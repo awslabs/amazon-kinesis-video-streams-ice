@@ -63,7 +63,8 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 /* Ice_AddHostCandidate - The application calls this API for adding host candidate. */
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
-                                  IceAgent_t * pIceAgent )
+                                  IceAgent_t * pIceAgent,
+                                  IceCandidate_t ** ppCandidate )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     IceCandidate_t * pCandidate = NULL;
@@ -90,6 +91,11 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                               pCandidate );
     }
 
+    if( retStatus == ICE_RESULT_OK )
+    {
+        ppCandidate = *pCandidate;
+    }
+
     return retStatus;
 }
 
@@ -99,6 +105,7 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
+                                   IceCandidate_t ** ppCandidate,
                                    uint8_t * pStunMessageBuffer,
                                    uint8_t * pTransactionIdBuffer )
 {
@@ -134,6 +141,11 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                                   pCandidate );
         }
 
+        if( retStatus == ICE_RESULT_OK )
+        {
+            ppCandidate = *pCandidate;
+        }
+
     }
     return retStatus;
 }
@@ -144,6 +156,7 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
+                                    IceCandidate_t ** ppCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority )
@@ -178,6 +191,8 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
+        ppCandidate = *pCandidate;
+
         for( i = 0; ( i < Ice_GetValidLocalCandidateCount( pIceAgent ) ) && ( retStatus == ICE_RESULT_OK ); i++ )
         {
             if( pIceAgent->localCandidates[ i ]->state == ICE_CANDIDATE_STATE_VALID )

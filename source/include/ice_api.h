@@ -25,10 +25,12 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 TransactionIdStore_t * pBuffer );
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
-                                  IceAgent_t * pIceAgent );
+                                  IceAgent_t * pIceAgent,
+                                  IceCandidate_t ** ppCandidate );
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
+                                   IceCandidate_t ** ppCandidate,
                                    uint8_t * pStunMessageBuffer,
                                    uint8_t * pTransactionIdBuffer );
 
@@ -37,6 +39,7 @@ IceResult_t Ice_InsertLocalCandidate( IceAgent_t * pIceAgent,
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
+                                    IceCandidate_t ** ppCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority );
