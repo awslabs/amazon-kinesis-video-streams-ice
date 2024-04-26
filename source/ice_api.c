@@ -93,7 +93,7 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
 
     if( retStatus == ICE_RESULT_OK )
     {
-        ppCandidate = *pCandidate;
+        *ppCandidate = pCandidate;
     }
 
     return retStatus;
@@ -143,7 +143,7 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
 
         if( retStatus == ICE_RESULT_OK )
         {
-            ppCandidate = *pCandidate;
+            *ppCandidate = pCandidate;
         }
 
     }
@@ -191,7 +191,7 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
-        ppCandidate = *pCandidate;
+        *ppCandidate = pCandidate;
 
         for( i = 0; ( i < Ice_GetValidLocalCandidateCount( pIceAgent ) ) && ( retStatus == ICE_RESULT_OK ); i++ )
         {
@@ -225,6 +225,7 @@ IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
     {
         retStatus = Ice_AddRemoteCandidate( pIceAgent,
                                             ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
+                                            &pCandidate,
                                             pIpAddr,
                                             0,
                                             priority );
