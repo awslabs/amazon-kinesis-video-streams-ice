@@ -22,6 +22,7 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 TransactionIdStore_t * pBuffer )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
+    int i;
 
     if( ( pIceAgent == NULL ) ||
         ( localPassword == NULL ) ||
@@ -49,6 +50,11 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
         pIceAgent->stunMessageBufferUsedCount = 0;
         pIceAgent->isControlling = 0;
         pIceAgent->tieBreaker = ( uint64_t ) rand(); //required as an attribute for STUN packet
+
+        memset( pIceAgent->localCandidates, 0, sizeof( pIceAgent->localCandidates ) );
+        memset( pIceAgent->remoteCandidates, 0, sizeof( pIceAgent->remoteCandidates ) );
+        memset( pIceAgent->stunMessageBuffers, 0, sizeof( pIceAgent->stunMessageBuffers ) );
+        memset( pIceAgent->iceCandidatePairs, 0, sizeof( pIceAgent->iceCandidatePairs ) );
 
         pIceAgent->pStunBindingRequestTransactionIdStore = pBuffer;
         retStatus = Ice_CreateTransactionIdStore( DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,

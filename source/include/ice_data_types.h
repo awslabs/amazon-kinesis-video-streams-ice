@@ -108,16 +108,6 @@ typedef struct TransactionIdStore
     uint8_t * transactionIds;
 } TransactionIdStore_t;
 
-typedef struct IceServer
-{
-    char url[MAX_ICE_CONFIG_URI_LEN + 1];
-    char username[MAX_ICE_CONFIG_USER_NAME_LEN + 1];
-    char credential[MAX_ICE_CONFIG_CREDENTIAL_LEN + 1];
-    IceSocketProtocol_t transport;
-    IceIPAddress_t ipAddress;
-    uint8_t IceServerAttributeFlag;
-} IceServer_t;
-
 typedef struct IceCandidate
 {
     IceCandidateType_t iceCandidateType;
@@ -144,10 +134,10 @@ typedef struct IceAgent
     char remoteUsername[MAX_ICE_CONFIG_USER_NAME_LEN + 1];
     char remotePassword[MAX_ICE_CONFIG_CREDENTIAL_LEN + 1];
     char combinedUserName[(MAX_ICE_CONFIG_USER_NAME_LEN + 1) << 1];
-    IceCandidate_t * localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
-    IceCandidate_t * remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
-    IceCandidatePair_t * iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
-    uint8_t * stunMessageBuffers[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
+    IceCandidate_t localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
+    IceCandidate_t remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
+    IceCandidatePair_t iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
+    uint8_t stunMessageBuffers[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
     uint16_t stunMessageBufferUsedCount;
     uint32_t isControlling;
     uint64_t tieBreaker;
