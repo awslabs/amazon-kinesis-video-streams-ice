@@ -26,26 +26,20 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                   IceAgent_t * pIceAgent,
-                                  IceCandidate_t ** ppCandidate );
+                                  IceCandidate_t * pCandidate );
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
-                                   IceCandidate_t ** ppCandidate,
+                                   IceCandidate_t * pCandidate,
                                    uint8_t * pStunMessageBuffer,
                                    uint8_t * pTransactionIdBuffer );
 
-IceResult_t Ice_InsertLocalCandidate( IceAgent_t * pIceAgent,
-                                      IceCandidate_t * pCandidate );
-
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
-                                    IceCandidate_t ** ppCandidate,
+                                    IceCandidate_t * pCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority );
-
-IceResult_t Ice_InsertRemoteCandidate( IceAgent_t * pIceAgent,
-                                       IceCandidate_t * pCandidate );
 
 IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
                                              IceIPAddress_t pIpAddr,
@@ -119,9 +113,9 @@ bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
                           StunAttributeAddress_t * pAddr2,
                           bool checkPort );
 
-IceCandidate_t * Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
-                                          IceIPAddress_t pIpAddress,
-                                          bool isRemote );
+IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
+                                        IceIPAddress_t pIpAddress,
+                                        bool isRemote );
 
 void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
                                    uint8_t * transactionId );
@@ -146,14 +140,14 @@ int Ice_GetValidRemoteCandidateCount( IceAgent_t * pIceAgent );
 
 int Ice_GetValidLocalCandidateCount( IceAgent_t * pIceAgent );
 
-IceResult_t Ice_InsertRemoteCandidate( IceAgent_t * pIceAgent,
-                                       IceCandidate_t * pCandidate );
-
 IceResult_t Ice_InsertLocalCandidate( IceAgent_t * pIceAgent,
-                                      IceCandidate_t * pCandidate );
+                                      IceCandidate_t localCandidate );
+
+IceResult_t Ice_InsertRemoteCandidate( IceAgent_t * pIceAgent,
+                                       IceCandidate_t remoteCandidate );
 
 void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                              IceCandidatePair_t * pIceCandidatePair,
+                              IceCandidatePair_t iceCandidatePair,
                               int iceCandidatePairCount );
 
 /************************************************************************************************************************************************/

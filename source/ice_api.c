@@ -29,6 +29,7 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
         ( localUsername == NULL ) ||
         ( remotePassword == NULL ) ||
         ( remoteUsername == NULL ) ||
+        ( combinedUsername == NULL ) ||
         ( pBuffer == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
@@ -36,16 +37,21 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
-        strcpy( pIceAgent->localUsername,
-                localUsername );
-        strcpy( pIceAgent->localPassword,
-                localPassword );
-        strcpy( pIceAgent->remoteUsername,
-                remoteUsername );
-        strcpy( pIceAgent->remotePassword,
-                remotePassword );
-        strcpy( pIceAgent->combinedUserName,
-                combinedUsername );
+        strncpy( pIceAgent->localUsername,
+                localUsername,
+                strlen( localUsername ) );
+        strncpy( pIceAgent->localPassword,
+                localPassword,
+                strlen( localPassword ) );
+        strncpy( pIceAgent->remoteUsername,
+                remoteUsername,
+                strlen( remoteUsername ) );
+        strncpy( pIceAgent->remotePassword,
+                remotePassword,
+                strlen( remotePassword ) );
+        strncpy( pIceAgent->combinedUserName,
+                combinedUsername,
+                strlen( combinedUsername ) );
 
         pIceAgent->stunMessageBufferUsedCount = 0;
         pIceAgent->isControlling = 0;
@@ -70,10 +76,10 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                   IceAgent_t * pIceAgent,
-                                  IceCandidate_t ** ppCandidate )
+                                  IceCandidate_t * pCandidate )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t * pCandidate = NULL;
+    IceCandidate_t iceCandidate ;
     int localCandidateCount = Ice_GetValidLocalCandidateCount( pIceAgent );
 
     if( localCandidateCount == ICE_MAX_LOCAL_CANDIDATE_COUNT )
@@ -82,24 +88,24 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
     }
     else
     {
-        pCandidate = pIceAgent->localCandidates[ localCandidateCount ];
+        iceCandidate = pIceAgent->localCandidates[ localCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        pCandidate->isRemote = 0;
-        pCandidate->ipAddress = ipAddr;
-        pCandidate->iceCandidateType = ICE_CANDIDATE_TYPE_HOST;
-        pCandidate->state = ICE_CANDIDATE_STATE_VALID;
-        pCandidate->priority = Ice_ComputeCandidatePriority( pCandidate );
+        iceCandidate.isRemote = 0;
+        iceCandidate.ipAddress = ipAddr;
+        iceCandidate.iceCandidateType = ICE_CANDIDATE_TYPE_HOST;
+        iceCandidate.state = ICE_CANDIDATE_STATE_VALID;
+        iceCandidate.priority = Ice_ComputeCandidatePriority( &iceCandidate );
 
         retStatus = Ice_InsertLocalCandidate( pIceAgent,
-                                              pCandidate );
+                                              iceCandidate );
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        *ppCandidate = pCandidate;
+        pCandidate = &iceCandidate;
     }
 
     return retStatus;
@@ -111,12 +117,12 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
-                                   IceCandidate_t ** ppCandidate,
+                                   IceCandidate_t * pCandidate,
                                    uint8_t * pStunMessageBuffer,
                                    uint8_t * pTransactionIdBuffer )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t * pCandidate = NULL;
+    IceCandidate_t iceCandidate ;
 
     int localCandidateCount = Ice_GetValidLocalCandidateCount( pIceAgent );
 
@@ -126,16 +132,16 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
     }
     else
     {
-        pCandidate = pIceAgent->localCandidates[ localCandidateCount ];
+        iceCandidate = pIceAgent->localCandidates[ localCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        pCandidate->isRemote = 0;
-        pCandidate->ipAddress = ipAddr;
-        pCandidate->iceCandidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
-        pCandidate->state = ICE_CANDIDATE_STATE_NEW;
-        pCandidate->priority = Ice_ComputeCandidatePriority( pCandidate );
+        iceCandidate.isRemote = 0;
+        iceCandidate.ipAddress = ipAddr;
+        iceCandidate.iceCandidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+        iceCandidate.state = ICE_CANDIDATE_STATE_NEW;
+        iceCandidate.priority = Ice_ComputeCandidatePriority( &iceCandidate );
 
         retStatus = Ice_CreateRequestForSrflxCandidate( pIceAgent,
                                                         pStunMessageBuffer,
@@ -144,12 +150,12 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
         if( retStatus == ICE_RESULT_OK )
         {
             retStatus = Ice_InsertLocalCandidate( pIceAgent,
-                                                  pCandidate );
+                                                  iceCandidate );
         }
 
         if( retStatus == ICE_RESULT_OK )
         {
-            *ppCandidate = pCandidate;
+            pCandidate = &iceCandidate;
         }
 
     }
@@ -162,13 +168,13 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
-                                    IceCandidate_t ** ppCandidate,
+                                    IceCandidate_t * pCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t * pCandidate = NULL;
+    IceCandidate_t iceCandidate;
     int i;
 
     int remoteCandidateCount = Ice_GetValidRemoteCandidateCount( pIceAgent );
@@ -179,33 +185,34 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
     }
     else
     {
-        pCandidate = pIceAgent->remoteCandidates[ remoteCandidateCount ];
+        iceCandidate = pIceAgent->remoteCandidates[ remoteCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        pCandidate->isRemote = 1;
-        pCandidate->ipAddress = ipAddr;
-        pCandidate->state = ICE_CANDIDATE_STATE_VALID;
-        pCandidate->priority = priority;
-        pCandidate->iceCandidateType = iceCandidateType;
-        pCandidate->remoteProtocol = remoteProtocol;
+        iceCandidate.isRemote = 1;
+        iceCandidate.ipAddress = ipAddr;
+        iceCandidate.state = ICE_CANDIDATE_STATE_VALID;
+        iceCandidate.priority = priority;
+        iceCandidate.iceCandidateType = iceCandidateType;
+        iceCandidate.remoteProtocol = remoteProtocol;
 
         retStatus = Ice_InsertRemoteCandidate( pIceAgent,
-                                               pCandidate );
+                                               iceCandidate );
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        *ppCandidate = pCandidate;
+        pCandidate = &iceCandidate;
 
-        for( i = 0; ( i < Ice_GetValidLocalCandidateCount( pIceAgent ) ) && ( retStatus == ICE_RESULT_OK ); i++ )
+        for( i = 0; ( ( i < Ice_GetValidLocalCandidateCount( pIceAgent ) ) && ( retStatus == ICE_RESULT_OK ) ); i++ )
         {
-            if( pIceAgent->localCandidates[ i ]->state == ICE_CANDIDATE_STATE_VALID )
+            if( pIceAgent->localCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
             {
                 retStatus = Ice_CreateCandidatePair( pIceAgent,
-                                                     pIceAgent->localCandidates[ i ],
+                                                     &( pIceAgent->localCandidates[ i ] ),
                                                      pCandidate );
+                printf("Status=%d\n",retStatus);
             }
         }
     }
@@ -222,20 +229,18 @@ IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
                                              IceCandidatePair_t * pIceCandidatePair )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t * pCandidate = NULL;
+    IceCandidate_t peerReflexiveCandidate;
 
-    pCandidate = Ice_FindCandidateFromIp( pIceAgent,
-                                          pIpAddr,
-                                          1 );
-    if( pCandidate == NULL )
-    {
-        retStatus = Ice_AddRemoteCandidate( pIceAgent,
-                                            ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
-                                            &pCandidate,
-                                            pIpAddr,
-                                            0,
-                                            priority );
-    }
+    peerReflexiveCandidate = Ice_FindCandidateFromIp( pIceAgent,
+                                                      pIpAddr,
+                                                      1 );
+    retStatus = Ice_AddRemoteCandidate( pIceAgent,
+                                        ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
+                                        &peerReflexiveCandidate,
+                                        pIpAddr,
+                                        0,
+                                        priority );
+
     return retStatus;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
@@ -248,7 +253,7 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     int iceCandidatePairCount;
-    IceCandidatePair_t * pIceCandidatePair = NULL;
+    IceCandidatePair_t iceCandidatePair;
 
     if( ( pIceAgent == NULL ) ||
         ( pLocalCandidate == NULL ) ||
@@ -267,20 +272,21 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
         }
         else
         {
-            pIceCandidatePair = pIceAgent->iceCandidatePairs[ iceCandidatePairCount ];
+            iceCandidatePair = pIceAgent->iceCandidatePairs[ iceCandidatePairCount ];
         }
 
-        if( retStatus == ICE_RESULT_OK ) {
-            pIceCandidatePair->local = pLocalCandidate;
-            pIceCandidatePair->remote = pRemoteCandidate;
-            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-            pIceCandidatePair->priority = Ice_ComputeCandidatePairPriority( pIceCandidatePair,
-                                                                            pIceAgent->isControlling );
-            pIceCandidatePair->connectivityChecks = 0;
+        if( retStatus == ICE_RESULT_OK ) 
+        {
+            iceCandidatePair.local = pLocalCandidate;
+            iceCandidatePair.remote = pRemoteCandidate;
+            iceCandidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+            iceCandidatePair.priority = Ice_ComputeCandidatePairPriority( &iceCandidatePair,
+                                                                          pIceAgent->isControlling );
+            iceCandidatePair.connectivityChecks = 0;
         }
 
         Ice_InsertCandidatePair( pIceAgent,
-                                 pIceCandidatePair,
+                                 iceCandidatePair,
                                  iceCandidatePairCount );
     }
 
@@ -292,23 +298,33 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
 /* Ice_insertCandidatePair : This API is called internally to insert candidate paits based on decreasing priority. */
 
 void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                              IceCandidatePair_t * pIceCandidatePair,
+                              IceCandidatePair_t iceCandidatePair,
                               int iceCandidatePairCount )
 {
-    int i,pivot;
+    int i;
+    int pivot = -1;
 
-    for( i = 0; i < iceCandidatePairCount; i++ ) {
-        if( pIceCandidatePair->priority >= pIceAgent->iceCandidatePairs[i]->priority ) {
+    for( i = 0; i < iceCandidatePairCount; i++ )
+    {
+        if( iceCandidatePair.priority >= pIceAgent->iceCandidatePairs[i].priority ) {
             pivot = i;
             break;
         }
     }
 
-    for( i = iceCandidatePairCount; i > pivot; i-- ) {
-        pIceAgent->iceCandidatePairs[ i ] = pIceAgent->iceCandidatePairs[ i - 1 ];
+    if( pivot == -1 )
+    {
+        pivot = iceCandidatePairCount;
+    }
+    else
+    {
+        for( i = iceCandidatePairCount; i > pivot; i-- )
+        {
+            pIceAgent->iceCandidatePairs[ i ] = pIceAgent->iceCandidatePairs[ i - 1 ];
+        }
     }
 
-    pIceAgent->iceCandidatePairs[pivot] = pIceCandidatePair;
+    pIceAgent->iceCandidatePairs[pivot] = iceCandidatePair;
 
     return;
 }
@@ -338,7 +354,7 @@ IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
     {
         retStatus = Ice_CreateCandidatePair( pIceAgent,
                                              pCandidate,
-                                             pIceAgent->remoteCandidates[ i ] );
+                                             &( pIceAgent->remoteCandidates[ i ] ) );
     }
 
     return retStatus;
@@ -802,7 +818,7 @@ IceResult_t Ice_HandleStunResponse( IceAgent_t * pIceAgent,
                 printf( "Received candidate with USE_CANDIDATE flag.\n" );
                 pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
                 retStatus = Ice_CreateResponseForRequest( pIceAgent,
-                                                          pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ],
+                                                          &( pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ][ ICE_STUN_MESSAGE_BUFFER_SIZE ] ),
                                                           &pSrcAddr,
                                                           pTransactionIdBuffer );
 
@@ -958,21 +974,17 @@ IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
 /* Ice_InsertLocalCandidate - Adds a candidate into the array of local candidates. */
 
 IceResult_t Ice_InsertLocalCandidate( IceAgent_t * pIceAgent,
-                                      IceCandidate_t * pCandidate )
+                                      IceCandidate_t localCandidate )
 {
     int i;
     IceResult_t retStatus = ICE_RESULT_OK;
+    int localCandidateCount = Ice_GetValidLocalCandidateCount( pIceAgent );
 
-    retStatus = ( Ice_GetValidLocalCandidateCount( pIceAgent ) == ICE_MAX_LOCAL_CANDIDATE_COUNT ) ? ICE_RESULT_MAX_CANDIDATE_THRESHOLD : ICE_RESULT_OK;
+    retStatus = ( localCandidateCount == ICE_MAX_LOCAL_CANDIDATE_COUNT ) ? ICE_RESULT_MAX_CANDIDATE_THRESHOLD : ICE_RESULT_OK;
 
     if( retStatus == ICE_RESULT_OK )
     {
-        for( i = 0; i < ICE_MAX_LOCAL_CANDIDATE_COUNT; i++ ) {
-            if( pIceAgent->localCandidates[ i ] == NULL ) {
-                pIceAgent->localCandidates[ i ] = pCandidate;
-                break;
-            }
-        }
+        pIceAgent->localCandidates[ localCandidateCount ] = localCandidate;
     }
 
     return retStatus;
@@ -982,21 +994,17 @@ IceResult_t Ice_InsertLocalCandidate( IceAgent_t * pIceAgent,
 /* Ice_InsertRemoteCandidate - Adds a candidate into the array of remote candidates */
 
 IceResult_t Ice_InsertRemoteCandidate( IceAgent_t * pIceAgent,
-                                       IceCandidate_t * pCandidate )
+                                       IceCandidate_t remoteCandidate )
 {
     int i;
     IceResult_t retStatus = ICE_RESULT_OK;
+    int remoteCandidateCount = Ice_GetValidRemoteCandidateCount( pIceAgent );
 
-    retStatus = ( Ice_GetValidRemoteCandidateCount( pIceAgent ) == ICE_MAX_REMOTE_CANDIDATE_COUNT ) ? ICE_RESULT_MAX_CANDIDATE_THRESHOLD : ICE_RESULT_OK;
+    retStatus = ( remoteCandidateCount == ICE_MAX_REMOTE_CANDIDATE_COUNT ) ? ICE_RESULT_MAX_CANDIDATE_THRESHOLD : ICE_RESULT_OK;
 
     if( retStatus == ICE_RESULT_OK )
     {
-        for( i = 0; i < ICE_MAX_REMOTE_CANDIDATE_COUNT; i++ ) {
-            if( pIceAgent->remoteCandidates[ i ] == NULL ) {
-                pIceAgent->remoteCandidates[ i ] = pCandidate;
-                break;
-            }
-        }
+        pIceAgent->remoteCandidates[ remoteCandidateCount ] = remoteCandidate;
     }
 
     return retStatus;
@@ -1011,7 +1019,7 @@ int Ice_GetValidLocalCandidateCount( IceAgent_t * pIceAgent )
 
     for( i = 0; i < ICE_MAX_LOCAL_CANDIDATE_COUNT; i++ )
     {
-        if( pIceAgent->localCandidates[ i ]->state == ICE_CANDIDATE_STATE_INVALID ) {
+        if( pIceAgent->localCandidates[ i ].state == ICE_CANDIDATE_STATE_INVALID ) {
             break;
         }
     }
@@ -1027,7 +1035,7 @@ int Ice_GetValidRemoteCandidateCount( IceAgent_t * pIceAgent )
 
     for( i = 0; i < ICE_MAX_REMOTE_CANDIDATE_COUNT; i++ )
     {
-        if( pIceAgent->remoteCandidates[ i ]->state == ICE_CANDIDATE_STATE_INVALID ) {
+        if( pIceAgent->remoteCandidates[ i ].state == ICE_CANDIDATE_STATE_INVALID ) {
             break;
         }
     }
@@ -1043,7 +1051,7 @@ int Ice_GetValidCandidatePairCount( IceAgent_t * pIceAgent )
 
     for( i = 0; i < ICE_MAX_CANDIDATE_PAIR_COUNT; i++ )
     {
-        if( pIceAgent->iceCandidatePairs[ i ]->state == ICE_CANDIDATE_PAIR_STATE_INVALID ) {
+        if( pIceAgent->iceCandidatePairs[ i ].state == ICE_CANDIDATE_PAIR_STATE_INVALID ) {
             break;
         }
     }
@@ -1202,13 +1210,13 @@ void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
 
 /* Ice_FindCandidateFromIp - This API is called internally to search for a candidate with a given IP. */
 
-IceCandidate_t * Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
+IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
                                           IceIPAddress_t pIpAddress,
                                           bool isRemote )
 {
-    IceCandidate_t * pCandidate = NULL;
+    IceCandidate_t iceCandidate;
     int candidateCount, i;
-    IceCandidate_t * candidateList[ ICE_MAX_LOCAL_CANDIDATE_COUNT ] = { NULL };
+    IceCandidate_t candidateList[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
 
     if( isRemote == false )
     {
@@ -1231,15 +1239,15 @@ IceCandidate_t * Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
     uint32_t addrLen = IS_IPV4_ADDR( pIceIpAdress ) ? STUN_IPV4_ADDRESS_SIZE : STUN_IPV6_ADDRESS_SIZE;
     for( i = 0; i < candidateCount; i++ )
     {
-        if( ( pIceIpAdress.family == candidateList[i]->ipAddress.ipAddress.family ) && ( memcmp( candidateList[i]->ipAddress.ipAddress.address,
+        if( ( pIceIpAdress.family == candidateList[i].ipAddress.ipAddress.family ) && ( memcmp( candidateList[i].ipAddress.ipAddress.address,
                                                                                                  pIceIpAdress.address,
                                                                                                  addrLen ) == 0 ) &&
-            ( pIceIpAdress.port == candidateList[i]->ipAddress.ipAddress.port ) )
+            ( pIceIpAdress.port == candidateList[i].ipAddress.ipAddress.port ) )
         {
-            pCandidate = candidateList[i];
+            iceCandidate = candidateList[i];
         }
     }
-    return pCandidate;
+    return iceCandidate;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
