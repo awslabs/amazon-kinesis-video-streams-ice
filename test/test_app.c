@@ -16,6 +16,16 @@ typedef enum RequestType{
 
 TransactionIdStore_t buffer[ICE_MAX_STORED_TRANSACTION_ID_COUNT] = { 0 };
 
+uint32_t computeCrc32( uint32_t initialResult, uint8_t * pBuffer, uint32_t bufferLength )
+{
+    return 5;
+}
+
+void computeHMAC( uint8_t * password, uint32_t passwordLength, uint8_t * pBuffer, uint32_t bufferLength, uint8_t * output, uint32_t * outputLength )
+{
+    *outputLength = 10;
+}
+
 /*--------------------------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 void test_IceAgentInit( IceAgent_t * iceAgent )
@@ -25,7 +35,7 @@ void test_IceAgentInit( IceAgent_t * iceAgent )
     char str1[] = "local", str2[] = "abc123", str3[] = "remote", str4[] = "xyz789";
     char str5[] = "remote:local";
 
-    result = Ice_CreateIceAgent( iceAgent, str1, str2, str3, str4, str5, buffer );
+    result = Ice_CreateIceAgent( iceAgent, str1, str2, str3, str4, str5, buffer, computeCrc32, computeHMAC );
     
     if( result == ICE_RESULT_OK )
     {
@@ -101,8 +111,9 @@ void test_GenerateSrflxCandidate( IceAgent_t * iceAgent )
     IceResult_t result ;
     StunAttributeAddress_t stunAddress;
     IceIPAddress_t iceIpAddress;
-    uint8_t stunMessageBuffer[ 1024 ] = { 0 };
+    uint8_t * stunMessageBuffer;
     int i;
+    uint32_t stunMessageBufferLength;
     IceCandidate_t srflxCandidate;
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
@@ -119,7 +130,7 @@ void test_GenerateSrflxCandidate( IceAgent_t * iceAgent )
     iceIpAddress.ipAddress = stunAddress;
     iceIpAddress.isPointToPoint = 0;
 
-    result = Ice_AddSrflxCandidate( iceIpAddress, iceAgent, &srflxCandidate, transactionId );
+    result = Ice_AddSrflxCandidate( iceIpAddress, iceAgent, &srflxCandidate, transactionId, &stunMessageBuffer, &stunMessageBufferLength );
 
     if( result == ICE_RESULT_OK )
     {
@@ -132,7 +143,9 @@ void test_GenerateSrflxCandidate( IceAgent_t * iceAgent )
             printf( "0x%02x ", stunMessageBuffer[ i ] );
         }
 
+        printf("\nStun Message Buffer Length : %d\n",stunMessageBufferLength);
         printf(" \n\nTransaction Id Count %d",iceAgent->pStunBindingRequestTransactionIdStore->transactionIdCount );
+        
     }
     else
     {
@@ -199,14 +212,15 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
 {
     IceResult_t result ;
     int i;
-    uint8_t stunMessageBuffer[ 1024 ] = { 0 };
+    uint8_t * stunMessageBuffer;
     uint8_t transactionId[] = { 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7,
                                 0xA8, 0xA9, 0xAA, 0x87, 0xDF, 0xAE };
-
+    uint32_t stunMessageBufferLength;
+    
     switch( index ){
         case NOMINATING_CANDIDATE:
         {
-            result = Ice_CreateRequestForNominatingValidCandidatePair( iceAgent, stunMessageBuffer, &( iceAgent->iceCandidatePairs[ 0 ] ), transactionId );
+            result = Ice_CreateRequestForNominatingValidCandidatePair( iceAgent, &stunMessageBuffer, &stunMessageBufferLength, &( iceAgent->iceCandidatePairs[ 0 ] ), transactionId );
             if( result == ICE_RESULT_OK )
             {
                 printf(" Nominating candidate pair : Local Candidate Port %d --> Remote Candidate Port %d \n",iceAgent->iceCandidatePairs[ 0 ].pLocal->ipAddress.ipAddress.port, iceAgent->iceCandidatePairs[0].pRemote->ipAddress.ipAddress.port );
@@ -217,6 +231,7 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
                 {
                     printf( "0x%02x ", stunMessageBuffer[ i ] );
                 }
+                printf("\nStun Message Buffer Length : %d\n",stunMessageBufferLength);
             }
             else
             {
@@ -226,7 +241,7 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
             break;
         case CONNECTIVITY_CHECK:
         {
-            result = Ice_CreateRequestForConnectivityCheck( iceAgent, stunMessageBuffer, transactionId );
+            result = Ice_CreateRequestForConnectivityCheck( iceAgent, stunMessageBuffer, transactionId, &stunMessageBufferLength );
             if( result == ICE_RESULT_OK )
             {
                 printf( "\nSerialized Message for Connectivity check :\n\n" );
@@ -235,6 +250,7 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
                 {
                     printf( "0x%02x ", stunMessageBuffer[ i ] );
                 }
+                printf("\nStun Message Buffer Length : %d\n",stunMessageBufferLength);
             }
             else
             {
@@ -244,7 +260,7 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
             break;
         case RESPONSE_FOR_REQUEST:
         {
-            result = Ice_CreateResponseForRequest( iceAgent, stunMessageBuffer, &( iceAgent->iceCandidatePairs[1].pRemote->ipAddress ), transactionId );
+            result = Ice_CreateResponseForRequest( iceAgent, stunMessageBuffer, &( iceAgent->iceCandidatePairs[1].pRemote->ipAddress ), transactionId, &stunMessageBufferLength );
             if( result == ICE_RESULT_OK )
             {
                 printf( "\nSerialized Message for Response to Request from Remote candidate :\n\n" );
@@ -253,6 +269,7 @@ void test_GenerateStunRequests( IceAgent_t * iceAgent , RequestType_t index )
                 {
                     printf( "0x%02x ", stunMessageBuffer[ i ] );
                 }
+                printf("\nStun Message Buffer Length : %d\n",stunMessageBufferLength);
             }
             else
             {
@@ -280,6 +297,7 @@ void test_HandleStunResponseFromIceServerForSrflxCandidate( IceAgent_t * iceAgen
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
                               0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 }; 
+    uint32_t stunPacketLength;
 
     /* Initialise ICE IP address */    
     stunAddress.family = STUN_ADDRESS_IPv6;
@@ -294,12 +312,12 @@ void test_HandleStunResponseFromIceServerForSrflxCandidate( IceAgent_t * iceAgen
     {
         Ice_TransactionIdStoreInsert( iceAgent->pStunBindingRequestTransactionIdStore, pStunHeader.pTransactionId );
 
-        result = Ice_PackageStunPacket( &pStunCxt, NULL, 0 );
+        result = Ice_PackageStunPacket( iceAgent, &pStunCxt, NULL, 0 , &stunPacketLength );
     }
 
     printf("\n");
     /* Call API for handling the STUN repsonse*/
-    result = Ice_HandleStunResponse( iceAgent, stunMessageBuffer, 52, transactionId, &( iceAgent->localCandidates[2] ), iceAgent->localCandidates[2].ipAddress, &( iceAgent->iceCandidatePairs[2] ) );
+    result = Ice_HandleStunPacket( iceAgent, stunMessageBuffer, stunPacketLength, transactionId, NULL, NULL, &( iceAgent->localCandidates[2] ), iceAgent->localCandidates[2].ipAddress, &( iceAgent->iceCandidatePairs[2] ) );
 
     if( result == ICE_RESULT_OK )
     {
@@ -325,6 +343,7 @@ void test_HandleStunRequestFromRemoteCandidate( IceAgent_t * iceAgent )
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ] = { 0 };
     StunAttributeAddress_t stunAddress;
     IceIPAddress_t iceIpAddress;
+    uint32_t stunPacketLength;
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
                               0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 }; 
@@ -343,10 +362,10 @@ void test_HandleStunRequestFromRemoteCandidate( IceAgent_t * iceAgent )
 
     if( result == ICE_RESULT_OK )
     {
-        result = Ice_PackageStunPacket( &pStunCxt, NULL, 0 );
+        result = Ice_PackageStunPacket( iceAgent, &pStunCxt, NULL, 0, &stunPacketLength );
     }
     /* Call API for handling the STUN repsonse. */
-    result = Ice_HandleStunResponse( iceAgent, stunMessageBuffer, 52, transactionId, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
+    result = Ice_HandleStunPacket( iceAgent, stunMessageBuffer, stunPacketLength, transactionId, NULL, NULL, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
 
     if( iceAgent->iceCandidatePairs[0].connectivityChecks == 13 )
     {
@@ -371,6 +390,7 @@ void test_HandleStunResponseFromRemoteInResponseToLocalCandidateRequest( IceAgen
                                 0xA8, 0xA9, 0xAA, 0x87, 0xDF, 0xAE };
     StunAttributeAddress_t stunAddress;
     IceIPAddress_t iceIpAddress;
+    uint32_t stunPacketLength;
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
                               0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 }; 
@@ -389,11 +409,11 @@ void test_HandleStunResponseFromRemoteInResponseToLocalCandidateRequest( IceAgen
 
     if( result == ICE_RESULT_OK )
     {
-        result = Ice_PackageStunPacket( &pStunCxt, NULL, 0 );
+        result = Ice_PackageStunPacket( iceAgent, &pStunCxt, NULL, 0, &stunPacketLength );
     }
     /* Call API for handling the STUN repsonse. */
-    result = Ice_HandleStunResponse( iceAgent, stunMessageBuffer, 52, transactionId, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
-    
+    result = Ice_HandleStunPacket( iceAgent, stunMessageBuffer, stunPacketLength, transactionId, NULL, NULL, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
+
     if( iceAgent->iceCandidatePairs[0].connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG )
     {
         printf("Success, candidate Pair is moved to Valid List.\n");
@@ -417,6 +437,7 @@ void test_HandleStunResponseForNominatingCandidatePair( IceAgent_t * iceAgent )
                                 0xA8, 0xA9, 0xAA, 0x87, 0xDF, 0xAE };
     StunAttributeAddress_t stunAddress;
     IceIPAddress_t iceIpAddress;
+    uint32_t stunPacketLength;
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
                               0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 }; 
@@ -435,10 +456,10 @@ void test_HandleStunResponseForNominatingCandidatePair( IceAgent_t * iceAgent )
 
     if( result == ICE_RESULT_OK )
     {
-        result = Ice_PackageStunPacket( &pStunCxt, NULL, 0 );
+        result = Ice_PackageStunPacket( iceAgent, &pStunCxt, NULL, 0, &stunPacketLength );
     }
     /* Call API for handling the STUN repsonse. */
-    result = Ice_HandleStunResponse( iceAgent, stunMessageBuffer, 32, transactionId, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
+    result = Ice_HandleStunPacket( iceAgent, stunMessageBuffer, stunPacketLength, transactionId, NULL, NULL, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
     
     if( iceAgent->iceCandidatePairs[0].state != ICE_CANDIDATE_PAIR_STATE_NOMINATED )
     {
@@ -459,6 +480,7 @@ void test_HandleStunResponseInResponseToNominatingCandidatePairRequest( IceAgent
                                 0xA8, 0xA9, 0xAA, 0x87, 0xDF, 0xAE };
     StunAttributeAddress_t stunAddress;
     IceIPAddress_t iceIpAddress;
+    uint32_t stunPacketLength;
 
     uint8_t ipAddressV6[] = { 0x20, 0x01, 0x0D, 0xB8, 0x12, 0x34, 0x56, 0x78,
                               0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 }; 
@@ -477,10 +499,10 @@ void test_HandleStunResponseInResponseToNominatingCandidatePairRequest( IceAgent
     result = StunSerializer_AddAttributeUseCandidate( &pStunCxt );
     if( result == ICE_RESULT_OK )
     {
-        result = Ice_PackageStunPacket( &pStunCxt, NULL, 0 );
+        result = Ice_PackageStunPacket( iceAgent, &pStunCxt, NULL, 0, &stunPacketLength );
     }
     /* Call API for handling the STUN repsonse. */
-    result = Ice_HandleStunResponse( iceAgent, stunMessageBuffer, 56, transactionId, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
+    result = Ice_HandleStunPacket( iceAgent, stunMessageBuffer, stunPacketLength, transactionId, NULL, NULL, iceAgent->iceCandidatePairs[0].pLocal, iceIpAddress, &( iceAgent->iceCandidatePairs[0] ) );
     if( result == ICE_RESULT_CANDIDATE_PAIR_READY )
     {
         printf("Candidate Pair at index 0 : Local Candidate Port : %d --> Remote Candidate Port %d is selected pair for Data Transfer.\n",iceAgent->iceCandidatePairs[0].pLocal->ipAddress.ipAddress.port,iceAgent->iceCandidatePairs[0].pRemote->ipAddress.ipAddress.port);
