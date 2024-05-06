@@ -47,7 +47,8 @@
 
 #define ICE_STUN_MESSAGE_BUFFER_SIZE                            1024
 
-typedef void ( * WriteUint16_t ) ( uint8_t * pDst, uint16_t val );
+typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult, uint8_t * pBuffer, uint32_t bufferLength );
+typedef void ( * Ice_ComputeHMAC ) ( uint8_t * password, uint32_t passwordLength, uint8_t * pBuffer, uint32_t bufferLength, uint8_t * output, uint32_t * outputLength );
 typedef enum {
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
@@ -145,7 +146,8 @@ typedef struct IceAgent
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
-    
+    Ice_ComputeCrc32 computeCRC32;
+    Ice_ComputeHMAC computeHMAC;
 } IceAgent_t;
 
 #endif /* ICE_DATA_TYPES_H */
