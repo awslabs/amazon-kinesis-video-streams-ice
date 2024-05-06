@@ -31,8 +31,9 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
                                    IceCandidate_t * pCandidate,
-                                   uint8_t * pStunMessageBuffer,
-                                   uint8_t * pTransactionIdBuffer );
+                                   uint8_t * pTransactionIdBuffer,
+                                   uint8_t ** ppSendStunMessageBuffer,
+                                   uint32_t * pSendStunMessageBufferLength );
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
@@ -63,11 +64,13 @@ IceResult_t Ice_InitializeStunPacket( StunContext_t * pStunCxt,
 
 IceResult_t Ice_PackageStunPacket( StunContext_t * pStunCxt,
                                    uint8_t * password,
-                                   uint32_t passwordLen );
+                                   uint32_t passwordLen,
+                                   uint32_t * pStunMessageBufferLength );
 
 IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
                                                 uint8_t * pStunMessageBuffer,
-                                                uint8_t * pTransactionIdBuffer );
+                                                uint8_t * pTransactionIdBuffer,
+                                                uint32_t * pSendStunMessageBufferLength );
 
 IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceAgent,
                                                               uint8_t * pStunMessageBuffer,
@@ -92,6 +95,7 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
 IceResult_t Ice_HandleStunResponse( IceAgent_t * pIceAgent,
                                     uint8_t * pStunMessageBuffer,
                                     uint8_t pStunMessageBufferLength,
+                                    uint8_t * pSendStunMessageBufferLength,
                                     uint8_t * pTransactionIdBuffer,
                                     IceCandidate_t * pLocalCandidate,
                                     IceIPAddress_t pSrcAddr,
