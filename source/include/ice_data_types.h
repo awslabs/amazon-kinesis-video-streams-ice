@@ -10,8 +10,8 @@
 
 #define ICE_CONNECTIVITY_SUCCESS_FLAG                           15
 
-#define DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT                 20
-#define MAX_STORED_TRANSACTION_ID_COUNT                         100
+#define ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT                 20
+#define ICE_MAX_STORED_TRANSACTION_ID_COUNT                         100
 
 #define ICE_MAX_LOCAL_CANDIDATE_COUNT                       100
 #define ICE_MAX_REMOTE_CANDIDATE_COUNT                      100
@@ -29,24 +29,25 @@
  * Maximum allowed ICE configuration user name length
  * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_GetIceServerConfig.html#API_AWSAcuitySignalingService_GetIceServerConfig_RequestSyntax
  */
-#define MAX_ICE_CONFIG_USER_NAME_LEN                            256
+#define ICE_MAX_CONFIG_USER_NAME_LEN                            256
 
 /**
  * Maximum allowed ICE configuration password length
  * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password
  */
-#define MAX_ICE_CONFIG_CREDENTIAL_LEN                           256
+#define ICE_MAX_CONFIG_CREDENTIAL_LEN                           256
 
 /**
  * Maximum allowed ICE URI length
  */
-#define MAX_ICE_CONFIG_URI_LEN                                  256
+#define ICE_MAX_CONFIG_URI_LEN                                  256
 
 
-#define IS_IPV4_ADDR(pAddress)                               ( (pAddress).family == STUN_ADDRESS_IPv4 )
+#define ICE_IS_IPV4_ADDR(pAddress)                               ( ( pAddress ).family == STUN_ADDRESS_IPv4 )
 
 #define ICE_STUN_MESSAGE_BUFFER_SIZE                            1024
 
+typedef void ( * WriteUint16_t ) ( uint8_t * pDst, uint16_t val );
 typedef enum {
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
@@ -107,7 +108,7 @@ typedef struct TransactionIdStore
     uint32_t nextTransactionIdIndex;
     uint32_t earliestTransactionIdIndex;
     uint32_t transactionIdCount;
-    uint8_t * transactionIds;
+    uint8_t * pTransactionIds;
 } TransactionIdStore_t;
 
 typedef struct IceCandidate
@@ -122,8 +123,8 @@ typedef struct IceCandidate
 
 typedef struct IceCandidatePair
 {
-    IceCandidate_t* local;
-    IceCandidate_t* remote;
+    IceCandidate_t * pLocal;
+    IceCandidate_t * pRemote;
     uint64_t priority;
     IceCandidatePairState_t state;
     uint8_t connectivityChecks; // checking for completion of 4-way handshake
@@ -131,11 +132,11 @@ typedef struct IceCandidatePair
 
 typedef struct IceAgent
 {
-    char localUsername[MAX_ICE_CONFIG_USER_NAME_LEN + 1];
-    char localPassword[MAX_ICE_CONFIG_CREDENTIAL_LEN + 1];
-    char remoteUsername[MAX_ICE_CONFIG_USER_NAME_LEN + 1];
-    char remotePassword[MAX_ICE_CONFIG_CREDENTIAL_LEN + 1];
-    char combinedUserName[(MAX_ICE_CONFIG_USER_NAME_LEN + 1) << 1];
+    char localUsername[ICE_MAX_CONFIG_USER_NAME_LEN + 1];
+    char localPassword[ICE_MAX_CONFIG_CREDENTIAL_LEN + 1];
+    char remoteUsername[ICE_MAX_CONFIG_USER_NAME_LEN + 1];
+    char remotePassword[ICE_MAX_CONFIG_CREDENTIAL_LEN + 1];
+    char combinedUserName[(ICE_MAX_CONFIG_USER_NAME_LEN + 1) << 1];
     IceCandidate_t localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
     IceCandidate_t remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
     IceCandidatePair_t iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
@@ -144,6 +145,7 @@ typedef struct IceAgent
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
+    
 } IceAgent_t;
 
 #endif /* ICE_DATA_TYPES_H */
