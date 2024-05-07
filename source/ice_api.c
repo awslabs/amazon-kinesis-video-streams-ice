@@ -83,10 +83,10 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                   IceAgent_t * pIceAgent,
-                                  IceCandidate_t * pCandidate )
+                                  IceCandidate_t ** ppCandidate )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t iceCandidate ;
+    IceCandidate_t * pIceCandidate ;
     int localCandidateCount;
 
     if( pIceAgent == NULL )
@@ -105,24 +105,21 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
     }
     else
     {
-        iceCandidate = pIceAgent->localCandidates[ localCandidateCount ];
+        pIceCandidate = &pIceAgent->localCandidates[ localCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        iceCandidate.isRemote = 0;
-        iceCandidate.ipAddress = ipAddr;
-        iceCandidate.iceCandidateType = ICE_CANDIDATE_TYPE_HOST;
-        iceCandidate.state = ICE_CANDIDATE_STATE_VALID;
-        iceCandidate.priority = Ice_ComputeCandidatePriority( &iceCandidate );
-
-        retStatus = Ice_InsertLocalCandidate( pIceAgent,
-                                              iceCandidate );
+        pIceCandidate->isRemote = 0;
+        pIceCandidate->ipAddress = ipAddr;
+        pIceCandidate->iceCandidateType = ICE_CANDIDATE_TYPE_HOST;
+        pIceCandidate->state = ICE_CANDIDATE_STATE_VALID;
+        pIceCandidate->priority = Ice_ComputeCandidatePriority( pIceCandidate );
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        pCandidate = &iceCandidate;
+        *ppCandidate = pIceCandidate;
     }
 
     return retStatus;
@@ -134,13 +131,13 @@ IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
-                                   IceCandidate_t * pCandidate,
+                                   IceCandidate_t ** ppCandidate,
                                    uint8_t * pTransactionIdBuffer,
                                    uint8_t ** ppSendStunMessageBuffer,
                                    uint32_t * pSendStunMessageBufferLength )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t iceCandidate ;
+    IceCandidate_t * pIceCandidate ;
     int localCandidateCount;
 
     if( ( pIceAgent == NULL ) ||
@@ -157,16 +154,16 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
     }
     else
     {
-        iceCandidate = pIceAgent->localCandidates[ localCandidateCount ];
+        pIceCandidate = &pIceAgent->localCandidates[ localCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        iceCandidate.isRemote = 0;
-        iceCandidate.ipAddress = ipAddr;
-        iceCandidate.iceCandidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
-        iceCandidate.state = ICE_CANDIDATE_STATE_NEW;
-        iceCandidate.priority = Ice_ComputeCandidatePriority( &iceCandidate );
+        pIceCandidate->isRemote = 0;
+        pIceCandidate->ipAddress = ipAddr;
+        pIceCandidate->iceCandidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+        pIceCandidate->state = ICE_CANDIDATE_STATE_NEW;
+        pIceCandidate->priority = Ice_ComputeCandidatePriority( pIceCandidate );
 
         retStatus = Ice_CreateRequestForSrflxCandidate( pIceAgent,
                                                         pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ],
@@ -176,13 +173,11 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
         if( retStatus == ICE_RESULT_OK )
         {
             *ppSendStunMessageBuffer = pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount - 1 ];
-            retStatus = Ice_InsertLocalCandidate( pIceAgent,
-                                                  iceCandidate );
         }
 
         if( retStatus == ICE_RESULT_OK )
         {
-            pCandidate = &iceCandidate;
+            *ppCandidate = pIceCandidate;
         }
 
     }
@@ -195,13 +190,13 @@ IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
-                                    IceCandidate_t * pCandidate,
+                                    IceCandidate_t ** ppCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t iceCandidate;
+    IceCandidate_t * pIceCandidate;
     int i;
     int remoteCandidateCount;
 
@@ -218,25 +213,22 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
     }
     else
     {
-        iceCandidate = pIceAgent->remoteCandidates[ remoteCandidateCount ];
+        pIceCandidate = &pIceAgent->remoteCandidates[ remoteCandidateCount ];
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        iceCandidate.isRemote = 1;
-        iceCandidate.ipAddress = ipAddr;
-        iceCandidate.state = ICE_CANDIDATE_STATE_VALID;
-        iceCandidate.priority = priority;
-        iceCandidate.iceCandidateType = iceCandidateType;
-        iceCandidate.remoteProtocol = remoteProtocol;
-
-        retStatus = Ice_InsertRemoteCandidate( pIceAgent,
-                                               iceCandidate );
+        pIceCandidate->isRemote = 1;
+        pIceCandidate->ipAddress = ipAddr;
+        pIceCandidate->state = ICE_CANDIDATE_STATE_VALID;
+        pIceCandidate->priority = priority;
+        pIceCandidate->iceCandidateType = iceCandidateType;
+        pIceCandidate->remoteProtocol = remoteProtocol;
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        pCandidate = &iceCandidate;
+        *ppCandidate = pIceCandidate;
 
         for( i = 0; ( ( i < Ice_GetValidLocalCandidateCount( pIceAgent ) ) && ( retStatus == ICE_RESULT_OK ) ); i++ )
         {
@@ -244,7 +236,7 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
             {
                 retStatus = Ice_CreateCandidatePair( pIceAgent,
                                                      &( pIceAgent->localCandidates[ i ] ),
-                                                     pCandidate );
+                                                     pIceCandidate );
             }
         }
     }
@@ -261,7 +253,8 @@ IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
                                              IceCandidatePair_t * pIceCandidatePair )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    IceCandidate_t peerReflexiveCandidate;
+    IceCandidate_t * pPeerReflexiveCandidate;
+    IceCandidate_t resCandidate;
 
     if( pIceAgent == NULL )
     {
@@ -270,12 +263,12 @@ IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
-        peerReflexiveCandidate = Ice_FindCandidateFromIp( pIceAgent,
-                                                        pIpAddr,
-                                                        1 );
+        resCandidate = Ice_FindCandidateFromIp( pIceAgent, pIpAddr, 1 );
+        pPeerReflexiveCandidate = &resCandidate;
+
         retStatus = Ice_AddRemoteCandidate( pIceAgent,
                                             ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
-                                            &peerReflexiveCandidate,
+                                            &pPeerReflexiveCandidate,
                                             pIpAddr,
                                             0,
                                             priority );
@@ -293,7 +286,7 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     int iceCandidatePairCount;
-    IceCandidatePair_t iceCandidatePair;
+    IceCandidatePair_t * pIceCandidatePair;
 
     if( ( pIceAgent == NULL ) ||
         ( pLocalCandidate == NULL ) ||
@@ -312,22 +305,20 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
         }
         else
         {
-            iceCandidatePair = pIceAgent->iceCandidatePairs[ iceCandidatePairCount ];
+            pIceCandidatePair = &( pIceAgent->iceCandidatePairs[ iceCandidatePairCount ] );
         }
 
         if( retStatus == ICE_RESULT_OK ) 
         {
-            iceCandidatePair.pLocal = pLocalCandidate;
-            iceCandidatePair.pRemote = pRemoteCandidate;
-            iceCandidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-            iceCandidatePair.priority = Ice_ComputeCandidatePairPriority( &iceCandidatePair,
-                                                                          pIceAgent->isControlling );
-            iceCandidatePair.connectivityChecks = 0;
-        }
+            pIceCandidatePair->pLocal = pLocalCandidate;
+            pIceCandidatePair->pRemote = pRemoteCandidate;
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+            pIceCandidatePair->priority = Ice_ComputeCandidatePairPriority( pIceCandidatePair,
+                                                                            pIceAgent->isControlling );
+            pIceCandidatePair->connectivityChecks = 0;
 
-        Ice_InsertCandidatePair( pIceAgent,
-                                 iceCandidatePair,
-                                 iceCandidatePairCount );
+            Ice_InsertCandidatePair( pIceAgent, pIceCandidatePair, iceCandidatePairCount );
+        }
     }
 
     return retStatus;
@@ -338,7 +329,7 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
 /* Ice_insertCandidatePair : This API is called internally to insert candidate paits based on decreasing priority. */
 
 void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                              IceCandidatePair_t iceCandidatePair,
+                              IceCandidatePair_t * pIceCandidatePair,
                               int iceCandidatePairCount )
 {
     int i;
@@ -346,7 +337,7 @@ void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
 
     for( i = 0; i < iceCandidatePairCount; i++ )
     {
-        if( iceCandidatePair.priority >= pIceAgent->iceCandidatePairs[i].priority ) {
+        if( pIceCandidatePair->priority >= pIceAgent->iceCandidatePairs[i].priority ) {
             pivot = i;
             break;
         }
@@ -364,7 +355,7 @@ void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
         }
     }
 
-    pIceAgent->iceCandidatePairs[pivot] = iceCandidatePair;
+    pIceAgent->iceCandidatePairs[pivot] = *pIceCandidatePair;
 
     return;
 }
@@ -674,7 +665,8 @@ IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceA
 IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
                                                    uint8_t ** pSendStunMessageBuffer,
                                                    uint32_t * pSendStunMessageBufferLength,
-                                                   uint8_t * pTransactionIdBuffer )
+                                                   uint8_t * pTransactionIdBuffer,
+                                                   IceCandidatePair_t * pIceCandidatePair )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     StunContext_t pStunCxt;
@@ -732,10 +724,10 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
                                                 ( uint32_t ) strlen( pIceAgent->remotePassword ) * sizeof( char ),
                                                 pSendStunMessageBufferLength );
         }
-
         if( retStatus == ICE_RESULT_OK )
         {
             *pSendStunMessageBuffer = pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount - 1 ];
+            pIceCandidatePair->connectivityChecks |= 1 << 1;
         }
     }
 
@@ -878,14 +870,14 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
 /* Ice_HandleStunPacket - This API handles the processing of Stun Response. */
 
 IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
-                                    uint8_t * pReceivedStunMessageBuffer,
-                                    uint32_t pReceivedStunMessageBufferLength,
-                                    uint8_t * pTransactionIdBuffer,
-                                    uint8_t ** ppSendStunMessageBuffer,
-                                    uint32_t * pSendStunMessageBufferLength,
-                                    IceCandidate_t * pLocalCandidate,
-                                    IceIPAddress_t pSrcAddr,
-                                    IceCandidatePair_t * pIceCandidatePair )
+                                uint8_t * pReceivedStunMessageBuffer,
+                                uint32_t pReceivedStunMessageBufferLength,
+                                uint8_t * pTransactionIdBuffer,
+                                uint8_t ** ppSendStunMessageBuffer,
+                                uint32_t * pSendStunMessageBufferLength,
+                                IceCandidate_t * pLocalCandidate,
+                                IceIPAddress_t * pRemoteAddr,
+                                IceCandidatePair_t * pIceCandidatePair )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     uint32_t priority = 0;
@@ -898,10 +890,16 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
         ( pReceivedStunMessageBuffer == NULL ) ||
         ( pReceivedStunMessageBufferLength > ICE_STUN_MESSAGE_BUFFER_SIZE ) ||
         ( pTransactionIdBuffer == NULL ) ||
-        ( pLocalCandidate == NULL )||
-        ( pIceCandidatePair == NULL ) )
+        ( pLocalCandidate == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
+    }
+
+    /* Find Candidate Pair with given local IP address and remote IP address . */
+    if( retStatus == ICE_RESULT_OK )
+    {
+        //TODO:
+        //Ice_FindCandidatePairWithLocalAndRemoteAddr( pIceAgent, pRemoteAddr, pRemoteAddr, pIceCandidatePair );
     }
 
     /* Initialize STUN context for deserializing. */
@@ -935,16 +933,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
             {
                 printf( "Received candidate with USE_CANDIDATE flag.\n" );
                 pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                retStatus = Ice_CreateResponseForRequest( pIceAgent,
-                                                          pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ],
-                                                          &pSrcAddr,
-                                                          pTransactionIdBuffer,
-                                                          pSendStunMessageBufferLength );
-
-                if( retStatus == ICE_RESULT_OK )
-                {
-                    retStatus = ICE_RESULT_SEND_STUN_REQUEST_RESPONSE;
-                }
+                retStatus = ICE_RESULT_SEND_STUN_RESPONSE_FOR_NOMINATION;
             }
             else
             {
@@ -952,38 +941,9 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                 if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_INVALID )
                 {
                     retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
-                                                                 pSrcAddr,
+                                                                 *pRemoteAddr,
                                                                  priority,
                                                                  pIceCandidatePair );
-                }
-
-                pIceCandidatePair->connectivityChecks |= 1 << 2;
-
-                /* Create a response from local to remote candidate. */
-                retStatus = Ice_CreateResponseForRequest( pIceAgent,
-                                                          pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ],
-                                                          &pSrcAddr,
-                                                          pTransactionIdBuffer,
-                                                          pSendStunMessageBufferLength );
-                if( retStatus == ICE_RESULT_OK )
-                {
-                    pIceCandidatePair->connectivityChecks |= 1 << 3;
-                    retStatus = ICE_RESULT_SEND_STUN_LOCAL_REMOTE;
-                }
-
-                if( ( pIceCandidatePair->connectivityChecks & 1 ) == 0 )
-                {
-                    /* Create a request from local to remote candidate. */
-                    pIceCandidatePair->connectivityChecks |= 1 << 0;
-
-                    retStatus = Ice_CreateRequestForConnectivityCheck( pIceAgent,
-                                                                       pIceAgent->stunMessageBuffers[ pIceAgent->stunMessageBufferUsedCount++ ],
-                                                                       pTransactionIdBuffer,
-                                                                       pSendStunMessageBufferLength );
-                    if( retStatus == ICE_RESULT_OK )
-                    {
-                        retStatus = ICE_RESULT_SEND_STUN_REQUEST_RESPONSE;
-                    }
                 }
             }
         }
@@ -1004,6 +964,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                         Ice_TransactionIdStoreRemove( pIceAgent->pStunBindingRequestTransactionIdStore,
                                                       pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET );
                     }
+                    retStatus = ICE_RESULT_UPDATED_SRFLX_CANDIDATE_ADDRESS;
                 }
             }
             else
@@ -1376,6 +1337,36 @@ IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
     return iceCandidate;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
+
+/* Ice_FindCandidatePairWithLocalAndRemoteAddr - This API is called internally to find a candidate pair given the local and remote IP addresses. */
+
+void Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
+                                                  IceIPAddress_t * pSrcAddr,
+                                                  IceIPAddress_t * pRemoteAddr,
+                                                  IceCandidatePair_t * pCandidatePair )
+{
+    int i;
+    int candidatePairCount;
+    IceCandidatePair_t iceCandidatePair;
+    
+    if( ( pIceAgent == NULL ) ||
+        ( pSrcAddr == NULL ) ||
+        ( pRemoteAddr == NULL ) )
+    {
+        pCandidatePair = NULL;
+        return;
+    }
+
+    candidatePairCount = Ice_GetValidCandidatePairCount( pIceAgent );
+    for( i = 0; i < candidatePairCount; i++ )
+    {
+        iceCandidatePair = pIceAgent->iceCandidatePairs[ i ];
+        if( ( Ice_IsSameIpAddress( &( iceCandidatePair.pLocal->ipAddress.ipAddress ) , &( pSrcAddr->ipAddress ), true ) ) && ( Ice_IsSameIpAddress( &( iceCandidatePair.pRemote->ipAddress.ipAddress ) , &( pRemoteAddr->ipAddress ), true ) ) )
+        {
+            pCandidatePair = &( iceCandidatePair );
+        }
+    }
+}
 
 /* Ice_IsSameIpAddress - This API is called internally to check if two IPAddress are same. */
 

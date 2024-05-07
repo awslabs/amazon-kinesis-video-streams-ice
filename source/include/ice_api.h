@@ -28,18 +28,18 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                   IceAgent_t * pIceAgent,
-                                  IceCandidate_t * pCandidate );
+                                  IceCandidate_t ** ppCandidate );
 
 IceResult_t Ice_AddSrflxCandidate( const IceIPAddress_t ipAddr,
                                    IceAgent_t * pIceAgent,
-                                   IceCandidate_t * pCandidate,
+                                   IceCandidate_t ** ppCandidate,
                                    uint8_t * pTransactionIdBuffer,
                                    uint8_t ** ppSendStunMessageBuffer,
                                    uint32_t * pSendStunMessageBufferLength );
 
 IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceCandidateType_t iceCandidateType,
-                                    IceCandidate_t * pCandidate,
+                                    IceCandidate_t ** ppCandidate,
                                     const IceIPAddress_t ipAddr,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority );
@@ -84,7 +84,8 @@ IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceA
 IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
                                                    uint8_t ** ppSendStunMessageBuffer,
                                                    uint32_t * pSendStunMessageBufferLength,
-                                                   uint8_t * pTransactionIdBuffer );
+                                                   uint8_t * pTransactionIdBuffer,
+                                                   IceCandidatePair_t * pIceCandidatePair );
 
 IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
                                           uint8_t ** ppSendStunMessageBuffer,
@@ -105,7 +106,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                     uint8_t ** ppSendStunMessageBuffer,
                                     uint32_t * pSendStunMessageBufferLength,
                                     IceCandidate_t * pLocalCandidate,
-                                    IceIPAddress_t pSrcAddr,
+                                    IceIPAddress_t * pRemoteAddr,
                                     IceCandidatePair_t * pIceCandidatePair );
 
 IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
@@ -158,7 +159,7 @@ IceResult_t Ice_InsertRemoteCandidate( IceAgent_t * pIceAgent,
                                        IceCandidate_t remoteCandidate );
 
 void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                              IceCandidatePair_t iceCandidatePair,
+                              IceCandidatePair_t * pIceCandidatePair,
                               int iceCandidatePairCount );
 
 /************************************************************************************************************************************************/
