@@ -48,7 +48,7 @@
 #define ICE_STUN_MESSAGE_BUFFER_SIZE                            1024
 
 typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult, uint8_t * pBuffer, uint32_t bufferLength );
-typedef void ( * Ice_ComputeHMAC ) ( uint8_t * password, uint32_t passwordLength, uint8_t * pBuffer, uint32_t bufferLength, uint8_t * output, uint32_t * outputLength );
+typedef void ( * Ice_ComputeHMAC ) ( uint8_t * pPassword, uint32_t passwordLength, uint8_t * pBuffer, uint32_t bufferLength, uint8_t * pOutput, uint32_t * pOutputLength );
 typedef enum {
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
