@@ -139,6 +139,7 @@ typedef struct IceCandidatePair
     uint64_t priority;
     IceCandidatePairState_t state;
     uint8_t connectivityChecks; // checking for completion of 4-way handshake
+    TransactionIdStore_t * pTransactionIdStore;
 } IceCandidatePair_t;
 
 typedef struct IceAgent

@@ -316,6 +316,12 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
                                                                             pIceAgent->isControlling );
             pIceCandidatePair->connectivityChecks = 0;
 
+            retStatus = Ice_CreateTransactionIdStore( ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,
+                                                      pIceCandidatePair->pTransactionIdStore );
+        }
+
+        if( retStatus == ICE_RESULT_OK )
+        {
             Ice_InsertCandidatePair( pIceAgent, pIceCandidatePair, iceCandidatePairCount );
         }
     }
@@ -546,8 +552,8 @@ IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
                                                 uint32_t * pSendStunMessageBufferLength )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
-    StunContext_t pStunCxt;
-    StunHeader_t pStunHeader;
+    StunContext_t stunCxt;
+    StunHeader_t stunHeader;
 
     if( ( pIceAgent == NULL ) ||
         ( pStunMessageBuffer == NULL ) ||
@@ -559,20 +565,20 @@ IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
-        retStatus = Ice_InitializeStunPacket( &pStunCxt,
+        retStatus = Ice_InitializeStunPacket( &stunCxt,
                                               pTransactionIdBuffer,
                                               pStunMessageBuffer,
-                                              &pStunHeader,
+                                              &stunHeader,
                                               1,
                                               1 );
 
         if( retStatus == ICE_RESULT_OK )
         {
             Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
-                                          pStunHeader.pTransactionId );
+                                          stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
-                                               &pStunCxt,
+                                               &stunHeader,
                                                NULL,
                                                0,
                                                pSendStunMessageBufferLength );
@@ -640,6 +646,9 @@ IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceA
 
         if( retStatus == ICE_RESULT_OK )
         {
+            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
+                                          stunHeader.pTransactionId );
+
             retStatus = Ice_PackageStunPacket( pIceAgent,
                                                &stunCxt,
                                                ( uint8_t * )pIceAgent->remotePassword,
@@ -717,6 +726,9 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
 
         if( retStatus == ICE_RESULT_OK )
         {
+            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
+                                          stunHeader.pTransactionId );
+
             retStatus = Ice_PackageStunPacket( pIceAgent,
                                                &stunCxt,
                                                ( uint8_t * )pIceAgent->remotePassword,
@@ -1030,49 +1042,57 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
 
                 if( foundCandidatePair )
                 {
-                    if( pIceCandidatePair->connectivityChecks & 2 == 0 )
+                    if( Ice_TransactionIdStoreHasId( pIceCandidatePair->pTransactionIdStore,
+                                                     pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET ) )
                     {
-                        pIceCandidatePair->connectivityChecks |= 1 << 1;
-                    }
+                        if( pIceCandidatePair->connectivityChecks & 2 == 0 )
+                        {
+                            pIceCandidatePair->connectivityChecks |= 1 << 1;
+                        }
 
-                    if( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG )
-                    {
-                        if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
+                        if( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG )
                         {
-                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-                            retStatus = ICE_RESULT_CANDIDATE_PAIR_READY;
-                        }
-                        else
-                        {
-                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
-                            retStatus = ICE_RESULT_START_NOMINATION;
-                        }
-                    }
-                    else
-                    {
-                        if( &stunAttributeAddress != NULL )
-                        {
-                            if( ( pIceCandidatePair->pLocal->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                                ( pIceCandidatePair->pRemote->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                                ( Ice_IsSameIpAddress( &stunAttributeAddress,
-                                                       &pIceCandidatePair->pLocal->ipAddress.ipAddress,
-                                                       false ) == 0 ) )
+                            if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                             {
-                                printf( "Local Candidate IP address does not match with XOR mapped address in binding response.\n" );
-
-                                newIpAddr.ipAddress = stunAttributeAddress;
-                                newIpAddr.isPointToPoint = 0;
-
-                                retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
-                                                                             &newIpAddr,
-                                                                             pIceCandidatePair->pLocal->priority,
-                                                                             false );
+                                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                                retStatus = ICE_RESULT_CANDIDATE_PAIR_READY;
+                            }
+                            else
+                            {
+                                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
+                                retStatus = ICE_RESULT_START_NOMINATION;
                             }
                         }
                         else
                         {
-                            printf( "No mapped address attribute found in STUN response. Dropping Packet.\n" );
+                            if( &stunAttributeAddress != NULL )
+                            {
+                                if( ( pIceCandidatePair->pLocal->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                                    ( pIceCandidatePair->pRemote->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                                    ( Ice_IsSameIpAddress( &stunAttributeAddress,
+                                                           &pIceCandidatePair->pLocal->ipAddress.ipAddress,
+                                                           false ) == 0 ) )
+                                {
+                                    printf( "Local Candidate IP address does not match with XOR mapped address in binding response.\n" );
+
+                                    newIpAddr.ipAddress = stunAttributeAddress;
+                                    newIpAddr.isPointToPoint = 0;
+
+                                    retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
+                                                                                 &newIpAddr,
+                                                                                 pIceCandidatePair->pLocal->priority,
+                                                                                 false );
+                                }
+                            }
+                            else
+                            {
+                                printf( "No mapped address attribute found in STUN response. Dropping Packet.\n" );
+                            }
                         }
+                    }
+                    else
+                    {
+                        printf( "Dropping response packet because transaction id does not match.\n" );
                     }
                 }
                 else
