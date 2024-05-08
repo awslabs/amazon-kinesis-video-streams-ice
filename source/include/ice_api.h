@@ -44,11 +44,6 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
                                     IceSocketProtocol_t remoteProtocol,
                                     const uint32_t priority );
 
-IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
-                                             IceIPAddress_t pIpAddr,
-                                             uint32_t priority,
-                                             IceCandidatePair_t * pIceCandidatePair );
-
 IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
                                      IceCandidate_t * pLocalCandidate,
                                      IceCandidate_t * pRemoteCandidate );
@@ -97,17 +92,17 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                        StunHeader_t * pStunHeader,
                                        StunAttribute_t * pStunAttribute,
                                        StunAttributeAddress_t * pStunAttributeAddress,
-                                       uint32_t priority );
+                                       uint32_t * pPriority );
 
 IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                   uint8_t * pReceivedStunMessageBuffer,
-                                  uint32_t pReceivedStunMessageBufferLength,
+                                  uint32_t receivedStunMessageBufferLength,
                                   uint8_t * pTransactionIdBuffer,
                                   uint8_t ** ppSendStunMessageBuffer,
                                   uint32_t * pSendStunMessageBufferLength,
-                                  IceCandidate_t * pLocalCandidate,
-                                  IceIPAddress_t * pRemoteAddr,
-                                  IceCandidatePair_t * pIceCandidatePair );
+                                  IceIPAddress_t * pLocalCandidateAddress,
+                                  IceIPAddress_t * pRemoteCandidateAddress,
+                                  IceCandidatePair_t ** ppIceCandidatePair );
 
 IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
                                                         StunAttributeAddress_t * pStunMappedAddress,
@@ -131,9 +126,10 @@ static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
                                  StunAttributeAddress_t * pAddr2,
                                  bool checkPort );
 
-static IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
-                                               IceIPAddress_t ipAddress,
-                                               bool isRemote );
+static bool Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
+                                     IceIPAddress_t iceIpAddress,
+                                     bool isRemote,
+                                     IceCandidate_t ** ppCandidate );
 
 static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
                                           uint8_t * pTransactionId );
@@ -155,6 +151,16 @@ static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate );
 static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
                                      IceCandidatePair_t * pIceCandidatePair,
                                      int iceCandidatePairCount );
+
+static bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
+                                                         IceIPAddress_t * pSrcAddr,
+                                                         IceIPAddress_t * pRemoteAddr,
+                                                         IceCandidatePair_t ** ppCandidatePair );
+
+static IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
+                                                    IceIPAddress_t * pIpAddr,
+                                                    uint32_t priority,
+                                                    bool isRemote );
 
 /************************************************************************************************************************************************/
 

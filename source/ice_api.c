@@ -244,31 +244,33 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
 
 /*  Ice_checkRemotePeerReflexiveCandidate - The library calls this API for creating remote peer reflexive candidates on receiving a STUN binding request. */
 
-IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
-                                             IceIPAddress_t ipAddr,
-                                             uint32_t priority,
-                                             IceCandidatePair_t * pIceCandidatePair )
+static IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
+                                                    IceIPAddress_t * pIpAddr,
+                                                    uint32_t priority,
+                                                    bool isRemote )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     IceCandidate_t * pPeerReflexiveCandidate;
-    IceCandidate_t resCandidate;
+    bool foundDuplicatedCandidate = false;
 
-    if( pIceAgent == NULL )
+    if( ( pIceAgent == NULL ) ||
+        ( pIpAddr == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        resCandidate = Ice_FindCandidateFromIp( pIceAgent, ipAddr, 1 );
-        pPeerReflexiveCandidate = &resCandidate;
-
-        retStatus = Ice_AddRemoteCandidate( pIceAgent,
-                                            ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
-                                            &pPeerReflexiveCandidate,
-                                            ipAddr,
-                                            0,
-                                            priority );
+        foundDuplicatedCandidate = Ice_FindCandidateFromIp( pIceAgent, *pIpAddr, isRemote, &pPeerReflexiveCandidate );
+        if( !foundDuplicatedCandidate )
+        {
+            retStatus = Ice_AddRemoteCandidate( pIceAgent,
+                                                ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
+                                                &pPeerReflexiveCandidate,
+                                                *pIpAddr,
+                                                0,
+                                                priority );
+        }
     }
 
     return retStatus;
@@ -331,10 +333,11 @@ static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
 {
     int i;
     int pivot = -1;
+    IceCandidatePair_t pivotCandidatePair = *pIceCandidatePair;
 
     for( i = 0; i < iceCandidatePairCount; i++ )
     {
-        if( pIceCandidatePair->priority >= pIceAgent->iceCandidatePairs[i].priority )
+        if( pivotCandidatePair.priority >= pIceAgent->iceCandidatePairs[i].priority )
         {
             pivot = i;
             break;
@@ -353,7 +356,7 @@ static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
         }
     }
 
-    pIceAgent->iceCandidatePairs[pivot] = *pIceCandidatePair;
+    pIceAgent->iceCandidatePairs[pivot] = pivotCandidatePair;
 
     return;
 }
@@ -437,18 +440,11 @@ IceResult_t Ice_InitializeStunPacket( StunContext_t * pStunCxt,
          *  b. 1 --> Populate values with randomized values.
          *  c. 2 --> Populate values with randomized values, for creating Srflx request.
          */
-        if( isGenerateTransactionID == 2 )
+        if( isGenerateTransactionID == 1 )
         {
             for( i = 0; i < STUN_HEADER_TRANSACTION_ID_LENGTH; i++ )
             {
                 pStunHeader->pTransactionId[i] = ( uint8_t )( rand() % 0x100 );
-            }
-        }
-        else if( isGenerateTransactionID == 1 )
-        {
-            for( i = 0; i < STUN_HEADER_TRANSACTION_ID_LENGTH; i++ )
-            {
-                pStunHeader->pTransactionId[i] = ( uint8_t )( rand() % 0xFF );
             }
         }
         else if( isGenerateTransactionID == 0 )
@@ -567,7 +563,7 @@ IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
                                               pTransactionIdBuffer,
                                               pStunMessageBuffer,
                                               &pStunHeader,
-                                              2,
+                                              1,
                                               1 );
 
         if( retStatus == ICE_RESULT_OK )
@@ -814,7 +810,7 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                        StunHeader_t * pStunHeader,
                                        StunAttribute_t * pStunAttribute,
                                        StunAttributeAddress_t * pStunAttributeAddress,
-                                       uint32_t priority )
+                                       uint32_t * pPriority )
 {
 
     IceResult_t retStatus = ICE_RESULT_OK;
@@ -822,7 +818,8 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
     if( ( pStunCxt == NULL ) ||
         ( pStunHeader == NULL ) ||
         ( pStunAttribute == NULL ) ||
-        ( pStunAttributeAddress == NULL ) )
+        ( pStunAttributeAddress == NULL ) ||
+        ( pPriority == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
     }
@@ -853,7 +850,7 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
             {
                 retStatus = StunDeserializer_ParseAttributePriority( pStunCxt,
                                                                      pStunAttribute,
-                                                                     &( priority ) );
+                                                                     pPriority );
             }
             break;
             default:
@@ -883,81 +880,113 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
 
 IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                   uint8_t * pReceivedStunMessageBuffer,
-                                  uint32_t pReceivedStunMessageBufferLength,
+                                  uint32_t receivedStunMessageBufferLength,
                                   uint8_t * pTransactionIdBuffer,
                                   uint8_t ** ppSendStunMessageBuffer,
                                   uint32_t * pSendStunMessageBufferLength,
-                                  IceCandidate_t * pLocalCandidate,
-                                  IceIPAddress_t * pRemoteAddr,
-                                  IceCandidatePair_t * pIceCandidatePair )
+                                  IceIPAddress_t * pLocalCandidateAddress,
+                                  IceIPAddress_t * pRemoteCandidateAddress,
+                                  IceCandidatePair_t ** ppIceCandidatePair )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     uint32_t priority = 0;
-    StunContext_t pStunCxt;
-    StunHeader_t pStunHeader;
-    StunAttribute_t pStunAttribute;
-    StunAttributeAddress_t pStunAttributeAddress;
+    StunContext_t stunCxt;
+    StunHeader_t stunHeader;
+    StunAttribute_t stunAttribute;
+    StunAttributeAddress_t stunAttributeAddress;
+    IceCandidate_t * pLocalCandidate;
+    IceCandidate_t * pRemoteCandidate;
+    IceCandidatePair_t * pIceCandidatePair;
+    IceIPAddress_t newIpAddr;
+    bool foundLocalCandidate = false;
+    bool foundRemoteCandidate = false;
+    bool foundCandidatePair = false;
 
     if( ( pIceAgent == NULL ) ||
         ( pReceivedStunMessageBuffer == NULL ) ||
-        ( pReceivedStunMessageBufferLength > ICE_STUN_MESSAGE_BUFFER_SIZE ) ||
+        ( receivedStunMessageBufferLength > ICE_STUN_MESSAGE_BUFFER_SIZE ) ||
         ( pTransactionIdBuffer == NULL ) ||
-        ( pLocalCandidate == NULL ) )
+        ( pLocalCandidateAddress == NULL ) ||
+        ( pRemoteCandidateAddress == NULL ) ||
+        ( ppSendStunMessageBuffer == NULL ) ||
+        ( pSendStunMessageBufferLength == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
-    }
-
-    /* Find Candidate Pair with given local IP address and remote IP address . */
-    if( retStatus == ICE_RESULT_OK )
-    {
-        // TODO:
-        // Ice_FindCandidatePairWithLocalAndRemoteAddr( pIceAgent, pRemoteAddr, pRemoteAddr, pIceCandidatePair );
     }
 
     /* Initialize STUN context for deserializing. */
     if( retStatus == ICE_RESULT_OK )
     {
-        retStatus = StunDeserializer_Init( &pStunCxt,
+        retStatus = StunDeserializer_Init( &stunCxt,
                                            pReceivedStunMessageBuffer,
-                                           pReceivedStunMessageBufferLength,
-                                           &pStunHeader );
+                                           receivedStunMessageBufferLength,
+                                           &stunHeader );
     }
 
     if( retStatus == ICE_RESULT_OK )
     {
-        retStatus = Ice_DeserializeStunPacket( &pStunCxt,
-                                               &pStunHeader,
-                                               &pStunAttribute,
-                                               &pStunAttributeAddress,
-                                               priority );
+        retStatus = Ice_DeserializeStunPacket( &stunCxt,
+                                               &stunHeader,
+                                               &stunAttribute,
+                                               &stunAttributeAddress,
+                                               &priority );
     }
 
     if( ( retStatus == ICE_RESULT_OK ) ||
         ( retStatus == ICE_RESULT_UPDATE_SRFLX_CANDIDATE ) ||
         ( retStatus == ICE_RESULT_USE_CANDIDATE_FLAG ) )
     {
-        switch( pStunHeader.messageType )
+        switch( stunHeader.messageType )
         {
         case STUN_MESSAGE_TYPE_BINDING_REQUEST:
         {
-            /* Check if received candidate with USE_CANDIDATE FLAG */
-            if( ( retStatus == ICE_RESULT_USE_CANDIDATE_FLAG ) && ( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG ) )
+            retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
+                                                         pRemoteCandidateAddress,
+                                                         priority,
+                                                         true );
+            if( retStatus == ICE_RESULT_OK )
             {
-                printf( "Received candidate with USE_CANDIDATE flag.\n" );
-                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                retStatus = ICE_RESULT_SEND_STUN_RESPONSE_FOR_NOMINATION;
+                foundCandidatePair = Ice_FindCandidatePairWithLocalAndRemoteAddr( pIceAgent,
+                                                                                  pLocalCandidateAddress,
+                                                                                  pRemoteCandidateAddress,
+                                                                                  &pIceCandidatePair );
+            }
+
+            if( foundCandidatePair )
+            {
+                /* Check if received candidate with USE_CANDIDATE FLAG */
+                if( ( retStatus == ICE_RESULT_USE_CANDIDATE_FLAG ) && ( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG ) )
+                {
+                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+                    retStatus = ICE_RESULT_SEND_RESPONSE_FOR_NOMINATION;
+                }
+                else
+                {
+                    pIceCandidatePair->connectivityChecks |= 1 << 2; //Received a connection request from remote candidate.
+
+                    if( ( pIceCandidatePair->connectivityChecks & 1 ) == 0 )
+                    {
+                        /* Create a request from local to remote candidate. */
+                        pIceCandidatePair->connectivityChecks |= 1 << 0;
+                        /* Create a response for received request. */
+                        pIceCandidatePair->connectivityChecks |= 1 << 3;
+
+                        retStatus = ICE_RESULT_SEND_TRIGGERED_CHECK; //The application needs to send 2 stun packets.
+                    }
+                    else
+                    {
+                        /* Create a response for received request. */
+                        pIceCandidatePair->connectivityChecks |= 1 << 3;
+
+                        retStatus = ICE_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST; //The application needs to send 1 stun packet.
+                    }
+                }
             }
             else
             {
-                /* Check if we need to add Remote Peer Reflexive candidates. */
-                if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_INVALID )
-                {
-                    retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
-                                                                 *pRemoteAddr,
-                                                                 priority,
-                                                                 pIceCandidatePair );
-                }
+                retStatus = ICE_RESULT_CANDIDATE_PAIR_NOT_FOUND; // Candidate Pair was not found using the local and remote IP address.
             }
+
         }
         break;
         case STUN_MESSAGE_TYPE_BINDING_SUCCESS_RESPONSE:
@@ -967,62 +996,88 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
             {
                 if( retStatus == ICE_RESULT_UPDATE_SRFLX_CANDIDATE )
                 {
-                    retStatus = Ice_HandleServerReflexiveCandidateResponse( pIceAgent,
-                                                                            &pStunAttributeAddress,
-                                                                            pLocalCandidate );
+                    foundLocalCandidate = Ice_FindCandidateFromIp( pIceAgent,
+                                                                   *pLocalCandidateAddress,
+                                                                   0,
+                                                                   &pLocalCandidate );
 
-                    if( retStatus == ICE_RESULT_OK )
+                    if( foundLocalCandidate )
                     {
-                        Ice_TransactionIdStoreRemove( pIceAgent->pStunBindingRequestTransactionIdStore,
-                                                      pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET );
+                        retStatus = Ice_HandleServerReflexiveCandidateResponse( pIceAgent,
+                                                                                &stunAttributeAddress,
+                                                                                pLocalCandidate );
+
+                        if( retStatus == ICE_RESULT_OK )
+                        {
+                            Ice_TransactionIdStoreRemove( pIceAgent->pStunBindingRequestTransactionIdStore,
+                                                          pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET );
+                        }
+
+                        retStatus = ICE_RESULT_UPDATED_SRFLX_CANDIDATE_ADDRESS;
                     }
-                    retStatus = ICE_RESULT_UPDATED_SRFLX_CANDIDATE_ADDRESS;
+                    else
+                    {
+                        retStatus = ICE_RESULT_CANDIDATE_NOT_FOUND; //Local candidate was not found.
+                    }
                 }
             }
             else
             {
+                foundCandidatePair = Ice_FindCandidatePairWithLocalAndRemoteAddr( pIceAgent,
+                                                                                  pLocalCandidateAddress,
+                                                                                  pRemoteCandidateAddress,
+                                                                                  &pIceCandidatePair );
 
-                if( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG )
+                if( foundCandidatePair )
                 {
-                    if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
+                    if( pIceCandidatePair->connectivityChecks & 2 == 0 )
                     {
-                        pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-                        retStatus = ICE_RESULT_CANDIDATE_PAIR_READY;
+                        pIceCandidatePair->connectivityChecks |= 1 << 1;
                     }
-                    else
-                    {
-                        pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
-                        retStatus = ICE_RESULT_START_NOMINATION;
-                    }
-                }
-                else
-                {
-                    pIceCandidatePair->connectivityChecks |= 1 << 1;
 
-                    if( &pStunAttributeAddress != NULL )
+                    if( pIceCandidatePair->connectivityChecks == ICE_CONNECTIVITY_SUCCESS_FLAG )
                     {
-                        if( ( pIceCandidatePair->pLocal->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                            ( pIceCandidatePair->pRemote->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                            ( Ice_IsSameIpAddress( &pStunAttributeAddress,
-                                                   &pIceCandidatePair->pLocal->ipAddress.ipAddress,
-                                                   false ) == 0 ) )
+                        if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                         {
-                            printf( "Local Candidate IP address does not match with XOR mapped address in binding response.\n" );
-
-                            IceIPAddress_t pAddr;
-                            pAddr.ipAddress = pStunAttributeAddress;
-                            pAddr.isPointToPoint = 0;
-
-                            retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
-                                                                         pAddr,
-                                                                         pIceCandidatePair->pLocal->priority,
-                                                                         pIceCandidatePair );
+                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                            retStatus = ICE_RESULT_CANDIDATE_PAIR_READY;
+                        }
+                        else
+                        {
+                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
+                            retStatus = ICE_RESULT_START_NOMINATION;
                         }
                     }
                     else
                     {
-                        printf( "No mapped address attribute found in STUN response. Dropping Packet.\n" );
+                        if( &stunAttributeAddress != NULL )
+                        {
+                            if( ( pIceCandidatePair->pLocal->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                                ( pIceCandidatePair->pRemote->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                                ( Ice_IsSameIpAddress( &stunAttributeAddress,
+                                                       &pIceCandidatePair->pLocal->ipAddress.ipAddress,
+                                                       false ) == 0 ) )
+                            {
+                                printf( "Local Candidate IP address does not match with XOR mapped address in binding response.\n" );
+
+                                newIpAddr.ipAddress = stunAttributeAddress;
+                                newIpAddr.isPointToPoint = 0;
+
+                                retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,
+                                                                             &newIpAddr,
+                                                                             pIceCandidatePair->pLocal->priority,
+                                                                             false );
+                            }
+                        }
+                        else
+                        {
+                            printf( "No mapped address attribute found in STUN response. Dropping Packet.\n" );
+                        }
                     }
+                }
+                else
+                {
+                    retStatus = ICE_RESULT_CANDIDATE_PAIR_NOT_FOUND; // Candidate Pair was not found using the local and remote IP address.
                 }
             }
         }
@@ -1035,6 +1090,12 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
             break;
         }
     }
+
+    if( retStatus != ICE_RESULT_CANDIDATE_PAIR_NOT_FOUND )
+    {
+        *ppIceCandidatePair = pIceCandidatePair;
+    }
+
     return retStatus;
 }
 
@@ -1117,7 +1178,7 @@ int Ice_GetValidCandidatePairCount( IceAgent_t * pIceAgent )
 {
     int i = -1;
 
-    if( i == -1 )
+    if( pIceAgent != NULL )
     {
         for( i = 0; i < ICE_MAX_CANDIDATE_PAIR_COUNT; i++ )
         {
@@ -1288,65 +1349,69 @@ static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdS
 
 /* Ice_FindCandidateFromIp - This API is called internally to search for a candidate with a given IP. */
 
-static IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
-                                               IceIPAddress_t iceIpAddress,
-                                               bool isRemote )
+static bool Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
+                                     IceIPAddress_t iceIpAddress,
+                                     bool isRemote,
+                                     IceCandidate_t ** ppCandidate )
 {
-    IceCandidate_t iceCandidate;
-    int candidateCount, i;
-    IceCandidate_t candidateList[ICE_MAX_LOCAL_CANDIDATE_COUNT];
+    int i;
     StunAttributeAddress_t stunAddress;
     uint32_t addrLen;
+    bool foundCandidate = false;
 
-    if( isRemote == false )
+    if( ( pIceAgent != NULL ) && ( ppCandidate != NULL ) )
     {
-        candidateCount = Ice_GetValidLocalCandidateCount( pIceAgent );
-        for( i = 0; i < candidateCount; i++ )
-        {
-            candidateList[i] = pIceAgent->localCandidates[i];
-        }
-    }
-    else
-    {
-        candidateCount = Ice_GetValidRemoteCandidateCount( pIceAgent );
-        for( i = 0; i < candidateCount; i++ )
-        {
-            candidateList[i] = pIceAgent->remoteCandidates[i];
-        }
-    }
+        stunAddress = iceIpAddress.ipAddress;
+        addrLen = ICE_IS_IPV4_ADDR( stunAddress ) ? STUN_IPV4_ADDRESS_SIZE : STUN_IPV6_ADDRESS_SIZE;
 
-    stunAddress = iceIpAddress.ipAddress;
-    addrLen = ICE_IS_IPV4_ADDR( stunAddress ) ? STUN_IPV4_ADDRESS_SIZE : STUN_IPV6_ADDRESS_SIZE;
-    for( i = 0; i < candidateCount; i++ )
-    {
-        if( ( stunAddress.family == candidateList[i].ipAddress.ipAddress.family ) && ( memcmp( candidateList[i].ipAddress.ipAddress.address, stunAddress.address, addrLen ) == 0 ) &&
-            ( stunAddress.port == candidateList[i].ipAddress.ipAddress.port ) )
+        if( isRemote == false )
         {
-            iceCandidate = candidateList[i];
+            for( i = 0; i < Ice_GetValidLocalCandidateCount( pIceAgent ); i++ )
+            {
+                if( Ice_IsSameIpAddress( &stunAddress, &pIceAgent->localCandidates[i].ipAddress.ipAddress, true ) == true )
+                {
+                    *ppCandidate = &pIceAgent->localCandidates[i];
+                    foundCandidate = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            for( i = 0; i < Ice_GetValidRemoteCandidateCount( pIceAgent ); i++ )
+            {
+                if( Ice_IsSameIpAddress( &stunAddress, &pIceAgent->remoteCandidates[i].ipAddress.ipAddress, true ) == true )
+                {
+                    *ppCandidate = &pIceAgent->remoteCandidates[i];
+                    foundCandidate = true;
+                    break;
+                }
+            }
         }
     }
-    return iceCandidate;
+    return foundCandidate;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
 /* Ice_FindCandidatePairWithLocalAndRemoteAddr - This API is called internally to find a candidate pair given the local and remote IP addresses. */
 
-static void Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
+static bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
                                                          IceIPAddress_t * pSrcAddr,
                                                          IceIPAddress_t * pRemoteAddr,
-                                                         IceCandidatePair_t * pCandidatePair )
+                                                         IceCandidatePair_t ** ppCandidatePair )
 {
     int i;
     int candidatePairCount;
     IceCandidatePair_t iceCandidatePair;
+    bool found = false;
 
     if( ( pIceAgent == NULL ) ||
         ( pSrcAddr == NULL ) ||
         ( pRemoteAddr == NULL ) ||
-        ( pCandidatePair == NULL ) )
+        ( ppCandidatePair == NULL ) )
     {
-        pCandidatePair = NULL;
-        return;
+        *ppCandidatePair = NULL;
+        return false;
     }
 
     candidatePairCount = Ice_GetValidCandidatePairCount( pIceAgent );
@@ -1355,9 +1420,12 @@ static void Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
         iceCandidatePair = pIceAgent->iceCandidatePairs[i];
         if( ( Ice_IsSameIpAddress( &( iceCandidatePair.pLocal->ipAddress.ipAddress ), &( pSrcAddr->ipAddress ), true ) ) && ( Ice_IsSameIpAddress( &( iceCandidatePair.pRemote->ipAddress.ipAddress ), &( pRemoteAddr->ipAddress ), true ) ) )
         {
-            pCandidatePair = &( iceCandidatePair );
+            *ppCandidatePair = &( pIceAgent->iceCandidatePairs[i] );
+            found = true;
         }
     }
+
+    return found;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
