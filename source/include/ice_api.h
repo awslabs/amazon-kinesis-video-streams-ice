@@ -3,7 +3,7 @@
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
-    extern "C" {
+extern "C" {
 #endif
 /* *INDENT-ON* */
 
@@ -100,14 +100,14 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                        uint32_t priority );
 
 IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
-                                    uint8_t * pReceivedStunMessageBuffer,
-                                    uint32_t pReceivedStunMessageBufferLength,
-                                    uint8_t * pTransactionIdBuffer,
-                                    uint8_t ** ppSendStunMessageBuffer,
-                                    uint32_t * pSendStunMessageBufferLength,
-                                    IceCandidate_t * pLocalCandidate,
-                                    IceIPAddress_t * pRemoteAddr,
-                                    IceCandidatePair_t * pIceCandidatePair );
+                                  uint8_t * pReceivedStunMessageBuffer,
+                                  uint32_t pReceivedStunMessageBufferLength,
+                                  uint8_t * pTransactionIdBuffer,
+                                  uint8_t ** ppSendStunMessageBuffer,
+                                  uint32_t * pSendStunMessageBufferLength,
+                                  IceCandidate_t * pLocalCandidate,
+                                  IceIPAddress_t * pRemoteAddr,
+                                  IceCandidatePair_t * pIceCandidatePair );
 
 IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
                                                         StunAttributeAddress_t * pStunMappedAddress,
@@ -124,37 +124,37 @@ int Ice_GetValidLocalCandidateCount( IceAgent_t * pIceAgent );
 /* These APIs are intended for internal use by the ICE library. */
 
 static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                                StunAttributeAddress_t * pAddr2,
-                                bool checkPort );
+                                 StunAttributeAddress_t * pAddr2,
+                                 bool checkPort );
 
 static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                                StunAttributeAddress_t * pAddr2,
-                                bool checkPort );
+                                 StunAttributeAddress_t * pAddr2,
+                                 bool checkPort );
 
 static IceCandidate_t Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
-                                            IceIPAddress_t ipAddress,
-                                            bool isRemote );
+                                               IceIPAddress_t ipAddress,
+                                               bool isRemote );
 
 static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
-                                        uint8_t * pTransactionId );
+                                          uint8_t * pTransactionId );
 
 static bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdStore,
-                                        uint8_t * pTransactionId );
+                                         uint8_t * pTransactionId );
 
 static void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdStore,
-                                        uint8_t * pTransactionId );
+                                          uint8_t * pTransactionId );
 
 static IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
-                                                TransactionIdStore_t * pTransactionIdStore );
+                                                 TransactionIdStore_t * pTransactionIdStore );
 
 static uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
-                                                uint32_t isLocalControlling );
+                                                  uint32_t isLocalControlling );
 
 static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate );
 
 static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                                    IceCandidatePair_t * pIceCandidatePair,
-                                    int iceCandidatePairCount );
+                                     IceCandidatePair_t * pIceCandidatePair,
+                                     int iceCandidatePairCount );
 
 /************************************************************************************************************************************************/
 

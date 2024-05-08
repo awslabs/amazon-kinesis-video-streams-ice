@@ -43,12 +43,19 @@
 #define ICE_MAX_CONFIG_URI_LEN                                  256
 
 
-#define ICE_IS_IPV4_ADDR(pAddress)                               ( ( pAddress ).family == STUN_ADDRESS_IPv4 )
+#define ICE_IS_IPV4_ADDR( pAddress )                               ( ( pAddress ).family == STUN_ADDRESS_IPv4 )
 
 #define ICE_STUN_MESSAGE_BUFFER_SIZE                            1024
 
-typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult, uint8_t * pBuffer, uint32_t bufferLength );
-typedef void ( * Ice_ComputeHMAC ) ( uint8_t * pPassword, uint32_t passwordLength, uint8_t * pBuffer, uint32_t bufferLength, uint8_t * pOutput, uint32_t * pOutputLength );
+typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult,
+                                          uint8_t * pBuffer,
+                                          uint32_t bufferLength );
+typedef void ( * Ice_ComputeHMAC ) ( uint8_t * pPassword,
+                                     uint32_t passwordLength,
+                                     uint8_t * pBuffer,
+                                     uint32_t bufferLength,
+                                     uint8_t * pOutput,
+                                     uint32_t * pOutputLength );
 typedef enum {
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
@@ -139,7 +146,7 @@ typedef struct IceAgent
     char localPassword[ICE_MAX_CONFIG_CREDENTIAL_LEN + 1];
     char remoteUsername[ICE_MAX_CONFIG_USER_NAME_LEN + 1];
     char remotePassword[ICE_MAX_CONFIG_CREDENTIAL_LEN + 1];
-    char combinedUserName[(ICE_MAX_CONFIG_USER_NAME_LEN + 1) << 1];
+    char combinedUserName[( ICE_MAX_CONFIG_USER_NAME_LEN + 1 ) << 1];
     IceCandidate_t localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
     IceCandidate_t remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
     IceCandidatePair_t iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
