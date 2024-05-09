@@ -44,6 +44,8 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
 
     if( retStatus == ICE_RESULT_OK )
     {
+        memset( pIceAgent, 0, sizeof( IceAgent_t ) );
+
         strcpy( pIceAgent->localUsername,
                 pLocalUsername );
         strcpy( pIceAgent->localPassword,
@@ -58,11 +60,6 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
         pIceAgent->stunMessageBufferUsedCount = 0;
         pIceAgent->isControlling = 0;
         pIceAgent->tieBreaker = ( uint64_t )rand(); // required as an attribute for STUN packet
-
-        memset( pIceAgent->localCandidates, 0, sizeof( pIceAgent->localCandidates ) );
-        memset( pIceAgent->remoteCandidates, 0, sizeof( pIceAgent->remoteCandidates ) );
-        memset( pIceAgent->stunMessageBuffers, 0, sizeof( pIceAgent->stunMessageBuffers ) );
-        memset( pIceAgent->iceCandidatePairs, 0, sizeof( pIceAgent->iceCandidatePairs ) );
 
         pIceAgent->pStunBindingRequestTransactionIdStore = pBuffer;
         retStatus = Ice_CreateTransactionIdStore( ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,
@@ -823,6 +820,9 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
 {
 
     IceResult_t retStatus = ICE_RESULT_OK;
+    uint16_t errorCode;
+    uint8_t *pErrorPhase;
+    uint16_t errorPhaseLength;
 
     if( ( pStunCxt == NULL ) ||
         ( pStunHeader == NULL ) ||
@@ -842,6 +842,14 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
         {
             switch( pStunAttribute->attributeType )
             {
+            case STUN_ATTRIBUTE_TYPE_ERROR_CODE:
+            {
+                retStatus = StunDeserializer_ParseAttributeErrorCode( pStunAttribute,
+                                                                      &errorCode,
+                                                                      &pErrorPhase,
+                                                                      &errorPhaseLength );
+            }
+            break;
             case STUN_ATTRIBUTE_TYPE_XOR_MAPPED_ADDRESS:
             {
                 retStatus = StunDeserializer_ParseAttributeAddress( pStunCxt,
