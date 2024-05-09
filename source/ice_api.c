@@ -315,9 +315,6 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
             pIceCandidatePair->priority = Ice_ComputeCandidatePairPriority( pIceCandidatePair,
                                                                             pIceAgent->isControlling );
             pIceCandidatePair->connectivityChecks = 0;
-
-            retStatus = Ice_CreateTransactionIdStore( ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,
-                                                      pIceCandidatePair->pTransactionIdStore );
         }
 
         if( retStatus == ICE_RESULT_OK )
@@ -646,7 +643,7 @@ IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceA
 
         if( retStatus == ICE_RESULT_OK )
         {
-            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
+            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
                                           stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
@@ -726,7 +723,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
 
         if( retStatus == ICE_RESULT_OK )
         {
-            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
+            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
                                           stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
@@ -1042,7 +1039,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
 
                 if( foundCandidatePair )
                 {
-                    if( Ice_TransactionIdStoreHasId( pIceCandidatePair->pTransactionIdStore,
+                    if( Ice_TransactionIdStoreHasId( pIceAgent->pStunBindingRequestTransactionIdStore,
                                                      pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET ) )
                     {
                         if( pIceCandidatePair->connectivityChecks & 2 == 0 )
