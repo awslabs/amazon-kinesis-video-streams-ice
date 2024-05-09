@@ -578,7 +578,7 @@ IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
                                           stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
-                                               &stunHeader,
+                                               &stunCxt,
                                                NULL,
                                                0,
                                                pSendStunMessageBufferLength );
@@ -707,7 +707,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
         if( retStatus == ICE_RESULT_OK )
         {
             retStatus = StunSerializer_AddAttributePriority( &stunCxt,
-                                                             0 );
+                                                             pIceCandidatePair->pLocal->priority );
         }
 
         if( retStatus == ICE_RESULT_OK )
