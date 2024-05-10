@@ -139,6 +139,7 @@ typedef struct IceCandidatePair
     uint64_t priority;
     IceCandidatePairState_t state;
     uint8_t connectivityChecks; // checking for completion of 4-way handshake
+    TransactionIdStore_t * pTransactionIdStore;
 } IceCandidatePair_t;
 
 typedef struct IceAgent
@@ -156,6 +157,7 @@ typedef struct IceAgent
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
+    TransactionIdStore_t bufferForCandidatePairTransactionIdStore[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
     Ice_ComputeCrc32 computeCRC32;
     Ice_ComputeHMAC computeHMAC;
 } IceAgent_t;

@@ -58,8 +58,15 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                 pCombinedUsername );
 
         pIceAgent->stunMessageBufferUsedCount = 0;
+        pIceAgent->candidatePairbufferUsedCount = 0;
         pIceAgent->isControlling = 0;
         pIceAgent->tieBreaker = ( uint64_t )rand(); // required as an attribute for STUN packet
+
+        memset( pIceAgent->localCandidates, 0, sizeof( pIceAgent->localCandidates ) );
+        memset( pIceAgent->remoteCandidates, 0, sizeof( pIceAgent->remoteCandidates ) );
+        memset( pIceAgent->stunMessageBuffers, 0, sizeof( pIceAgent->stunMessageBuffers ) );
+        memset( pIceAgent->iceCandidatePairs, 0, sizeof( pIceAgent->iceCandidatePairs ) );
+        memset( pIceAgent->bufferForCandidatePairTransactionIdStore, 0, sizeof( pIceAgent->bufferForCandidatePairTransactionIdStore ) );
 
         pIceAgent->pStunBindingRequestTransactionIdStore = pBuffer;
         retStatus = Ice_CreateTransactionIdStore( ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,
@@ -312,8 +319,14 @@ IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
             pIceCandidatePair->priority = Ice_ComputeCandidatePairPriority( pIceCandidatePair,
                                                                             pIceAgent->isControlling );
             pIceCandidatePair->connectivityChecks = 0;
+            pIceCandidatePair->pTransactionIdStore = &pIceAgent->bufferForCandidatePairTransactionIdStore[ pIceAgent->candidatePairbufferUsedCount++ ];
         }
 
+        if( retStatus == ICE_RESULT_OK )
+        {
+            retStatus = Ice_CreateTransactionIdStore( ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT,
+                                                        pIceCandidatePair->pTransactionIdStore );
+        }
         if( retStatus == ICE_RESULT_OK )
         {
             Ice_InsertCandidatePair( pIceAgent, pIceCandidatePair, iceCandidatePairCount );
@@ -640,7 +653,7 @@ IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceA
 
         if( retStatus == ICE_RESULT_OK )
         {
-            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
+            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
                                           stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
@@ -720,7 +733,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
 
         if( retStatus == ICE_RESULT_OK )
         {
-            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
+            Ice_TransactionIdStoreInsert( pIceCandidatePair->pTransactionIdStore,
                                           stunHeader.pTransactionId );
 
             retStatus = Ice_PackageStunPacket( pIceAgent,
@@ -857,7 +870,6 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                                                     pStunAttributeAddress );
                 retStatus = ICE_RESULT_UPDATE_SRFLX_CANDIDATE;
             }
-            break;
             case STUN_ATTRIBUTE_TYPE_USE_CANDIDATE:
             {
                 retStatus = ICE_RESULT_USE_CANDIDATE_FLAG;
@@ -1047,7 +1059,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
 
                 if( foundCandidatePair )
                 {
-                    if( Ice_TransactionIdStoreHasId( pIceAgent->pStunBindingRequestTransactionIdStore,
+                    if( Ice_TransactionIdStoreHasId( pIceCandidatePair->pTransactionIdStore,
                                                      pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET ) )
                     {
                         if( pIceCandidatePair->connectivityChecks & 2 == 0 )
