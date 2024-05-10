@@ -91,8 +91,7 @@ IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
 IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                        StunHeader_t * pStunHeader,
                                        StunAttribute_t * pStunAttribute,
-                                       StunAttributeAddress_t * pStunAttributeAddress,
-                                       uint32_t * pPriority );
+                                       IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
 
 IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                   uint8_t * pReceivedStunMessageBuffer,

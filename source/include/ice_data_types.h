@@ -122,6 +122,14 @@ typedef struct TransactionIdStore
     uint8_t * pTransactionIds;
 } TransactionIdStore_t;
 
+typedef struct IceStunDeserializedPacketInfo
+{
+    uint8_t useCandidateFlag;
+    uint16_t errorCode;
+    uint32_t priority;
+    StunAttributeAddress_t * pStunAttributeAddress;
+}IceStunDeserializedPacketInfo_t;
+
 typedef struct IceCandidate
 {
     IceCandidateType_t iceCandidateType;
@@ -139,7 +147,7 @@ typedef struct IceCandidatePair
     uint64_t priority;
     IceCandidatePairState_t state;
     uint8_t connectivityChecks; // checking for completion of 4-way handshake
-    TransactionIdStore_t * pTransactionIdStore;
+    uint8_t pTransactionIdStore[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
 } IceCandidatePair_t;
 
 typedef struct IceAgent
@@ -157,8 +165,6 @@ typedef struct IceAgent
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
-    TransactionIdStore_t bufferForCandidatePairTransactionIdStore[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
-    uint16_t candidatePairbufferUsedCount;
     Ice_ComputeCrc32 computeCRC32;
     Ice_ComputeHMAC computeHMAC;
 } IceAgent_t;
