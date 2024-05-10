@@ -158,6 +158,7 @@ typedef struct IceAgent
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     TransactionIdStore_t bufferForCandidatePairTransactionIdStore[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
+    uint16_t candidatePairbufferUsedCount;
     Ice_ComputeCrc32 computeCRC32;
     Ice_ComputeHMAC computeHMAC;
 } IceAgent_t;
