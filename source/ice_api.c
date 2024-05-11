@@ -825,7 +825,6 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
     IceResult_t retStatus = ICE_RESULT_OK;
     uint8_t *pErrorPhase;
     uint16_t errorPhaseLength;
-    
 
     if( ( pStunCxt == NULL ) ||
         ( pStunHeader == NULL ) ||
@@ -839,7 +838,6 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
     pDeserializedPacketInfo->useCandidateFlag = 0;
     pDeserializedPacketInfo->errorCode = 0;
     pDeserializedPacketInfo->priority = 0;
-    pDeserializedPacketInfo->pStunAttributeAddress = NULL;
 
     while( retStatus == ICE_RESULT_OK )
     {
@@ -856,14 +854,13 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                                                       &pDeserializedPacketInfo->errorCode,
                                                                       &pErrorPhase,
                                                                       &errorPhaseLength );
-                
             }
             break;
             case STUN_ATTRIBUTE_TYPE_XOR_MAPPED_ADDRESS:
             {
                 retStatus = StunDeserializer_ParseAttributeAddress( pStunCxt,
                                                                     pStunAttribute,
-                                                                    pDeserializedPacketInfo->pStunAttributeAddress );
+                                                                    &pDeserializedPacketInfo->stunAttributeAddress );
             }
             break;
             case STUN_ATTRIBUTE_TYPE_USE_CANDIDATE:
@@ -882,6 +879,10 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                 break;
             }
         }
+    }
+    if( retStatus == STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND )
+    {
+        retStatus = ICE_RESULT_OK;
     }
     return retStatus;
 }
@@ -1013,7 +1014,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
             if( Ice_TransactionIdStoreHasId( pIceAgent->pStunBindingRequestTransactionIdStore,
                                              pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET ) )
             {
-                if( deserializePacketInfo.pStunAttributeAddress != NULL )
+                if( &deserializePacketInfo.stunAttributeAddress != NULL )
                 {
                     foundLocalCandidate = Ice_FindCandidateFromIp( pIceAgent,
                                                                    *pLocalCandidateAddress,
@@ -1023,7 +1024,7 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                     if( foundLocalCandidate )
                     {
                         retStatus = Ice_HandleServerReflexiveCandidateResponse( pIceAgent,
-                                                                                deserializePacketInfo.pStunAttributeAddress,
+                                                                                &deserializePacketInfo.stunAttributeAddress,
                                                                                 pLocalCandidate );
 
                         if( retStatus == ICE_RESULT_OK )
@@ -1073,17 +1074,17 @@ IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                         }
                         else
                         {
-                            if( deserializePacketInfo.pStunAttributeAddress != NULL )
+                            if( &deserializePacketInfo.stunAttributeAddress != NULL )
                             {
                                 if( ( pIceCandidatePair->pLocal->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
                                     ( pIceCandidatePair->pRemote->iceCandidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                                    ( Ice_IsSameIpAddress( deserializePacketInfo.pStunAttributeAddress,
+                                    ( Ice_IsSameIpAddress( &deserializePacketInfo.stunAttributeAddress,
                                                            &pIceCandidatePair->pLocal->ipAddress.ipAddress,
                                                            false ) == 0 ) )
                                 {
                                     printf( "Local Candidate IP address does not match with XOR mapped address in binding response.\n" );
 
-                                    newIpAddr.ipAddress = *( deserializePacketInfo.pStunAttributeAddress );
+                                    newIpAddr.ipAddress = deserializePacketInfo.stunAttributeAddress;
                                     newIpAddr.isPointToPoint = 0;
 
                                     retStatus = Ice_CheckPeerReflexiveCandidate( pIceAgent,

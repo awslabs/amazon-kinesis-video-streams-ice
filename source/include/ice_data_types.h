@@ -127,7 +127,7 @@ typedef struct IceStunDeserializedPacketInfo
     uint8_t useCandidateFlag;
     uint16_t errorCode;
     uint32_t priority;
-    StunAttributeAddress_t * pStunAttributeAddress;
+    StunAttributeAddress_t stunAttributeAddress;
 }IceStunDeserializedPacketInfo_t;
 
 typedef struct IceCandidate
