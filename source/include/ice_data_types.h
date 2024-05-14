@@ -159,8 +159,7 @@ typedef struct IceAgent
     IceCandidate_t localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
     IceCandidate_t remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
     IceCandidatePair_t iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
-    uint8_t stunMessageBuffers[ ICE_MAX_CANDIDATE_PAIR_COUNT ][ ICE_STUN_MESSAGE_BUFFER_SIZE ];
-    uint16_t stunMessageBufferUsedCount;
+    uint8_t stunMessageBuffer[ ICE_STUN_MESSAGE_BUFFER_SIZE ];
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
