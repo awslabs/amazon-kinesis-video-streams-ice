@@ -1,20 +1,7 @@
 #ifndef ICE_API_H
 #define ICE_API_H
 
-/* *INDENT-OFF* */
-#ifdef __cplusplus
-extern "C" {
-#endif
-/* *INDENT-ON* */
-
-/* Standard includes. */
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-
 #include "ice_data_types.h"
-
-/************************************************************************************************************************************************/
 
 IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 char * pLocalUsername,
@@ -112,55 +99,5 @@ int Ice_GetValidCandidatePairCount( IceAgent_t * pIceAgent );
 int Ice_GetValidRemoteCandidateCount( IceAgent_t * pIceAgent );
 
 int Ice_GetValidLocalCandidateCount( IceAgent_t * pIceAgent );
-
-/************************************************************************************************************************************************/
-
-/* These APIs are intended for internal use by the ICE library. */
-
-static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                                 StunAttributeAddress_t * pAddr2,
-                                 bool checkPort );
-
-static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                                 StunAttributeAddress_t * pAddr2,
-                                 bool checkPort );
-
-static bool Ice_FindCandidateFromIp( IceAgent_t * pIceAgent,
-                                     IceIPAddress_t iceIpAddress,
-                                     bool isRemote,
-                                     IceCandidate_t ** ppCandidate );
-
-static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
-                                          uint8_t * pTransactionId );
-
-static bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdStore,
-                                         uint8_t * pTransactionId );
-
-static void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdStore,
-                                          uint8_t * pTransactionId );
-
-static IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
-                                                 TransactionIdStore_t * pTransactionIdStore );
-
-static uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
-                                                  uint32_t isLocalControlling );
-
-static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate );
-
-static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                                     IceCandidatePair_t * pIceCandidatePair,
-                                     int iceCandidatePairCount );
-
-static bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
-                                                         IceIPAddress_t * pSrcAddr,
-                                                         IceIPAddress_t * pRemoteAddr,
-                                                         IceCandidatePair_t ** ppCandidatePair );
-
-static IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
-                                                    IceIPAddress_t * pIpAddr,
-                                                    uint32_t priority,
-                                                    bool isRemote );
-
-/************************************************************************************************************************************************/
 
 #endif /* ICE_API_H */
