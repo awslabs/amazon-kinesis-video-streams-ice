@@ -10,8 +10,9 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 char * pRemotePassword,
                                 char * pCombinedUsername,
                                 TransactionIdStore_t * pBuffer,
-                                Ice_ComputeCrc32 computeCrc32,
-                                Ice_ComputeHMAC computeHMAC );
+                                Ice_ComputeRandom computeRandomFunction,
+                                Ice_ComputeCrc32 computeCrc32Function,
+                                Ice_ComputeHMAC computeHMACFunction );
 
 IceResult_t Ice_AddHostCandidate( const IceIPAddress_t ipAddr,
                                   IceAgent_t * pIceAgent,
@@ -39,7 +40,8 @@ IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
                                              IceCandidate_t * pCandidate,
                                              const IceIPAddress_t * pIpAddr );
 
-IceResult_t Ice_InitializeStunPacket( StunContext_t * pStunCxt,
+IceResult_t Ice_InitializeStunPacket( IceAgent_t * pIceAgent,
+                                      StunContext_t * pStunCxt,
                                       uint8_t * pTransactionId,
                                       uint8_t * pStunMessageBuffer,
                                       StunHeader_t * pStunHeader,
@@ -80,15 +82,15 @@ IceResult_t Ice_DeserializeStunPacket( StunContext_t * pStunCxt,
                                        StunAttribute_t * pStunAttribute,
                                        IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
 
-IceResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
-                                  uint8_t * pReceivedStunMessageBuffer,
-                                  uint32_t receivedStunMessageBufferLength,
-                                  uint8_t ** ppSendTransactionIdBuffer,
-                                  uint8_t ** ppSendStunMessageBuffer,
-                                  uint32_t * pSendStunMessageBufferLength,
-                                  IceIPAddress_t * pLocalCandidateAddress,
-                                  IceIPAddress_t * pRemoteCandidateAddress,
-                                  IceCandidatePair_t ** ppIceCandidatePair );
+IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
+                                                  uint8_t * pReceivedStunMessageBuffer,
+                                                  uint32_t receivedStunMessageBufferLength,
+                                                  uint8_t ** ppSendTransactionIdBuffer,
+                                                  uint8_t ** ppSendStunMessageBuffer,
+                                                  uint32_t * pSendStunMessageBufferLength,
+                                                  IceIPAddress_t * pLocalCandidateAddress,
+                                                  IceIPAddress_t * pRemoteCandidateAddress,
+                                                  IceCandidatePair_t ** ppIceCandidatePair );
 
 IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
                                                         StunAttributeAddress_t * pStunMappedAddress,

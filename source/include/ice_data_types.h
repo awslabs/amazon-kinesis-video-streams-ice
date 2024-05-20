@@ -47,6 +47,8 @@
 
 #define ICE_STUN_MESSAGE_BUFFER_SIZE                            1024
 
+typedef uint64_t ( * Ice_ComputeRandom ) ( void );
+
 typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult,
                                           uint8_t * pBuffer,
                                           uint32_t bufferLength );
@@ -87,22 +89,29 @@ typedef enum {
 typedef enum IceResult
 {
     ICE_RESULT_OK,
-    ICE_RESULT_START_NOMINATION,
-    ICE_RESULT_USE_CANDIDATE_FLAG,
+    ICE_RESULT_BAD_PARAM,
+    ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
+    ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
+    ICE_RESULT_OUT_OF_MEMORY
+} IceResult_t;
+
+typedef enum IceStunPacketHandleResult
+{
+    ICE_RESULT_STUN_PACKET_ERROR,
+    ICE_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE,
     ICE_RESULT_UPDATED_SRFLX_CANDIDATE_ADDRESS,
     ICE_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
     ICE_RESULT_SEND_TRIGGERED_CHECK,
+    ICE_RESULT_START_NOMINATION,
+    ICE_RESULT_USE_CANDIDATE_FLAG,
     ICE_RESULT_SEND_RESPONSE_FOR_NOMINATION,
     ICE_RESULT_CANDIDATE_PAIR_READY,
-    ICE_RESULT_BASE = 0x53000000,
-    ICE_RESULT_BAD_PARAM,
-    ICE_RESULT_CANDIDATE_NOT_FOUND,
-    ICE_RESULT_CANDIDATE_PAIR_NOT_FOUND,
-    ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
-    ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
-    ICE_RESULT_OUT_OF_MEMORY,
-    ICE_RESULT_SPRINT_ERROR
-} IceResult_t;
+    ICE_RESULT_NOT_FOUND_CANDIDATE,
+    ICE_RESULT_NOT_FOUND_CANDIDATE_PAIR,
+    ICE_RESULT_NOT_FOUND_ADDRESS_ATTRIBUTE,
+    ICE_RESULT_NOT_FOUND_MATCHING_TRANSACTION_ID,
+    ICE_RESULT_STUN_BINDING_INDICATION
+} IceStunPacketHandleResult_t;
 
 /* ICE component structures */
 
@@ -163,6 +172,7 @@ typedef struct IceAgent
     uint32_t isControlling;
     uint64_t tieBreaker;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
+    Ice_ComputeRandom computeRandom;
     Ice_ComputeCrc32 computeCRC32;
     Ice_ComputeHMAC computeHMAC;
 } IceAgent_t;
