@@ -72,28 +72,31 @@ static void Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
     int pivot = -1;
     IceCandidatePair_t pivotCandidatePair = *pIceCandidatePair;
 
-    for( i = 0; i < iceCandidatePairCount; i++ )
+    if( ( pIceAgent != NULL ) && ( pIceCandidatePair != NULL ) )
     {
-        if( pivotCandidatePair.priority >= pIceAgent->iceCandidatePairs[ i ].priority )
+        for( i = 0; i < iceCandidatePairCount; i++ )
         {
-            pivot = i;
-            break;
+            if( pivotCandidatePair.priority >= pIceAgent->iceCandidatePairs[ i ].priority )
+            {
+                pivot = i;
+                break;
+            }
         }
-    }
 
-    if( pivot == -1 )
-    {
-        pivot = iceCandidatePairCount;
-    }
-    else
-    {
-        for( i = iceCandidatePairCount; i > pivot; i-- )
+        if( pivot == -1 )
         {
-            pIceAgent->iceCandidatePairs[ i ] = pIceAgent->iceCandidatePairs[ i - 1 ];
+            pivot = iceCandidatePairCount;
         }
-    }
+        else
+        {
+            for( i = iceCandidatePairCount; i > pivot; i-- )
+            {
+                pIceAgent->iceCandidatePairs[ i ] = pIceAgent->iceCandidatePairs[ i - 1 ];
+            }
+        }
 
-    pIceAgent->iceCandidatePairs[ pivot ] = pivotCandidatePair;
+        pIceAgent->iceCandidatePairs[ pivot ] = pivotCandidatePair;
+    }
 
     return;
 }
@@ -157,31 +160,38 @@ static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate )
 {
     uint32_t typePreference = 0, localPreference = 0;
 
-    switch( pIceCandidate->iceCandidateType )
+    if( pIceCandidate != NULL )
     {
-        case ICE_CANDIDATE_TYPE_HOST:
-            typePreference = ICE_PRIORITY_HOST_CANDIDATE_TYPE_PREFERENCE;
-            break;
+        switch( pIceCandidate->iceCandidateType )
+        {
+            case ICE_CANDIDATE_TYPE_HOST:
+                typePreference = ICE_PRIORITY_HOST_CANDIDATE_TYPE_PREFERENCE;
+                break;
 
-        case ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE:
-            typePreference = ICE_PRIORITY_SERVER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE;
-            break;
+            case ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE:
+                typePreference = ICE_PRIORITY_SERVER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE;
+                break;
 
-        case ICE_CANDIDATE_TYPE_PEER_REFLEXIVE:
-            typePreference = ICE_PRIORITY_PEER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE;
-            break;
+            case ICE_CANDIDATE_TYPE_PEER_REFLEXIVE:
+                typePreference = ICE_PRIORITY_PEER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE;
+                break;
 
-        case ICE_CANDIDATE_TYPE_RELAYED:
-            typePreference = ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE;
-            break;
+            case ICE_CANDIDATE_TYPE_RELAYED:
+                typePreference = ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE;
+                break;
+        }
+
+        if( !pIceCandidate->ipAddress.isPointToPoint )
+        {
+            localPreference = ICE_PRIORITY_LOCAL_PREFERENCE;
+        }
+
+        return( ( 1 << 24 ) * ( typePreference ) + ( 1 << 8 ) * ( localPreference ) + 255 );
     }
-
-    if( !pIceCandidate->ipAddress.isPointToPoint )
+    else
     {
-        localPreference = ICE_PRIORITY_LOCAL_PREFERENCE;
+        return 0;
     }
-
-    return( ( 1 << 24 ) * ( typePreference ) + ( 1 << 8 ) * ( localPreference ) + 255 );
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
@@ -193,14 +203,21 @@ static uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandi
     uint64_t controllingAgentCandidatePri = pIceCandidatePair->pLocal->priority;
     uint64_t controlledAgentCandidatePri = pIceCandidatePair->pRemote->priority;
 
-    if( isLocalControlling == 0 )
+    if( pIceCandidatePair != NULL )
     {
-        controllingAgentCandidatePri = controlledAgentCandidatePri;
-        controlledAgentCandidatePri = pIceCandidatePair->pLocal->priority;
-    }
+        if( isLocalControlling == 0 )
+        {
+            controllingAgentCandidatePri = controlledAgentCandidatePri;
+            controlledAgentCandidatePri = pIceCandidatePair->pLocal->priority;
+        }
 
-    return( ( ( uint64_t ) 1 << 32 ) * ( controllingAgentCandidatePri >= controlledAgentCandidatePri ? controlledAgentCandidatePri : controllingAgentCandidatePri ) +
-            2 * ( controllingAgentCandidatePri >= controlledAgentCandidatePri ? controllingAgentCandidatePri : controlledAgentCandidatePri ) + ( controllingAgentCandidatePri > controlledAgentCandidatePri ? 1 : 0 ) );
+        return( ( ( uint64_t ) 1 << 32 ) * ( controllingAgentCandidatePri >= controlledAgentCandidatePri ? controlledAgentCandidatePri : controllingAgentCandidatePri ) +
+                2 * ( controllingAgentCandidatePri >= controlledAgentCandidatePri ? controllingAgentCandidatePri : controlledAgentCandidatePri ) + ( controllingAgentCandidatePri > controlledAgentCandidatePri ? 1 : 0 ) );
+    }
+    else
+    {
+        return 0;
+    }
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
@@ -254,6 +271,8 @@ static void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdS
 
         pTransactionIdStore->transactionIdCount = transactionIDCount;
     }
+
+    return;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
@@ -291,7 +310,7 @@ static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdS
 {
     uint32_t i, j;
 
-    if( pTransactionIdStore != NULL )
+    if( ( pTransactionIdStore != NULL ) && ( pTransactionId != NULL ) )
     {
         for( i = pTransactionIdStore->earliestTransactionIdIndex, j = 0; j < pTransactionIdStore->maxTransactionIdsCount; ++j )
         {
@@ -308,6 +327,8 @@ static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdS
             i = ( i + 1 ) % pTransactionIdStore->maxTransactionIdsCount;
         }
     }
+
+    return;
 }
 /*------------------------------------------------------------------------------------------------------------------*/
 
@@ -418,14 +439,16 @@ static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
 
     if( ( pAddr1 == NULL ) || ( pAddr2 == NULL ) )
     {
-        return false;
+        ret = false;
     }
+    else
+    {
+        addrLen = ICE_IS_IPV4_ADDR( *pAddr1 ) ? STUN_IPV4_ADDRESS_SIZE : STUN_IPV6_ADDRESS_SIZE;
 
-    addrLen = ICE_IS_IPV4_ADDR( *pAddr1 ) ? STUN_IPV4_ADDRESS_SIZE : STUN_IPV6_ADDRESS_SIZE;
-
-    ret = ( pAddr1->family == pAddr2->family && memcmp( pAddr1->address,
-                                                        pAddr2->address,
-                                                        addrLen ) == 0 && ( !checkPort || pAddr1->port == pAddr2->port ) );
+        ret = ( pAddr1->family == pAddr2->family && memcmp( pAddr1->address,
+                                                            pAddr2->address,
+                                                            addrLen ) == 0 && ( !checkPort || pAddr1->port == pAddr2->port ) );
+    }
 
     return ret;
 }
