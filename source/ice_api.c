@@ -836,7 +836,7 @@ static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceA
         pDeserializedPacketInfo->errorCode = 0;
         pDeserializedPacketInfo->priority = 0;
 
-        while( stunRetStatus == STUN_RESULT_OK )
+        while( ( stunRetStatus == STUN_RESULT_OK ) && ( retStatus == ICE_RESULT_STUN_DESERIALIZE_OK ) )
         {
             stunRetStatus = StunDeserializer_GetNextAttribute( pStunCxt,
                                                                pStunAttribute );
@@ -883,11 +883,11 @@ static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceA
                                                         pIntBuffer,
                                                         bufferLength,
                                                         messageIntegrity,
-                                                        &hmacLen );
+                                                        &( hmacLen ) );
 
                                 if( memcmp( messageIntegrity, pStunAttribute->pAttributeValue, STUN_HMAC_VALUE_LENGTH ) != 0 )
                                 {
-                                    stunRetStatus = STUN_RESULT_MESSAGE_INTEGRITY_MISMATCH;
+                                    retStatus = ICE_RESULT_STUN_INTEGRITY_MISMATCH;
                                 }
                             }
                         }
@@ -919,7 +919,7 @@ static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceA
 
                         if( crc32 != crc32Fingerprint )
                         {
-                            stunRetStatus = STUN_RESULT_FINGERPRINT_MISMATCH;
+                            stunRetStatus = ICE_RESULT_STUN_FINGERPRINT_MISMATCH;
                         }
 
                         break;
@@ -928,15 +928,6 @@ static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceA
                         break;
                 }
             }
-        }
-
-        if( stunRetStatus == STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND )
-        {
-            retStatus = ICE_RESULT_STUN_DESERIALIZE_OK;
-        }
-        else
-        {
-            retStatus = ICE_RESULT_STUN_DESERIALIZE_ERROR;
         }
     }
 
