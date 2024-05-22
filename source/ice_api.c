@@ -1394,7 +1394,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
         if( retStatus == ICE_RESULT_OK )
         {
             *ppSendStunMessageBuffer = &( pIceAgent->stunMessageBuffer[ 0 ] );
-            pIceCandidatePair->connectivityChecks |= 1 << 1;
+            pIceCandidatePair->connectivityChecks |= 1 << 0;
         }
     }
 
@@ -1663,8 +1663,8 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                                                         &( stunCxt ),
                                                                         &( stunHeader ),
                                                                         &( stunAttribute ),
-                                                                        ( uint8_t * ) pIceAgent->localPassword,
-                                                                        ( uint32_t ) strlen( pIceAgent->localPassword ) * sizeof( char ),
+                                                                        ( uint8_t * ) pIceAgent->remotePassword,
+                                                                        ( uint32_t ) strlen( pIceAgent->remotePassword ) * sizeof( char ),
                                                                         &( deserializePacketInfo ) );
 
                     if( ( stunPacketHandleStatus == ICE_RESULT_STUN_DESERIALIZE_OK ) && ( deserializePacketInfo.errorCode == 0 ) )
@@ -1680,7 +1680,7 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                         pReceivedStunMessageBuffer + STUN_HEADER_TRANSACTION_ID_OFFSET,
                                         STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
                             {
-                                if( pIceCandidatePair->connectivityChecks & 2 == 0 )
+                                if( !( pIceCandidatePair->connectivityChecks & 2 ) )
                                 {
                                     pIceCandidatePair->connectivityChecks |= 1 << 1;
                                 }
