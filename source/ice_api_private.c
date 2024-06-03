@@ -6,6 +6,7 @@
 
 /* API includes. */
 #include "ice_api.h"
+#include "ice_api_private.h"
 
 /* STUN API includes. */
 #include "stun_data_types.h"
@@ -16,9 +17,9 @@
 
 /* Ice_IsSameIpAddress - This API is called internally to check if two IPAddresses are same. */
 
-static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                                 StunAttributeAddress_t * pAddr2,
-                                 bool checkPort )
+bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
+                          StunAttributeAddress_t * pAddr2,
+                          bool checkPort )
 {
     bool isSameAddress = false;
     uint32_t addrLen = 0;
@@ -45,10 +46,10 @@ static bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
 
 /* Ice_FindCandidateFromIP - This API is called internally to search for a candidate with a given IP. */
 
-static bool Ice_FindCandidateFromIP( IceAgent_t * pIceAgent,
-                                     IceCandidate_t ** ppCandidate,
-                                     IceIPAddress_t iceIpAddress,
-                                     bool isRemote )
+bool Ice_FindCandidateFromIP( IceAgent_t * pIceAgent,
+                              IceCandidate_t ** ppCandidate,
+                              IceIPAddress_t iceIpAddress,
+                              bool isRemote )
 {
     int i;
     StunAttributeAddress_t stunAddress;
@@ -99,10 +100,10 @@ static bool Ice_FindCandidateFromIP( IceAgent_t * pIceAgent,
 
 /* Ice_FindCandidatePairWithLocalAndRemoteAddr - This API is called internally to find a candidate pair given the local and remote IP addresses. */
 
-static bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
-                                                         IceIPAddress_t * pSrcAddr,
-                                                         IceIPAddress_t * pRemoteAddr,
-                                                         IceCandidatePair_t ** ppCandidatePair )
+bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
+                                                  IceIPAddress_t * pSrcAddr,
+                                                  IceIPAddress_t * pRemoteAddr,
+                                                  IceCandidatePair_t ** ppCandidatePair )
 {
     int i;
     IceCandidatePair_t iceCandidatePair;
@@ -143,8 +144,8 @@ static bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
 
 /* Ice_CreateTransactionIdStore - Creates the Transaction ID Store. */
 
-static IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
-                                                 TransactionIdStore_t * pTransactionIdStore )
+IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
+                                          TransactionIdStore_t * pTransactionIdStore )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
 
@@ -168,8 +169,8 @@ static IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
 
 /* Ice_TransactionIdStoreInsert - Inserts the Transaction in the IceAgent Transaction ID Store. */
 
-static void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdStore,
-                                          uint8_t * pTransactionId )
+void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdStore,
+                                   uint8_t * pTransactionId )
 {
     uint8_t * storeLocation = NULL;
     uint32_t transactionIDCount = 0;
@@ -201,8 +202,8 @@ static void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdS
 
 /* Ice_TransactionIdStoreHasId - Checks if the transaction is present in the Transaction ID Store. */
 
-static bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdStore,
-                                         uint8_t * pTransactionId )
+bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdStore,
+                                  uint8_t * pTransactionId )
 {
     bool idFound = false;
     uint32_t i, j;
@@ -228,8 +229,8 @@ static bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdSt
 
 /* Ice_TransactionIdStoreRemove - Inserts the Transaction in the IceAgent Transaction ID Store. */
 
-static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
-                                          uint8_t * pTransactionId )
+void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
+                                   uint8_t * pTransactionId )
 {
     uint32_t i, j;
 
@@ -258,9 +259,9 @@ static void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdS
 
 /* Ice_CreateCandidatePair - The library calls this API for creating candidate pair between a local and remote candidate . */
 
-static IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
-                                            IceCandidate_t * pLocalCandidate,
-                                            IceCandidate_t * pRemoteCandidate )
+IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
+                                     IceCandidate_t * pLocalCandidate,
+                                     IceCandidate_t * pRemoteCandidate )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     int iceCandidatePairCount = 0;
@@ -314,9 +315,9 @@ static IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
 
 /* Ice_insertCandidatePair : This API is called internally to insert candidate pairs based on decreasing priority. */
 
-static IceResult_t Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                                            IceCandidatePair_t * pIceCandidatePair,
-                                            int iceCandidatePairCount )
+IceResult_t Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
+                                     IceCandidatePair_t * pIceCandidatePair,
+                                     int iceCandidatePairCount )
 {
     int i;
     IceResult_t retStatus = ICE_RESULT_OK;
@@ -353,11 +354,11 @@ static IceResult_t Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
 
 /*  Ice_CheckRemotePeerReflexiveCandidate - The library calls this API for creating remote peer reflexive candidates on receiving a STUN binding request. */
 
-static IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
-                                                    IceIPAddress_t * pIpAddr,
-                                                    IceCandidate_t * pLocalCandidate,
-                                                    uint32_t priority,
-                                                    bool isRemote )
+IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
+                                             IceIPAddress_t * pIpAddr,
+                                             IceCandidate_t * pLocalCandidate,
+                                             uint32_t priority,
+                                             bool isRemote )
 {
     IceResult_t retStatus = ICE_RESULT_OK;
     IceCandidate_t * pPeerReflexiveCandidate = NULL;
@@ -404,7 +405,7 @@ static IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
 
 /* Ice_ComputeCandidatePriority - Compute the candidate priority */
 
-static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate )
+uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate )
 {
     uint32_t typePreference = 0;
     uint32_t localPreference = 0;
@@ -457,8 +458,8 @@ static uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate )
 
 /* Ice_ComputeCandidatePairPriority - Compute the candidate pair priority. */
 
-static uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
-                                                  uint32_t isLocalControlling )
+uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
+                                           uint32_t isLocalControlling )
 {
     uint64_t controllingAgentCandidatePri = pIceCandidatePair->pLocal->priority;
     uint64_t controlledAgentCandidatePri = pIceCandidatePair->pRemote->priority;
@@ -484,9 +485,9 @@ static uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandi
 
 /* Ice_UpdateSrflxCandidateAddress : This API will be called by processStunPacket, if the binding request is for finding srflx candidate to update the candidate address */
 
-static IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
-                                                    IceCandidate_t * pCandidate,
-                                                    const IceIPAddress_t * pIpAddr )
+IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
+                                             IceCandidate_t * pCandidate,
+                                             const IceIPAddress_t * pIpAddr )
 {
     int i;
     IceResult_t retStatus = ICE_RESULT_OK;
@@ -521,9 +522,9 @@ static IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
 /* Ice_HandleServerReflexiveCandidateResponse - 1. Parse STUN Binding Response from the STUN server to get Server Reflexive candidate.
  *                                              2. Add the Server Reflexive candidate to the ICE Library. */
 
-static IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
-                                                               StunAttributeAddress_t * pStunMappedAddress,
-                                                               IceCandidate_t * pLocalCandidate )
+IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
+                                                        StunAttributeAddress_t * pStunMappedAddress,
+                                                        IceCandidate_t * pLocalCandidate )
 {
     IceIPAddress_t ipAddr;
     IceResult_t retStatus = ICE_RESULT_OK;
@@ -559,13 +560,13 @@ static IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIce
  *   3. During nomination - USE_CANDIDATE flag
  *   4. Send Response to Remote Candidates
  */
-static IceResult_t Ice_InitializeStunPacket( IceAgent_t * pIceAgent,
-                                             StunContext_t * pStunCxt,
-                                             uint8_t * pTransactionId,
-                                             uint8_t * pStunMessageBuffer,
-                                             StunHeader_t * pStunHeader,
-                                             uint8_t isGenerateTransactionID,
-                                             uint8_t isStunBindingRequest )
+IceResult_t Ice_InitializeStunPacket( IceAgent_t * pIceAgent,
+                                      StunContext_t * pStunCxt,
+                                      uint8_t * pTransactionId,
+                                      uint8_t * pStunMessageBuffer,
+                                      StunHeader_t * pStunHeader,
+                                      uint8_t isGenerateTransactionID,
+                                      uint8_t isStunBindingRequest )
 {
     int i;
     IceResult_t retStatus = ICE_RESULT_OK;
@@ -631,11 +632,11 @@ static IceResult_t Ice_InitializeStunPacket( IceAgent_t * pIceAgent,
 
 /* Ice_PackageStunPacket - This API takes care of the serialization of the Stun Packet and appends the requited attributes .*/
 
-static IceResult_t Ice_PackageStunPacket( IceAgent_t * pIceAgent,
-                                          StunContext_t * pStunCxt,
-                                          uint8_t * pPassword,
-                                          uint32_t passwordLen,
-                                          uint32_t * pStunMessageBufferLength )
+IceResult_t Ice_PackageStunPacket( IceAgent_t * pIceAgent,
+                                   StunContext_t * pStunCxt,
+                                   uint8_t * pPassword,
+                                   uint32_t passwordLen,
+                                   uint32_t * pStunMessageBufferLength )
 {
     uint8_t messageIntegrity[ STUN_HMAC_VALUE_LENGTH ];
     IceResult_t iceRetStatus = ICE_RESULT_OK;
@@ -723,13 +724,13 @@ static IceResult_t Ice_PackageStunPacket( IceAgent_t * pIceAgent,
 
 /* Ice_DeserializeStunPacket - This API deserializes a received STUN packet . */
 
-static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceAgent,
-                                                              StunContext_t * pStunCxt,
-                                                              StunHeader_t * pStunHeader,
-                                                              StunAttribute_t * pStunAttribute,
-                                                              uint8_t * pPassword,
-                                                              uint32_t passwordLen,
-                                                              IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
+IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceAgent,
+                                                       StunContext_t * pStunCxt,
+                                                       StunHeader_t * pStunHeader,
+                                                       StunAttribute_t * pStunAttribute,
+                                                       uint8_t * pPassword,
+                                                       uint32_t passwordLen,
+                                                       IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
 {
     uint8_t messageIntegrity[ STUN_HMAC_VALUE_LENGTH ];
     IceStunPacketHandleResult_t iceRetStatus = ICE_RESULT_STUN_DESERIALIZE_OK;
@@ -859,3 +860,4 @@ static IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceA
 
     return iceRetStatus;
 }
+/*------------------------------------------------------------------------------------------------------------------*/

@@ -26,16 +26,16 @@
 #define ICE_PRIORITY_LOCAL_PREFERENCE                              65535
 
 /* ICE macros to define default values. */
-#define ICE_RESULT_NO_VALID_CANDIDATE_PAIR                        ( -1 )
-#define ICE_RESULT_NO_VALID_LOCAL_CANDIDATE                       ( -1 )
-#define ICE_RESULT_NO_VALID_REMOTE_CANDIDATE                      ( -1 )
+#define ICE_RESULT_NO_VALID_CANDIDATE_PAIR                         ( -1 )
+#define ICE_RESULT_NO_VALID_LOCAL_CANDIDATE                        ( -1 )
+#define ICE_RESULT_NO_VALID_REMOTE_CANDIDATE                       ( -1 )
 
 /**
  * Macros to define the bits set for connectivity checks in a candidate pair.
  * +-----+-----+-----+-----+-----+
  * |     | BIT3| BIT2| BIT1| BIT0|
  * +-----+-----+-----+-----+-----+
- * 
+ *
  *   This depicts the connectivityChecks in a candidate pair, these 4 bits show which bit stands for which STUN request/ response.
  *
  *    1. BIT0 - STUN request from local candidate to remote candidate.
@@ -44,10 +44,10 @@
  *    4. BIT3 - STUN response from local candidate to remote candidate.
  *
  */
-#define ICE_STUN_REQUEST_LOCAL_REMOTE_BIT0                          ( 0 )
-#define ICE_STUN_RESPONSE_LOCAL_REMOTE_BIT1                         ( 1 )
-#define ICE_STUN_REQUEST_REMOTE_LOCAL_BIT2                          ( 2 )
-#define ICE_STUN_RESPONSE_REMOTE_LOCAL_BIT3                         ( 3 )
+#define ICE_STUN_REQUEST_LOCAL_REMOTE_BIT0                         ( 0 )
+#define ICE_STUN_RESPONSE_LOCAL_REMOTE_BIT1                        ( 1 )
+#define ICE_STUN_REQUEST_REMOTE_LOCAL_BIT2                         ( 2 )
+#define ICE_STUN_RESPONSE_REMOTE_LOCAL_BIT3                        ( 3 )
 
 /**
  * Maximum allowed ICE configuration user name length

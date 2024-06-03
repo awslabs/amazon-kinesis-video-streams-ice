@@ -15,7 +15,7 @@
 
 /*------------------------------------------------------------------------------------------------------------------*/
 
-/* Ice_CreateIceAgent - The application calls this API for starting a new 
+/* Ice_CreateIceAgent - The application calls this API for starting a new
  * ICE agent. */
 
 IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
