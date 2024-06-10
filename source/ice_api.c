@@ -25,11 +25,10 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 char * pRemotePassword,
                                 char * pCombinedUsername,
                                 TransactionIdStore_t * pBuffer,
-                                Ice_ComputeRandom computeRandomFunction,
+                                uint64_t tieBreaker,
                                 Ice_ComputeCrc32 computeCRC32Function,
                                 Ice_ComputeHMAC computeHMACFunction )
 {
-    int i;
     IceResult_t retStatus = ICE_RESULT_OK;
 
     if( ( pIceAgent == NULL ) ||
@@ -79,12 +78,11 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
     {
         pIceAgent->isControlling = 0;
 
-        pIceAgent->computeRandom = computeRandomFunction;
         pIceAgent->computeCRC32 = computeCRC32Function;
         pIceAgent->computeHMAC = computeHMACFunction;
 
         /* This field is required as an attribute during creation of STUN packet. */
-        pIceAgent->tieBreaker = pIceAgent->computeRandom();
+        pIceAgent->tieBreaker = tieBreaker;
     }
 
     return retStatus;
@@ -263,56 +261,6 @@ IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
 
     return retStatus;
 }
-
-/*------------------------------------------------------------------------------------------------------------------*/
-
-/* Ice_CreateRequestForSrflxCandidate - This API creates Stun Packet for sending Srflx candidate request to ICE STUN server. */
-
-IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
-                                                uint8_t * pStunMessageBuffer,
-                                                uint8_t * pTransactionIdBuffer,
-                                                uint32_t * pSendStunMessageBufferLength )
-{
-    StunContext_t stunCxt;
-    StunHeader_t stunHeader;
-    IceResult_t retStatus = ICE_RESULT_OK;
-    uint8_t needTransactionIDGeneration = 1;
-    uint8_t isStunBindingRequest = 1;
-
-    if( ( pIceAgent == NULL ) ||
-        ( pStunMessageBuffer == NULL ) ||
-        ( pTransactionIdBuffer == NULL ) ||
-        ( pSendStunMessageBufferLength == NULL ) )
-    {
-        retStatus = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( retStatus == ICE_RESULT_OK )
-    {
-        retStatus = Ice_InitializeStunPacket( pIceAgent,
-                                              &( stunCxt ),
-                                              pTransactionIdBuffer,
-                                              pStunMessageBuffer,
-                                              &( stunHeader ),
-                                              needTransactionIDGeneration,
-                                              isStunBindingRequest );
-
-        if( retStatus == ICE_RESULT_OK )
-        {
-            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
-                                          stunHeader.pTransactionId );
-
-            retStatus = Ice_PackageStunPacket( pIceAgent,
-                                               &( stunCxt ),
-                                               NULL,
-                                               0,
-                                               pSendStunMessageBufferLength );
-        }
-    }
-
-    return retStatus;
-}
-
 /*------------------------------------------------------------------------------------------------------------------*/
 
 /* Ice_CreateRequestForNominatingValidCandidatePair - This API creates Stun Packet for nomination of the valid candidate Pair sent by the Controlling ICE agent. */
@@ -487,7 +435,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
 IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
                                           uint8_t ** ppSendStunMessageBuffer,
                                           uint32_t * pSendStunMessageBufferLength,
-                                          IceIPAddress_t * pSrcAddr,
+                                          IceCandidatePair_t * pIceCandidatePair,
                                           uint8_t * pTransactionIdBuffer )
 {
     StunContext_t stunCxt;
@@ -521,7 +469,7 @@ IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
     if( retStatus == ICE_RESULT_OK )
     {
         memcpy( &( stunMappedAddress ),
-                &( pSrcAddr->ipAddress ),
+                &( pIceCandidatePair->pRemote->ipAddress.ipAddress ),
                 sizeof( StunAttributeAddress_t ) );
         stunRetStatus = StunSerializer_AddAttributeXorMappedAddress( &( stunCxt ),
                                                                      &( stunMappedAddress ) );
@@ -566,8 +514,6 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                                                   uint8_t * pReceivedStunMessageBuffer,
                                                   uint32_t receivedStunMessageBufferLength,
                                                   uint8_t ** ppSendTransactionIdBuffer,
-                                                  uint8_t ** ppSendStunMessageBuffer,
-                                                  uint32_t * pSendStunMessageBufferLength,
                                                   IceIPAddress_t * pLocalCandidateAddress,
                                                   IceIPAddress_t * pRemoteCandidateAddress,
                                                   IceCandidatePair_t ** ppIceCandidatePair )
@@ -591,7 +537,6 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
         ( ppSendTransactionIdBuffer == NULL ) ||
         ( pLocalCandidateAddress == NULL ) ||
         ( pRemoteCandidateAddress == NULL ) ||
-        ( ppSendStunMessageBuffer == NULL ) ||
         ( pSendStunMessageBufferLength == NULL ) ||
         ( ppIceCandidatePair == NULL ) )
     {
@@ -670,7 +615,7 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
                         }
 
                         /* The application always needs to send a response for the request received from remote candidate.
-                         * So the transaction ID needs to be returned back to the application always in theis sceanrio. */
+                         * So the transaction ID needs to be returned back to the application always in theis scenario. */
                         *ppSendTransactionIdBuffer = stunHeader.pTransactionId;
                     }
                     else

@@ -70,9 +70,6 @@
 #define ICE_IS_IPV4_ADDR( pAddress )    ( ( pAddress ).family == STUN_ADDRESS_IPv4 )
 
 #define ICE_STUN_MESSAGE_BUFFER_SIZE    1024
-
-typedef uint64_t ( * Ice_ComputeRandom ) ( void );
-
 typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult,
                                           uint8_t * pBuffer,
                                           uint32_t bufferLength );

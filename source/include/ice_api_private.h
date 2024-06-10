@@ -52,6 +52,11 @@ uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate );
 uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
                                            uint32_t isLocalControlling );
 
+IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
+                                                uint8_t * pStunMessageBuffer,
+                                                uint8_t * pTransactionIdBuffer,
+                                                uint32_t * pSendStunMessageBufferLength );
+
 IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
                                              IceCandidate_t * pCandidate,
                                              const IceIPAddress_t * pIpAddr );

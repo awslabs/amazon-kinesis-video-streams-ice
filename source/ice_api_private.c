@@ -480,7 +480,54 @@ uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePai
 
     return candidatePairPriority;
 }
+/*------------------------------------------------------------------------------------------------------------------*/
 
+/* Ice_CreateRequestForSrflxCandidate - This API creates Stun Packet for sending Srflx candidate request to ICE STUN server. */
+
+IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
+                                                uint8_t * pStunMessageBuffer,
+                                                uint8_t * pTransactionIdBuffer,
+                                                uint32_t * pSendStunMessageBufferLength )
+{
+    StunContext_t stunCxt;
+    StunHeader_t stunHeader;
+    IceResult_t retStatus = ICE_RESULT_OK;
+    uint8_t needTransactionIDGeneration = 1;
+    uint8_t isStunBindingRequest = 1;
+
+    if( ( pIceAgent == NULL ) ||
+        ( pStunMessageBuffer == NULL ) ||
+        ( pTransactionIdBuffer == NULL ) ||
+        ( pSendStunMessageBufferLength == NULL ) )
+    {
+        retStatus = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( retStatus == ICE_RESULT_OK )
+    {
+        retStatus = Ice_InitializeStunPacket( pIceAgent,
+                                              &( stunCxt ),
+                                              pTransactionIdBuffer,
+                                              pStunMessageBuffer,
+                                              &( stunHeader ),
+                                              needTransactionIDGeneration,
+                                              isStunBindingRequest );
+
+        if( retStatus == ICE_RESULT_OK )
+        {
+            Ice_TransactionIdStoreInsert( pIceAgent->pStunBindingRequestTransactionIdStore,
+                                          stunHeader.pTransactionId );
+
+            retStatus = Ice_PackageStunPacket( pIceAgent,
+                                               &( stunCxt ),
+                                               NULL,
+                                               0,
+                                               pSendStunMessageBufferLength );
+        }
+    }
+
+    return retStatus;
+}
 /*------------------------------------------------------------------------------------------------------------------*/
 
 /* Ice_UpdateSrflxCandidateAddress : This API will be called by processStunPacket, if the binding request is for finding srflx candidate to update the candidate address */
