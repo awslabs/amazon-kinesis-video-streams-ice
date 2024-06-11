@@ -25,7 +25,7 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 char * pRemotePassword,
                                 char * pCombinedUsername,
                                 TransactionIdStore_t * pBuffer,
-                                uint64_t tieBreaker,
+                                Ice_ComputeRandom computeRandomFunction,
                                 Ice_ComputeCrc32 computeCRC32Function,
                                 Ice_ComputeHMAC computeHMACFunction )
 {
@@ -78,11 +78,12 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
     {
         pIceAgent->isControlling = 0;
 
+        pIceAgent->computeRandom = computeRandomFunction;
         pIceAgent->computeCRC32 = computeCRC32Function;
         pIceAgent->computeHMAC = computeHMACFunction;
 
         /* This field is required as an attribute during creation of STUN packet. */
-        pIceAgent->tieBreaker = tieBreaker;
+        pIceAgent->tieBreaker = pIceAgent->computeRandom();
     }
 
     return retStatus;
@@ -449,7 +450,6 @@ IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
     if( ( pIceAgent == NULL ) ||
         ( ppSendStunMessageBuffer == NULL ) ||
         ( pSendStunMessageBufferLength == NULL ) ||
-        ( pSrcAddr == NULL ) ||
         ( pTransactionIdBuffer == NULL ) )
     {
         retStatus = ICE_RESULT_BAD_PARAM;
@@ -537,7 +537,6 @@ IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
         ( ppSendTransactionIdBuffer == NULL ) ||
         ( pLocalCandidateAddress == NULL ) ||
         ( pRemoteCandidateAddress == NULL ) ||
-        ( pSendStunMessageBufferLength == NULL ) ||
         ( ppIceCandidatePair == NULL ) )
     {
         iceRetStatus = ICE_RESULT_BAD_PARAM;

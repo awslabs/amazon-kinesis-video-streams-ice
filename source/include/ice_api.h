@@ -10,7 +10,7 @@ IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
                                 char * pRemotePassword,
                                 char * pCombinedUsername,
                                 TransactionIdStore_t * pBuffer,
-                                uint64_t tieBreaker,
+                                Ice_ComputeRandom computeRandomFunction,
                                 Ice_ComputeCrc32 computeCrc32Function,
                                 Ice_ComputeHMAC computeHMACFunction );
 
