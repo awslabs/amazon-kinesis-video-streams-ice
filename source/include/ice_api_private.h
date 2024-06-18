@@ -3,88 +3,59 @@
 
 #include "ice_data_types.h"
 
+/*----------------------------------------------------------------------------*/
+
 /*
  * Functions below are not part of the public API and are intended
- * for use by the library only.
+ * for use by the library only. We do not do parameter checking in these APIs
+ * as those are done in public APIs
  */
-bool Ice_IsSameIpAddress( StunAttributeAddress_t * pAddr1,
-                          StunAttributeAddress_t * pAddr2,
-                          bool checkPort );
+uint8_t Ice_IsSameTransportAddress( IceTransportAddress_t * pTransportAddress1,
+                                    IceTransportAddress_t * pTransportAddress2 );
 
-bool Ice_FindCandidateFromIP( IceAgent_t * pIceAgent,
-                              IceCandidate_t ** ppCandidate,
-                              IceIPAddress_t iceIpAddress,
-                              bool isRemote );
+uint8_t Ice_IsSameIpAddress( IceTransportAddress_t * pTransportAddress1,
+                             IceTransportAddress_t * pTransportAddress2 );
 
-bool Ice_FindCandidatePairWithLocalAndRemoteAddr( IceAgent_t * pIceAgent,
-                                                  IceIPAddress_t * pSrcAddr,
-                                                  IceIPAddress_t * pRemoteAddr,
-                                                  IceCandidatePair_t ** ppCandidatePair );
+IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
+                                  IceCandidate_t * pLocalCandidate,
+                                  IceCandidate_t * pRemoteCandidate );
 
-IceResult_t Ice_CreateTransactionIdStore( uint32_t maxIdCount,
-                                          TransactionIdStore_t * pTransactionIdStore );
+uint32_t Ice_ComputeCandidatePriority( IceCandidateType_t candidateType,
+                                       uint8_t isPointToPoint );
 
-void Ice_TransactionIdStoreInsert( TransactionIdStore_t * pTransactionIdStore,
-                                   uint8_t * pTransactionId );
+uint64_t Ice_ComputeCandidatePairPriority( uint32_t localCandidatePriority,
+                                           uint32_t remoteCandidatePriority,
+                                           uint32_t isControlling );
 
-bool Ice_TransactionIdStoreHasId( TransactionIdStore_t * pTransactionIdStore,
-                                  uint8_t * pTransactionId );
+IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
+                                    StunContext_t * pStunCtx,
+                                    const uint8_t * pPassword,
+                                    size_t passwordLength,
+                                    size_t * pStunMessageBufferLength );
 
-void Ice_TransactionIdStoreRemove( TransactionIdStore_t * pTransactionIdStore,
-                                   uint8_t * pTransactionId );
-
-IceResult_t Ice_CreateCandidatePair( IceAgent_t * pIceAgent,
-                                     IceCandidate_t * pLocalCandidate,
-                                     IceCandidate_t * pRemoteCandidate );
-
-IceResult_t Ice_InsertCandidatePair( IceAgent_t * pIceAgent,
-                                     IceCandidatePair_t * pIceCandidatePair,
-                                     int iceCandidatePairCount );
-
-IceResult_t Ice_CheckPeerReflexiveCandidate( IceAgent_t * pIceAgent,
-                                             IceIPAddress_t * pIpAddr,
-                                             IceCandidate_t * pLocalCandidate,
-                                             uint32_t priority,
-                                             bool isRemote );
-
-uint32_t Ice_ComputeCandidatePriority( IceCandidate_t * pIceCandidate );
-
-uint64_t Ice_ComputeCandidatePairPriority( IceCandidatePair_t * pIceCandidatePair,
-                                           uint32_t isLocalControlling );
-
-IceResult_t Ice_CreateRequestForSrflxCandidate( IceAgent_t * pIceAgent,
-                                                uint8_t * pStunMessageBuffer,
-                                                uint8_t * pTransactionIdBuffer,
-                                                uint32_t * pSendStunMessageBufferLength );
-
-IceResult_t Ice_UpdateSrflxCandidateAddress( IceAgent_t * pIceAgent,
-                                             IceCandidate_t * pCandidate,
-                                             const IceIPAddress_t * pIpAddr );
-
-IceResult_t Ice_HandleServerReflexiveCandidateResponse( IceAgent_t * pIceAgent,
-                                                        StunAttributeAddress_t * pStunMappedAddress,
-                                                        IceCandidate_t * pLocalCandidate );
-
-IceResult_t Ice_InitializeStunPacket( IceAgent_t * pIceAgent,
-                                      StunContext_t * pStunCxt,
-                                      uint8_t * pTransactionId,
-                                      uint8_t * pStunMessageBuffer,
-                                      StunHeader_t * pStunHeader,
-                                      uint8_t isGenerateTransactionID,
-                                      uint8_t isStunBindingRequest );
-
-IceResult_t Ice_PackageStunPacket( IceAgent_t * pIceAgent,
-                                   StunContext_t * pStunCxt,
-                                   uint8_t * pPpassword,
-                                   uint32_t passwordLen,
-                                   uint32_t * pStunMessageBufferLength );
-
-IceStunPacketHandleResult_t Ice_DeserializeStunPacket( IceAgent_t * pIceAgent,
-                                                       StunContext_t * pStunCxt,
-                                                       StunHeader_t * pStunHeader,
-                                                       StunAttribute_t * pStunAttribute,
-                                                       uint8_t * pPassword,
-                                                       uint32_t passwordLen,
+IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
+                                                       StunContext_t * pStunCtx,
+                                                       const uint8_t * pPassword,
+                                                       size_t passwordLength,
                                                        IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
+
+IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContext,
+                                                          StunContext_t * pStunCtx,
+                                                          IceEndpoint_t * pLocalCandidateEndpoint,
+                                                          IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                          IceCandidatePair_t ** ppIceCandidatePair );
+
+IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pContext,
+                                                               StunContext_t * pStunCtx,
+                                                               IceEndpoint_t * pLocalCandidateEndpoint );
+
+IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * pContext,
+                                                                 StunContext_t * pStunCtx,
+                                                                 StunHeader_t * pStunHeader,
+                                                                 IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                 IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                                 IceCandidatePair_t ** ppIceCandidatePair );
+
+/*----------------------------------------------------------------------------*/
 
 #endif /* ICE_API_PRIVATE_H */

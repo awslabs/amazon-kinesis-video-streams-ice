@@ -8,80 +8,26 @@
 /* Stun includes. */
 #include "stun_data_types.h"
 
-#define ICE_CONNECTIVITY_SUCCESS_FLAG                              15
+/* Transaction ID Store includes. */
+#include "transaction_id_store.h"
 
-#define ICE_DEFAULT_MAX_STORED_TRANSACTION_ID_COUNT                20
-#define ICE_MAX_STORED_TRANSACTION_ID_COUNT                        100
+/*----------------------------------------------------------------------------*/
 
-#define ICE_MAX_LOCAL_CANDIDATE_COUNT                              100
-#define ICE_MAX_REMOTE_CANDIDATE_COUNT                             100
-#define ICE_MAX_CANDIDATE_PAIR_COUNT                               1024
-#define MAX_ICE_SERVERS_COUNT                                      21
+/* Macros used to track a candidate pair's connectivity check status. */
+#define ICE_STUN_REQUEST_SENT_FLAG      ( 1 << 0 )
+#define ICE_STUN_RESPONSE_RECEIVED_FLAG ( 1 << 1 )
+#define ICE_STUN_REQUEST_RECEIVED_FLAG  ( 1 << 2 )
+#define ICE_STUN_RESPONSE_SENT_FLAG     ( 1 << 3 )
 
-/* ICE candidate priorities */
-#define ICE_PRIORITY_HOST_CANDIDATE_TYPE_PREFERENCE                126
-#define ICE_PRIORITY_SERVER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE    100
-#define ICE_PRIORITY_PEER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE      110
-#define ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE             0
-#define ICE_PRIORITY_LOCAL_PREFERENCE                              65535
+#define ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( connectivityCheckFlags )    \
+    ( ( connectivityCheckFlags ) == ( ICE_STUN_REQUEST_SENT_FLAG |          \
+                                      ICE_STUN_RESPONSE_RECEIVED_FLAG |     \
+                                      ICE_STUN_REQUEST_RECEIVED_FLAG |      \
+                                      ICE_STUN_RESPONSE_SENT_FLAG ) )
 
-/* ICE macros to define default values. */
-#define ICE_RESULT_NO_VALID_CANDIDATE_PAIR                         ( -1 )
-#define ICE_RESULT_NO_VALID_LOCAL_CANDIDATE                        ( -1 )
-#define ICE_RESULT_NO_VALID_REMOTE_CANDIDATE                       ( -1 )
+/*----------------------------------------------------------------------------*/
 
-/**
- * Macros to define the bits set for connectivity checks in a candidate pair.
- * +-----+-----+-----+-----+-----+
- * |     | BIT3| BIT2| BIT1| BIT0|
- * +-----+-----+-----+-----+-----+
- *
- *   This depicts the connectivityChecks in a candidate pair, these 4 bits show which bit stands for which STUN request/ response.
- *
- *    1. BIT0 - STUN request from local candidate to remote candidate.
- *    2. BIT1 - STUN response from remote candidate to local candidate.
- *    3. BIT2 - STUN request from remote candidate to local candidate.
- *    4. BIT3 - STUN response from local candidate to remote candidate.
- *
- */
-#define ICE_STUN_REQUEST_LOCAL_REMOTE_BIT0                         ( 0 )
-#define ICE_STUN_RESPONSE_LOCAL_REMOTE_BIT1                        ( 1 )
-#define ICE_STUN_REQUEST_REMOTE_LOCAL_BIT2                         ( 2 )
-#define ICE_STUN_RESPONSE_REMOTE_LOCAL_BIT3                        ( 3 )
-
-/**
- * Maximum allowed ICE configuration user name length
- * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_GetIceServerConfig.html#API_AWSAcuitySignalingService_GetIceServerConfig_RequestSyntax
- */
-#define ICE_MAX_CONFIG_USER_NAME_LEN                               256
-
-/**
- * Maximum allowed ICE configuration password length
- * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password
- */
-#define ICE_MAX_CONFIG_CREDENTIAL_LEN                              256
-
-/**
- * Maximum allowed ICE URI length
- */
-#define ICE_MAX_CONFIG_URI_LEN                                     256
-
-
-#define ICE_IS_IPV4_ADDR( pAddress )    ( ( pAddress ).family == STUN_ADDRESS_IPv4 )
-
-#define ICE_STUN_MESSAGE_BUFFER_SIZE    1024
-
-typedef uint64_t ( * Ice_ComputeRandom ) ( void );
-typedef uint32_t ( * Ice_ComputeCrc32 ) ( uint32_t initialResult,
-                                          uint8_t * pBuffer,
-                                          uint32_t bufferLength );
-typedef void ( * Ice_ComputeHMAC ) ( uint8_t * pPassword,
-                                     uint32_t passwordLength,
-                                     uint8_t * pBuffer,
-                                     uint32_t bufferLength,
-                                     uint8_t * pOutput,
-                                     uint32_t * pOutputLength );
-typedef enum
+typedef enum IceCandidateType
 {
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
@@ -89,14 +35,14 @@ typedef enum
     ICE_CANDIDATE_TYPE_RELAYED,
 } IceCandidateType_t;
 
-typedef enum
+typedef enum IceCandidateState
 {
     ICE_CANDIDATE_STATE_INVALID,
     ICE_CANDIDATE_STATE_NEW,
     ICE_CANDIDATE_STATE_VALID
 } IceCandidateState_t;
 
-typedef enum
+typedef enum IceCandidatePairState
 {
     ICE_CANDIDATE_PAIR_STATE_INVALID,
     ICE_CANDIDATE_PAIR_STATE_FROZEN,
@@ -106,7 +52,7 @@ typedef enum
     ICE_CANDIDATE_PAIR_STATE_SUCCEEDED
 } IceCandidatePairState_t;
 
-typedef enum
+typedef enum IceSocketProtocol
 {
     ICE_SOCKET_PROTOCOL_NONE,
     ICE_SOCKET_PROTOCOL_TCP,
@@ -120,60 +66,64 @@ typedef enum IceResult
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
     ICE_RESULT_STUN_ERROR,
+    ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
     ICE_RESULT_OUT_OF_MEMORY
 } IceResult_t;
 
-typedef enum IceStunPacketHandleResult
+typedef enum IceHandleStunPacketResult
 {
-    ICE_RESULT_STUN_DESERIALIZE_OK,
-    ICE_RESULT_STUN_INTEGRITY_MISMATCH,
-    ICE_RESULT_STUN_FINGERPRINT_MISMATCH,
-    ICE_RESULT_STUN_INVALID_PACKET_TYPE,
-    ICE_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE,
-    ICE_RESULT_UPDATED_SRFLX_CANDIDATE_ADDRESS,
-    ICE_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
-    ICE_RESULT_SEND_TRIGGERED_CHECK,
-    ICE_RESULT_START_NOMINATION,
-    ICE_RESULT_USE_CANDIDATE_FLAG,
-    ICE_RESULT_SEND_RESPONSE_FOR_NOMINATION,
-    ICE_RESULT_CANDIDATE_PAIR_READY,
-    ICE_RESULT_NOT_FOUND_CANDIDATE,
-    ICE_RESULT_NOT_FOUND_CANDIDATE_PAIR,
-    ICE_RESULT_NOT_FOUND_ADDRESS_ATTRIBUTE,
-    ICE_RESULT_NOT_FOUND_MATCHING_TRANSACTION_ID,
-    ICE_RESULT_STUN_BINDING_INDICATION
-} IceStunPacketHandleResult_t;
+    ICE_HANDLE_STUN_PACKET_RESULT_OK,
+    ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
+    ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR,
+    ICE_HANDLE_STUN_PACKET_RESULT_INTEGRITY_MISMATCH,
+    ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH,
+    ICE_HANDLE_STUN_PACKET_RESULT_INVALID_PACKET_TYPE,
+    ICE_HANDLE_STUN_PACKET_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE,
+    ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK,
+    ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR,
+    ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION,
+    ICE_HANDLE_STUN_PACKET_RESULT_USE_CANDIDATE_FLAG,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION,
+    ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
+    ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND,
+    ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
+    ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND,
+    ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND,
+    ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION
+} IceHandleStunPacketResult_t;
 
-/* ICE component structures */
+/*----------------------------------------------------------------------------*/
 
-typedef struct IceIPAddress
+typedef IceResult_t ( * IceRandom_t ) ( uint8_t * pOutputBuffer,
+                                        size_t outputBufferLength );
+typedef IceResult_t ( * IceCrc32_t ) ( uint32_t initialResult,
+                                       const uint8_t * pBuffer,
+                                       size_t bufferLength,
+                                       uint32_t * pCalculatedCrc32 );
+typedef IceResult_t ( * IceHmac_t ) ( const uint8_t * pPassword,
+                                      size_t passwordLength,
+                                      const uint8_t * pBuffer,
+                                      size_t bufferLength,
+                                      uint8_t * pOutputBuffer,
+                                      size_t * pOutputBufferLength );
+
+/*----------------------------------------------------------------------------*/
+
+typedef StunAttributeAddress_t IceTransportAddress_t;
+
+typedef struct IceEndpoint
 {
-    StunAttributeAddress_t ipAddress;
-    uint32_t isPointToPoint;
-} IceIPAddress_t;
-
-typedef struct TransactionIdStore
-{
-    uint32_t maxTransactionIdsCount;
-    uint32_t nextTransactionIdIndex;
-    uint32_t earliestTransactionIdIndex;
-    uint32_t transactionIdCount;
-    uint8_t * pTransactionIds;
-} TransactionIdStore_t;
-
-typedef struct IceStunDeserializedPacketInfo
-{
-    uint8_t useCandidateFlag;
-    uint16_t errorCode;
-    uint32_t priority;
-    StunAttributeAddress_t stunAttributeAddress;
-} IceStunDeserializedPacketInfo_t;
+    IceTransportAddress_t transportAddress;
+    uint8_t isPointToPoint;
+} IceEndpoint_t;
 
 typedef struct IceCandidate
 {
-    IceCandidateType_t iceCandidateType;
-    uint32_t isRemote;
-    IceIPAddress_t ipAddress;
+    IceCandidateType_t candidateType;
+    uint8_t isRemote;
+    IceEndpoint_t endpoint;
     IceCandidateState_t state;
     uint32_t priority;
     IceSocketProtocol_t remoteProtocol;
@@ -181,31 +131,83 @@ typedef struct IceCandidate
 
 typedef struct IceCandidatePair
 {
-    IceCandidate_t * pLocal;
-    IceCandidate_t * pRemote;
+    IceCandidate_t * pLocalCandidate;
+    IceCandidate_t * pRemoteCandidate;
     uint64_t priority;
     IceCandidatePairState_t state;
-    uint8_t connectivityChecks; /* checking for completion of 4-way handshake */
-    uint8_t pTransactionIdStore[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
+    uint32_t connectivityCheckFlags;
+    uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
 } IceCandidatePair_t;
 
-typedef struct IceAgent
+typedef struct IceCryptoFunctions
 {
-    char localUsername[ ICE_MAX_CONFIG_USER_NAME_LEN + 1 ];
-    char localPassword[ ICE_MAX_CONFIG_CREDENTIAL_LEN + 1 ];
-    char remoteUsername[ ICE_MAX_CONFIG_USER_NAME_LEN + 1 ];
-    char remotePassword[ ICE_MAX_CONFIG_CREDENTIAL_LEN + 1 ];
-    char combinedUserName[ ( ICE_MAX_CONFIG_USER_NAME_LEN + 1 ) << 1 ];
-    IceCandidate_t localCandidates[ ICE_MAX_LOCAL_CANDIDATE_COUNT ];
-    IceCandidate_t remoteCandidates[ ICE_MAX_REMOTE_CANDIDATE_COUNT ];
-    IceCandidatePair_t iceCandidatePairs[ ICE_MAX_CANDIDATE_PAIR_COUNT ];
-    uint8_t stunMessageBuffer[ ICE_STUN_MESSAGE_BUFFER_SIZE ];
-    uint32_t isControlling;
+    IceRandom_t randomFxn;
+    IceCrc32_t crc32Fxn;
+    IceHmac_t hmacFxn;
+} IceCryptoFunctions_t;
+
+typedef struct IceCredentials
+{
+    const char * pLocalUsername;
+    size_t localUsernameLength;
+    const char * pLocalPassword;
+    size_t localPasswordLength;
+    const char * pRemoteUsername;
+    size_t remoteUsernameLength;
+    const char * pRemotePassword;
+    size_t remotePasswordLength;
+    const char * pCombinedUsername;
+    size_t combinedUsernameLength;
+} IceCredentials_t;
+
+typedef struct IceContext
+{
+    IceCredentials_t creds;
+    IceCandidate_t * pLocalCandidates;
+    size_t maxLocalCandidates;
+    size_t numLocalCandidates;
+    IceCandidate_t * pRemoteCandidates;
+    size_t maxRemoteCandidates;
+    size_t numRemoteCandidates;
+    IceCandidatePair_t * pCandidatePairs;
+    size_t maxCandidatePairs;
+    size_t numCandidatePairs;
     uint64_t tieBreaker;
+    uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
-    Ice_ComputeRandom computeRandom;
-    Ice_ComputeCrc32 computeCRC32;
-    Ice_ComputeHMAC computeHMAC;
-} IceAgent_t;
+    IceCryptoFunctions_t cryptoFunctions;
+} IceContext_t;
+
+typedef struct IceInitInfo
+{
+    IceCredentials_t creds;
+    IceCandidate_t * pLocalCandidatesArray;
+    size_t localCandidatesArrayLength;
+    IceCandidate_t * pRemoteCandidatesArray;
+    size_t remoteCandidatesArrayLength;
+    IceCandidatePair_t * pCandidatePairsArray;
+    size_t candidatePairsArrayLength;
+    uint8_t isControlling;
+    TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
+    IceCryptoFunctions_t cryptoFunctions;
+} IceInitInfo_t;
+
+typedef struct IceRemoteCandidateInfo
+{
+    IceCandidateType_t candidateType;
+    IceSocketProtocol_t remoteProtocol;
+    uint32_t priority;
+    IceEndpoint_t * pEndpoint;
+} IceRemoteCandidateInfo_t;
+
+typedef struct IceStunDeserializedPacketInfo
+{
+    uint8_t useCandidateFlag;
+    uint16_t errorCode;
+    uint32_t priority;
+    IceTransportAddress_t transportAddress;
+} IceStunDeserializedPacketInfo_t;
+
+/*----------------------------------------------------------------------------*/
 
 #endif /* ICE_DATA_TYPES_H */

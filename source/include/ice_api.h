@@ -3,65 +3,51 @@
 
 #include "ice_data_types.h"
 
-IceResult_t Ice_CreateIceAgent( IceAgent_t * pIceAgent,
-                                char * pLocalUsername,
-                                char * pLocalPassword,
-                                char * pRemoteUsername,
-                                char * pRemotePassword,
-                                char * pCombinedUsername,
-                                TransactionIdStore_t * pBuffer,
-                                Ice_ComputeRandom computeRandomFunction,
-                                Ice_ComputeCrc32 computeCrc32Function,
-                                Ice_ComputeHMAC computeHMACFunction );
+IceResult_t Ice_Init( IceContext_t * pContext,
+                      IceInitInfo_t * pInitInfo );
 
-IceResult_t Ice_AddHostCandidate( IceAgent_t * pIceAgent,
-                                  const IceIPAddress_t ipAddr,
-                                  IceCandidate_t ** ppCandidate );
+IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
+                                  IceEndpoint_t * pEndpoint );
 
-IceResult_t Ice_AddSrflxCandidate( IceAgent_t * pIceAgent,
-                                   const IceIPAddress_t ipAddr,
-                                   IceCandidate_t ** ppCandidate,
-                                   uint8_t * pTransactionIdBuffer,
-                                   uint8_t ** ppSendStunMessageBuffer,
-                                   uint32_t * pSendStunMessageBufferLength );
+IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
+                                             IceEndpoint_t * pEndpoint,
+                                             uint8_t * pStunMessageBuffer,
+                                             size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_AddRemoteCandidate( IceAgent_t * pIceAgent,
-                                    IceCandidateType_t iceCandidateType,
-                                    IceCandidate_t ** ppCandidate,
-                                    const IceIPAddress_t ipAddr,
-                                    IceSocketProtocol_t remoteProtocol,
-                                    const uint32_t priority );
+IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
+                                    IceRemoteCandidateInfo_t * pRemoteCandidateInfo );
 
-IceResult_t Ice_CreateRequestForNominatingValidCandidatePair( IceAgent_t * pIceAgent,
-                                                              uint8_t ** ppSendStunMessageBuffer,
-                                                              uint32_t * pSendStunMessageBufferLength,
-                                                              IceCandidatePair_t * pIceCandidatePair,
-                                                              uint8_t * pTransactionIdBuffer );
+IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
+                                                   IceCandidatePair_t * pIceCandidatePair,
+                                                   uint8_t * pStunMessageBuffer,
+                                                   size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_CreateRequestForConnectivityCheck( IceAgent_t * pIceAgent,
-                                                   uint8_t ** ppSendStunMessageBuffer,
-                                                   uint32_t * pSendStunMessageBufferLength,
-                                                   uint8_t * pTransactionIdBuffer,
-                                                   IceCandidatePair_t * pIceCandidatePair );
+IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext,
+                                                         IceCandidatePair_t * pIceCandidatePair,
+                                                         uint8_t * pStunMessageBuffer,
+                                                         size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_CreateResponseForRequest( IceAgent_t * pIceAgent,
-                                          uint8_t ** ppSendStunMessageBuffer,
-                                          uint32_t * pSendStunMessageBufferLength,
+IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                           IceCandidatePair_t * pIceCandidatePair,
-                                          uint8_t * pTransactionIdBuffer );
+                                          uint8_t * pTransactionId,
+                                          uint8_t * pStunMessageBuffer,
+                                          size_t * pStunMessageBufferLength );
 
-IceStunPacketHandleResult_t Ice_HandleStunPacket( IceAgent_t * pIceAgent,
-                                                  uint8_t * pReceivedStunMessageBuffer,
-                                                  uint32_t receivedStunMessageBufferLength,
-                                                  uint8_t ** ppSendTransactionIdBuffer,
-                                                  IceIPAddress_t * pLocalCandidateAddress,
-                                                  IceIPAddress_t * pRemoteCandidateAddress,
+IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
+                                                  uint8_t * pReceivedStunMessage,
+                                                  size_t receivedStunMessageLength,
+                                                  IceEndpoint_t * pLocalCandidateEndpoint,
+                                                  IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                  uint8_t ** ppTransactionId,
                                                   IceCandidatePair_t ** ppIceCandidatePair );
 
-int Ice_GetValidCandidatePairCount( IceAgent_t * pIceAgent );
+IceResult_t Ice_GetLocalCandidateCount( IceContext_t * pContext,
+                                        size_t * pNumLocalCandidates );
 
-int Ice_GetValidRemoteCandidateCount( IceAgent_t * pIceAgent );
+IceResult_t Ice_GetRemoteCandidateCount( IceContext_t * pContext,
+                                         size_t * pNumRemoteCandidates );
 
-int Ice_GetValidLocalCandidateCount( IceAgent_t * pIceAgent );
+IceResult_t Ice_GetCandidatePairCount( IceContext_t * pContext,
+                                       size_t * pNumCandidatePairs );
 
 #endif /* ICE_API_H */
