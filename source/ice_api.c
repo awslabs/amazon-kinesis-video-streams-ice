@@ -653,7 +653,7 @@ IceResult_t Ice_GetCandidatePairCount( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        *pNumCandidatePairs = pContext->numRemoteCandidates;
+        *pNumCandidatePairs = pContext->numCandidatePairs;
     }
 
     return result;

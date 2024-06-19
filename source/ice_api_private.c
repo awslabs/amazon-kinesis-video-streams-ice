@@ -290,7 +290,7 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
         ( stunResult == STUN_RESULT_OK ) )
     {
         stunResult = StunSerializer_Finalize( pStunCtx,
-                                              pStunMessageBufferLength );
+                                              ( uint32_t * ) pStunMessageBufferLength );
     }
 
     if( stunResult != STUN_RESULT_OK )
