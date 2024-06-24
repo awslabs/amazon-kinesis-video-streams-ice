@@ -29,7 +29,7 @@ uint8_t Ice_IsSameTransportAddress( IceTransportAddress_t * pTransportAddress1,
     uint8_t isSameAddress = 0;
     size_t ipAddressLength = 0;
 
-    if( ( pTransportAddress1 != NULL ) && ( pTransportAddress1 != NULL ) )
+    if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
                                                                             STUN_IPV6_ADDRESS_SIZE;
@@ -103,7 +103,7 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
                                                                   pRemoteCandidate->priority,
                                                                   pContext->isControlling );
 
-        /* ICE Candidate paris are sorted by priority. Find the correct location
+        /* ICE Candidate pairs are sorted by priority. Find the correct location
          * of the new candidate pair in the candidate pair array. */
         for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
@@ -130,6 +130,7 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         memset( &( pContext->pCandidatePairs[ candidatePairIndex ].transactionId[ 0 ] ),
                 0,
                 STUN_HEADER_TRANSACTION_ID_LENGTH );
+        pContext->numCandidatePairs += 1;
     }
 
     return result;
