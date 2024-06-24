@@ -238,15 +238,15 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
         memcpy( &( pRemoteCandidate->endpoint ),
                 pRemoteCandidateInfo->pEndpoint,
                 sizeof( IceEndpoint_t ) );
-        
+
         /* Create candidate pairs with all the existing local candidates. */
         for( i = 0; ( i < pContext->numLocalCandidates ) && ( result == ICE_RESULT_OK ); i++ )
         {
-            if( pContext->pLocalCandidates[ i ].state == ICE_CANDIDATE_PAIR_STATE_VALID )
+            if( pContext->pLocalCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
             {
                 result = Ice_AddCandidatePair( pContext,
-                                            &( pContext->pLocalCandidates[ i ] ),
-                                            pRemoteCandidate );
+                                               &( pContext->pLocalCandidates[ i ] ),
+                                               pRemoteCandidate );
             }
         }
     }
