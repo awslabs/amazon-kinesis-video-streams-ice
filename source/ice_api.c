@@ -227,26 +227,42 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        pRemoteCandidate = &( pContext->pRemoteCandidates[ pContext->numRemoteCandidates ] );
-        pContext->numRemoteCandidates += 1;
-
-        pRemoteCandidate->candidateType = pRemoteCandidateInfo->candidateType;
-        pRemoteCandidate->isRemote = 1;
-        pRemoteCandidate->priority = pRemoteCandidateInfo->priority;
-        pRemoteCandidate->remoteProtocol = pRemoteCandidateInfo->remoteProtocol;
-        pRemoteCandidate->state = ICE_CANDIDATE_STATE_VALID;
-        memcpy( &( pRemoteCandidate->endpoint ),
-                pRemoteCandidateInfo->pEndpoint,
-                sizeof( IceEndpoint_t ) );
-
-        /* Create candidate pairs with all the existing local candidates. */
-        for( i = 0; ( i < pContext->numLocalCandidates ) && ( result == ICE_RESULT_OK ); i++ )
+        /* Do we already have a remote candidate with the same transport (IP
+         * and port) address? */
+        for( i = 0; i < pContext->numRemoteCandidates; i++ )
         {
-            if( pContext->pLocalCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
+            if( Ice_IsSameTransportAddress( &( pContext->pRemoteCandidates[ i ].endpoint.transportAddress ),
+                                            &( pRemoteCandidateInfo->pEndpoint->transportAddress ) ) == 1 )
             {
-                result = Ice_AddCandidatePair( pContext,
-                                               &( pContext->pLocalCandidates[ i ] ),
-                                               pRemoteCandidate );
+                break;
+            }
+        }
+
+        /* Only add a remote candidate if we do not have a remote candidate with
+         * the same transport (IP and port) address already. */
+        if( i == pContext->numRemoteCandidates )
+        {
+            pRemoteCandidate = &( pContext->pRemoteCandidates[ pContext->numRemoteCandidates ] );
+            pContext->numRemoteCandidates += 1;
+
+            pRemoteCandidate->candidateType = pRemoteCandidateInfo->candidateType;
+            pRemoteCandidate->isRemote = 1;
+            pRemoteCandidate->priority = pRemoteCandidateInfo->priority;
+            pRemoteCandidate->remoteProtocol = pRemoteCandidateInfo->remoteProtocol;
+            pRemoteCandidate->state = ICE_CANDIDATE_STATE_VALID;
+            memcpy( &( pRemoteCandidate->endpoint ),
+                    pRemoteCandidateInfo->pEndpoint,
+                    sizeof( IceEndpoint_t ) );
+
+            /* Create candidate pairs with all the existing local candidates. */
+            for( i = 0; ( i < pContext->numLocalCandidates ) && ( result == ICE_RESULT_OK ); i++ )
+            {
+                if( pContext->pLocalCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
+                {
+                    result = Ice_AddCandidatePair( pContext,
+                                                   &( pContext->pLocalCandidates[ i ] ),
+                                                   pRemoteCandidate );
+                }
             }
         }
     }
