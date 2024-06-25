@@ -55,7 +55,7 @@ uint8_t Ice_IsSameIpAddress( IceTransportAddress_t * pTransportAddress1,
     uint8_t isSameIpAddress = 0;
     size_t ipAddressLength = 0;
 
-    if( ( pTransportAddress1 != NULL ) && ( pTransportAddress1 != NULL ) )
+    if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
                                                                             STUN_IPV6_ADDRESS_SIZE;
