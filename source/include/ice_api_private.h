@@ -10,11 +10,11 @@
  * for use by the library only. We do not do parameter checking in these APIs
  * as those are done in public APIs
  */
-uint8_t Ice_IsSameTransportAddress( IceTransportAddress_t * pTransportAddress1,
-                                    IceTransportAddress_t * pTransportAddress2 );
+uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddress1,
+                                    const IceTransportAddress_t * pTransportAddress2 );
 
-uint8_t Ice_IsSameIpAddress( IceTransportAddress_t * pTransportAddress1,
-                             IceTransportAddress_t * pTransportAddress2 );
+uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
+                             const IceTransportAddress_t * pTransportAddress2 );
 
 IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
                                   IceCandidate_t * pLocalCandidate,
@@ -41,19 +41,19 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
 
 IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContext,
                                                           StunContext_t * pStunCtx,
-                                                          IceEndpoint_t * pLocalCandidateEndpoint,
-                                                          IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                          const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                          const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                           IceCandidatePair_t ** ppIceCandidatePair );
 
 IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pContext,
                                                                StunContext_t * pStunCtx,
-                                                               IceEndpoint_t * pLocalCandidateEndpoint );
+                                                               const IceEndpoint_t * pLocalCandidateEndpoint );
 
 IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * pContext,
                                                                  StunContext_t * pStunCtx,
-                                                                 StunHeader_t * pStunHeader,
-                                                                 IceEndpoint_t * pLocalCandidateEndpoint,
-                                                                 IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                                 const StunHeader_t * pStunHeader,
+                                                                 const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                 const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair );
 
 /*----------------------------------------------------------------------------*/

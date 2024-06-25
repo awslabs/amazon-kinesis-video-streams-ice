@@ -204,7 +204,7 @@ typedef struct IceRemoteCandidateInfo
     IceCandidateType_t candidateType;
     IceSocketProtocol_t remoteProtocol;
     uint32_t priority;
-    IceEndpoint_t * pEndpoint;
+    const IceEndpoint_t * pEndpoint;
 } IceRemoteCandidateInfo_t;
 
 typedef struct IceStunDeserializedPacketInfo

@@ -15,7 +15,7 @@
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_Init( IceContext_t * pContext,
-                      IceInitInfo_t * pInitInfo )
+                      const IceInitInfo_t * pInitInfo )
 {
     IceResult_t result = ICE_RESULT_OK;
 
@@ -73,7 +73,7 @@ IceResult_t Ice_Init( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
-                                  IceEndpoint_t * pEndpoint )
+                                  const IceEndpoint_t * pEndpoint )
 {
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pHostCandidate = NULL;
@@ -114,7 +114,7 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
-                                             IceEndpoint_t * pEndpoint,
+                                             const IceEndpoint_t * pEndpoint,
                                              uint8_t * pStunMessageBuffer,
                                              size_t * pStunMessageBufferLength )
 {
@@ -205,7 +205,7 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
-                                    IceRemoteCandidateInfo_t * pRemoteCandidateInfo )
+                                    const IceRemoteCandidateInfo_t * pRemoteCandidateInfo )
 {
     size_t i;
     IceResult_t result = ICE_RESULT_OK;
@@ -432,7 +432,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
  * Stun Binding Request.
  */
 IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
-                                          IceCandidatePair_t * pIceCandidatePair,
+                                          const IceCandidatePair_t * pIceCandidatePair,
                                           uint8_t * pTransactionId,
                                           uint8_t * pStunMessageBuffer,
                                           size_t * pStunMessageBufferLength )
@@ -505,8 +505,8 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   uint8_t * pReceivedStunMessage,
                                                   size_t receivedStunMessageLength,
-                                                  IceEndpoint_t * pLocalCandidateEndpoint,
-                                                  IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                  const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                   uint8_t ** ppTransactionId,
                                                   IceCandidatePair_t ** ppIceCandidatePair )
 {
