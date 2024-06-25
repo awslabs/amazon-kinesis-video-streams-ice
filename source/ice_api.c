@@ -295,12 +295,6 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        result = pContext->cryptoFunctions.randomFxn( &( pIceCandidatePair->transactionId[ 0 ] ),
-                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
         stunHeader.messageType = STUN_MESSAGE_TYPE_BINDING_REQUEST;
         stunHeader.pTransactionId = &( pIceCandidatePair->transactionId[ 0 ] );
 
@@ -379,12 +373,6 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
         ( pStunMessageBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        result = pContext->cryptoFunctions.randomFxn( &( pIceCandidatePair->transactionId[ 0 ] ),
-                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
     }
 
     if( result == ICE_RESULT_OK )

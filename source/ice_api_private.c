@@ -81,6 +81,7 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
     IceResult_t result = ICE_RESULT_OK;
     uint64_t candidatePairPriority;
     size_t i, candidatePairIndex = pContext->numCandidatePairs;
+    uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
 
     if( ( pContext == NULL ) ||
         ( pLocalCandidate == NULL ) ||
@@ -95,6 +96,12 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         {
             result = ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD;
         }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        result = pContext->cryptoFunctions.randomFxn( &( transactionId[ 0 ] ),
+                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
     }
 
     if( result == ICE_RESULT_OK )
@@ -127,8 +134,8 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         pContext->pCandidatePairs[ candidatePairIndex ].priority = candidatePairPriority;
         pContext->pCandidatePairs[ candidatePairIndex ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
         pContext->pCandidatePairs[ candidatePairIndex ].connectivityCheckFlags = 0;
-        memset( &( pContext->pCandidatePairs[ candidatePairIndex ].transactionId[ 0 ] ),
-                0,
+        memcpy( &( pContext->pCandidatePairs[ candidatePairIndex ].transactionId[ 0 ] ),
+                &( transactionId[ 0 ] ),
                 STUN_HEADER_TRANSACTION_ID_LENGTH );
         pContext->numCandidatePairs += 1;
     }
