@@ -34,21 +34,21 @@ following steps:
     ICE agent pairs each local candidate with each remote candidate and creates a candidate pair list. It then performs a connectivity check on each ICE candidate pair. Connectivity check on a candidate pair involves the exchange of the following STUN messages:
 
 ```
-                                    +-----------------+                                +------------------+    
-                                    |                 |                                |                  |    
-                                    | Local Candidate |                                | Remote Candidate |    
-                                    |                 |                                |                  |    
-                                    +-----------------+                                +------------------+    
-                                            |                                                   |
-                                            |                                                   |
-                                            |-------------------------------------------------->|
-                                            |                   STUN Request                    |
-                                            |<--------------------------------------------------|
-                                            |                   STUN Response                   |
-                                            |<--------------------------------------------------|
-                                            |                   STUN Request                    |
-                                            |-------------------------------------------------->|
-                                            |                   STUN Response                   |
+        +-----------------+                                +------------------+    
+        |                 |                                |                  |    
+        | Local Candidate |                                | Remote Candidate |    
+        |                 |                                |                  |    
+        +-----------------+                                +------------------+    
+                |                                                   |
+                |                                                   |
+                |-------------------------------------------------->|
+                |                   STUN Request                    |
+                |<--------------------------------------------------|
+                |                   STUN Response                   |
+                |<--------------------------------------------------|
+                |                   STUN Request                    |
+                |-------------------------------------------------->|
+                |                   STUN Response                   |
 ```
 The candidate pairs for which the connectivity check succeeds, are promoted to valid candidate pairs.
 
@@ -59,17 +59,17 @@ The candidate pairs for which the connectivity check succeeds, are promoted to v
 and if the connectivity check succeeds, the nominated candidate pair becomes selected candidate pair. This candidate pair is then used for data transfer for the rest of the session.
 
 ```
-                                    +-----------------+                                +------------------+    
-                                    |                 |                                |                  |    
-                                    | Local Candidate |                                | Remote Candidate |    
-                                    |                 |                                |                  |    
-                                    +-----------------+                                +------------------+    
-                                            |                                                   |
-                                            |                                                   |
-                                            |-------------------------------------------------->|
-                                            |          STUN Request with Attribute              |
-                                            |<--------------------------------------------------|
-                                            |                   STUN Response                   |
+        +-----------------+                                +------------------+    
+        |                 |                                |                  |    
+        | Local Candidate |                                | Remote Candidate |    
+        |                 |                                |                  |    
+        +-----------------+                                +------------------+    
+                |                                                   |
+                |                                                   |
+                |-------------------------------------------------->|
+                |          STUN Request with Attribute              |
+                |<--------------------------------------------------|
+                |                   STUN Response                   |
 
 ```
 
