@@ -500,7 +500,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-/* Ice_HandleStunPacket - This API handles the processing of Stun Response.
+/* Ice_HandleStunPacket - This API handles the processing of Stun Packet.
  */
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   uint8_t * pReceivedStunMessage,
