@@ -114,7 +114,7 @@ typedef IceResult_t ( * IceHmac_t ) ( const uint8_t * pPassword,
                                       const uint8_t * pBuffer,
                                       size_t bufferLength,
                                       uint8_t * pOutputBuffer,
-                                      size_t * pOutputBufferLength );
+                                      uint16_t * pOutputBufferLength );
 
 /*----------------------------------------------------------------------------*/
 
