@@ -1,0 +1,4 @@
+[submodule "source/dependency/amazon-kinesis-video-streams-stun"]
+	path = source/dependency/amazon-kinesis-video-streams-stun
+	url = https://github.com/awslabs/amazon-kinesis-video-streams-stun
+	update = none
