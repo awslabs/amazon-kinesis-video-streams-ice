@@ -1,5 +1,6 @@
 # Include filepaths for source and include.
 include( ${MODULE_ROOT_DIR}/iceFilePaths.cmake )
+include( ${MODULE_ROOT_DIR}/source/dependency/amazon-kinesis-video-streams-stun/stunFilePaths.cmake )
 
 # ====================  Define your project name (edit) ========================
 set( project_name "ice_api" )
@@ -30,12 +31,14 @@ list(APPEND real_source_files
             ${MODULE_ROOT_DIR}/source/ice_api_private.c
             ${MODULE_ROOT_DIR}/source/ice_api.c
             ${MODULE_ROOT_DIR}/source/transaction_id_store.c
+            ${STUN_SOURCES}
         )
 # List the directories the module under test includes.
 list(APPEND real_include_directories
             ${ICE_INCLUDE_PUBLIC_DIRS}
             ${MODULE_ROOT_DIR}/test/unit-test
             ${CMOCK_DIR}/vendor/unity/src
+            ${STUN_INCLUDE_PUBLIC_DIRS}
         )
 
 # =====================  Create UnitTest Code here (edit)  =====================

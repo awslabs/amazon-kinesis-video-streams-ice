@@ -5,3 +5,4 @@
 [submodule "test/CMock"]
 	path = test/CMock
 	url = https://github.com/ThrowTheSwitch/CMock.git
+	update = none

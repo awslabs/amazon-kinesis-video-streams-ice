@@ -17,8 +17,8 @@ execute_process( COMMAND lcov --directory ${CMAKE_BINARY_DIR}
                          --capture
                          --rc lcov_branch_coverage=1
                          --output-file=${CMAKE_BINARY_DIR}/base_coverage.info
-                         --include "source/*.c"
-                         --exclude "source/dependency/amazon-kinesis-video-streams-stun/source/*.c"
+                         --include "*source*"
+                         --exclude "*source/dependency*"
         )
 file(GLOB files "${CMAKE_BINARY_DIR}/bin/tests/*")
 
@@ -52,8 +52,8 @@ execute_process(
                          --base-directory ${CMAKE_BINARY_DIR}
                          --directory ${CMAKE_BINARY_DIR}
                          --output-file ${CMAKE_BINARY_DIR}/second_coverage.info
-                         --include "source/*.c"
-                         --exclude "source/dependency/amazon-kinesis-video-streams-stun/source/*.c"
+                         --include "*source*"
+                         --exclude "*source/dependency*"
         )
 
 # Combile baseline results (zeros) with the one after running the tests.
@@ -64,8 +64,8 @@ execute_process(
                          --add-tracefile ${CMAKE_BINARY_DIR}/second_coverage.info
                          --output-file ${CMAKE_BINARY_DIR}/coverage.info
                          --rc lcov_branch_coverage=1
-                         --include "source/*.c"
-                         --exclude "source/dependency/amazon-kinesis-video-streams-stun/source/*.c"
+                         --include "*source*"
+                         --exclude "*source/dependency*"
         )
 execute_process(
             COMMAND genhtml --rc lcov_branch_coverage=1

@@ -1,7 +1,7 @@
 # Function to create the test executable.
 function(create_test test_name
                      test_src
-                     link_list 
+                     link_list
                      dep_list
                      include_list)
     set(mocks_dir "${CMAKE_CURRENT_BINARY_DIR}/mocks")
