@@ -112,6 +112,46 @@ the rest of the session.
     candidate pair.
     - Call `Ice_CreateResponseForRequest()` to create STUN message for response
     to a STUN Binding Request.
+    
+## Building Unit Tests
+
+### Platform Prerequisites
+
+- For running unit tests:
+    - C99 compiler like gcc.
+    - CMake 3.13.0 or later.
+    - Ruby 2.0.0 or later (It is required for the CMock test framework that we
+      use).
+- For running the coverage target, gcov and lcov are required.
+
+
+### Steps to Build Unit Tests
+
+1. The following command in STEP 2 also ensures that the Submodules ( CMock and KVS Stun ) are added.
+2. Run the following command to generate Makefiles:
+
+    ```sh
+    cmake -S test/unit-test -B build/ -G "Unix Makefiles" \
+     -DCMAKE_BUILD_TYPE=Debug \
+     -DBUILD_CLONE_SUBMODULES=ON \
+     -DCMAKE_C_FLAGS='--coverage -Wall -Wextra -Werror -DNDEBUG'
+    ```
+
+### Steps to Generate Code Coverage Report and Run Unit Tests
+
+1. Run Unit Tests in [Steps to Build Unit Tests](#steps-to-build-unit-tests).
+2. Generate coverage report in the `build/coverage` folder:
+
+    ```
+    cd build && make coverage
+    ```
+
+### Script to Run Unit Test and Generate Code Coverage Report
+
+```sh
+cmake -S test/unit-test -B build/ -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DBUILD_CLONE_SUBMODULES=ON -DCMAKE_C_FLAGS='--coverage -Wall -Wextra -Werror -DNDEBUG -DLIBRARY_LOG_LEVEL=LOG_DEBUG'
+cd build && make coverage
+```
 
 ## Security
 

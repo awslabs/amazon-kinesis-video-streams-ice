@@ -10,11 +10,11 @@ set( ICE_SOURCES
      "${CMAKE_CURRENT_LIST_DIR}/source/ice_api.c"
      "${CMAKE_CURRENT_LIST_DIR}/source/ice_api_private.c"
      "${CMAKE_CURRENT_LIST_DIR}/source/transaction_id_store.c"
-     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/source/stun_deserializer.c"
-     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/source/stun_serializer.c"
-     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/source/stun_endidanness.c" )
+     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/amazon-kinesis-video-streams-stun/source/stun_deserializer.c"
+     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/amazon-kinesis-video-streams-stun/source/stun_serializer.c"
+     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/amazon-kinesis-video-streams-stun/source/stun_endianness.c" )
 
 # Ice library Public Include directories.
 set( ICE_INCLUDE_PUBLIC_DIRS
      "${CMAKE_CURRENT_LIST_DIR}/source/include"
-     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/source/include" )
+     "${CMAKE_CURRENT_LIST_DIR}/source/dependency/amazon-kinesis-video-streams-stun/source/include" )

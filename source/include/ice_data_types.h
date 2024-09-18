@@ -155,15 +155,15 @@ typedef struct IceCryptoFunctions
 
 typedef struct IceCredentials
 {
-    const char * pLocalUsername;
+    const uint8_t * pLocalUsername;
     size_t localUsernameLength;
-    const char * pLocalPassword;
+    const uint8_t * pLocalPassword;
     size_t localPasswordLength;
-    const char * pRemoteUsername;
+    const uint8_t * pRemoteUsername;
     size_t remoteUsernameLength;
-    const char * pRemotePassword;
+    const uint8_t * pRemotePassword;
     size_t remotePasswordLength;
-    const char * pCombinedUsername;
+    const uint8_t * pCombinedUsername;
     size_t combinedUsernameLength;
 } IceCredentials_t;
 

@@ -512,7 +512,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     TransactionIdStoreResult_t transactionIdStoreResult;
-    StunResult_t stunResult;
+    StunResult_t stunResult = STUN_RESULT_BASE;
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
 
