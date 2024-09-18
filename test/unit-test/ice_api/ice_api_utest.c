@@ -7,7 +7,6 @@
 #include <time.h>
 #include <string.h>
 
-
 /* API includes. */
 #include "ice_api.h"
 
@@ -16,40 +15,52 @@
 IceResult_t testRandomFxn( uint8_t * pDest,
                            size_t length )
 {
-    // Fill the buffer with a repeating pattern
-    for(size_t i = 0; i < length; i++)
+    size_t i;
+
+    /* Fill the buffer with a repeating pattern. */
+    for( i = 0; i < length; i++ )
     {
-        pDest[i] = ( uint8_t )( i % 256 );
+        pDest[ i ] = ( uint8_t ) ( i % 256 );
     }
+
     return ICE_RESULT_OK;
 }
+
+/*-----------------------------------------------------------*/
 
 IceResult_t testCrc32Fxn( uint32_t initialResult,
                           const uint8_t * pBuffer,
                           size_t bufferLength,
                           uint32_t * pCalculatedCrc32 )
 {
-    // Initialize the CRC32 value
+    size_t i, j;
     uint32_t crc32 = initialResult;
 
-    // Calculate the CRC32 using a simple algorithm
-    for(size_t i = 0; i < bufferLength; i++)
+    /* Calculate the CRC32 using a simple algorithm. */
+    for( i = 0; i < bufferLength; i++ )
     {
-        crc32 ^= pBuffer[i];
-        for(int j = 0; j < 8; j++)
+        crc32 ^= pBuffer[ i ];
+
+        for( j = 0; j < 8; j++ )
         {
-            if( crc32 & 1 )
+            if( ( crc32 & 1 ) != 0 )
+            {
                 crc32 = ( crc32 >> 1 ) ^ 0xEDB88320;
+            }
             else
+            {
                 crc32 = ( crc32 >> 1 );
+            }
         }
     }
 
-    // Store the calculated CRC32 value
+    /* Store the calculated CRC32 value. */
     *pCalculatedCrc32 = crc32;
 
     return ICE_RESULT_OK;
 }
+
+/*-----------------------------------------------------------*/
 
 IceResult_t testHmacFxn( const uint8_t * pPassword,
                          size_t passwordLength,
@@ -58,26 +69,30 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
                          uint8_t * pOutputBuffer,
                          uint16_t * pOutputBufferLength )
 {
-    // Assume a fixed HMAC output length of 32 bytes (256-bit)
+    /* Assume a fixed HMAC output length of 32 bytes (256-bit). */
     const uint16_t hmacLength = 32;
+    uint16_t i;
+    IceResult_t result = ICE_RESULT_OK;
 
-    // Check if the output buffer is large enough
     if( *pOutputBufferLength < hmacLength )
     {
-        return ICE_RESULT_BAD_PARAM;
+        result = ICE_RESULT_BAD_PARAM;
     }
 
-    // Calculate the HMAC using a simple algorithm
-    for(uint16_t i = 0; i < hmacLength; i++)
+    if( result == ICE_RESULT_OK )
     {
-        // Perform a simple XOR operation with the password and input buffer
-        pOutputBuffer[i] = pPassword[i % passwordLength] ^ pBuffer[i % bufferLength];
+        /* Calculate the HMAC using a simple algorithm. */
+        for( i = 0; i < hmacLength; i++ )
+        {
+            pOutputBuffer[ i ] = pPassword[ i % passwordLength ] ^
+                                 pBuffer[ i % bufferLength ];
+        }
+
+        /* Update the output buffer length. */
+        *pOutputBufferLength = hmacLength;
     }
 
-    // Update the output buffer length
-    *pOutputBufferLength = hmacLength;
-
-    return ICE_RESULT_OK;
+    return result;
 }
 
 /* ==============================  Test Cases  ============================== */
@@ -91,11 +106,11 @@ void test_iceInit_BadParams( void )
     IceContext_t context = { 0 };
     IceInitInfo_t initInfo = { 0 };
     IceResult_t result;
-    IceCandidate_t localCandidateArray[ 0 ];
-    IceCandidatePair_t candidatePairArray[ 0 ];
-    TransactionIdStore_t transactionIdStore[ 0 ];
-    uint8_t buffer[ 10 ];
-
+    IceCandidate_t localCandidateArray[ 1 ];
+    IceCandidatePair_t candidatePairArray[ 1 ];
+    TransactionIdStore_t transactionIdStore[ 1 ];
+    uint8_t localUsername[ 10 ], localPassword[ 10 ];
+    uint8_t remoteUsername[ 10 ], remotePassword[ 10 ];
 
     result = Ice_Init( NULL,
                        &( initInfo ));
@@ -116,7 +131,6 @@ void test_iceInit_BadParams( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
-
 
     initInfo.pLocalCandidatesArray = &( localCandidateArray[ 0 ] );
     initInfo.pRemoteCandidatesArray = NULL;
@@ -181,7 +195,7 @@ void test_iceInit_BadParams( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    initInfo.creds.pLocalUsername = &( buffer[ 0 ] );
+    initInfo.creds.pLocalUsername = &( localUsername[ 0 ] );
     initInfo.creds.pLocalPassword = NULL;
 
     result = Ice_Init( &( context ),
@@ -190,7 +204,7 @@ void test_iceInit_BadParams( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    initInfo.creds.pLocalPassword = &( buffer[ 0 ] );
+    initInfo.creds.pLocalPassword = &( localPassword[ 0 ] );
     initInfo.creds.pRemoteUsername = NULL;
 
     result = Ice_Init( &( context ),
@@ -199,7 +213,7 @@ void test_iceInit_BadParams( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    initInfo.creds.pRemoteUsername = &( buffer[ 0 ] );
+    initInfo.creds.pRemoteUsername = &( remoteUsername[ 0 ] );
     initInfo.creds.pRemotePassword = NULL;
 
     result = Ice_Init( &( context ),
@@ -208,7 +222,7 @@ void test_iceInit_BadParams( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    initInfo.creds.pRemotePassword = &( buffer[ 0 ] );
+    initInfo.creds.pRemotePassword = &( remotePassword[ 0 ] );
     initInfo.creds.pCombinedUsername = NULL;
 
     result = Ice_Init( &( context ),
@@ -232,32 +246,90 @@ void test_iceInit( void )
     IceCandidatePair_t candidatePairArray[ 100 ];
     TransactionIdStore_t transactionIdStore[ 16 ];
 
+    initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
+    initInfo.creds.localUsernameLength = strlen( "localUsername" );
+    initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
+    initInfo.creds.localPasswordLength = strlen( "localPassword" );
+    initInfo.creds.pRemoteUsername = ( uint8_t * )  "remoteUsername";
+    initInfo.creds.remoteUsernameLength = strlen( "remoteUsername" );
+    initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
+    initInfo.creds.remotePasswordLength = strlen( "remotePassword" );
+    initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
+    initInfo.creds.combinedUsernameLength = strlen( "combinedUsername" );
+
     initInfo.pLocalCandidatesArray = &( localCandidateArray[ 0 ] );
+    initInfo.localCandidatesArrayLength = 10;
     initInfo.pRemoteCandidatesArray = &( remoteCandidateArray[ 0 ] );
+    initInfo.remoteCandidatesArrayLength = 10;
     initInfo.pCandidatePairsArray = &( candidatePairArray[ 0 ] );
+    initInfo.candidatePairsArrayLength = 100;
+
+    initInfo.isControlling = 1;
     initInfo.pStunBindingRequestTransactionIdStore = &( transactionIdStore[ 0 ] );
     initInfo.cryptoFunctions.randomFxn = testRandomFxn;
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
-    initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
-    initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
-    initInfo.creds.pRemoteUsername = ( uint8_t * )  "remoteUsername";
-    initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
-    initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
-    initInfo.isControlling = 1;
 
     result = Ice_Init( &( context ),
                        &( initInfo ));
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    TEST_ASSERT_EQUAL( localCandidateArray,
+
+    TEST_ASSERT_EQUAL( initInfo.creds.localUsernameLength,
+                       context.creds.localUsernameLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( initInfo.creds.pLocalUsername,
+                                   context.creds.pLocalUsername,
+                                   initInfo.creds.localUsernameLength );
+
+    TEST_ASSERT_EQUAL( initInfo.creds.localPasswordLength,
+                       context.creds.localPasswordLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( initInfo.creds.pLocalPassword,
+                                   context.creds.pLocalPassword,
+                                   initInfo.creds.localPasswordLength );
+
+    TEST_ASSERT_EQUAL( initInfo.creds.remoteUsernameLength,
+                       context.creds.remoteUsernameLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( initInfo.creds.pRemoteUsername,
+                                   context.creds.pRemoteUsername,
+                                   initInfo.creds.remoteUsernameLength );
+
+    TEST_ASSERT_EQUAL( initInfo.creds.remotePasswordLength,
+                       context.creds.remotePasswordLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( initInfo.creds.pRemotePassword,
+                                   context.creds.pRemotePassword,
+                                   initInfo.creds.remotePasswordLength );
+
+    TEST_ASSERT_EQUAL( initInfo.creds.combinedUsernameLength,
+                       context.creds.combinedUsernameLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( initInfo.creds.pCombinedUsername,
+                                   context.creds.pCombinedUsername,
+                                   initInfo.creds.combinedUsernameLength );
+
+    TEST_ASSERT_EQUAL( &( localCandidateArray[ 0 ] ),
                        context.pLocalCandidates );
-    TEST_ASSERT_EQUAL( remoteCandidateArray,
+    TEST_ASSERT_EQUAL( 10,
+                       context.maxLocalCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numLocalCandidates );
+
+    TEST_ASSERT_EQUAL( &( remoteCandidateArray[ 0 ] ),
                        context.pRemoteCandidates );
-    TEST_ASSERT_EQUAL( candidatePairArray,
+    TEST_ASSERT_EQUAL( 10,
+                       context.maxRemoteCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numRemoteCandidates );
+
+    TEST_ASSERT_EQUAL( &( candidatePairArray[ 0 ] ),
                        context.pCandidatePairs );
-    TEST_ASSERT_EQUAL( transactionIdStore,
+    TEST_ASSERT_EQUAL( 100,
+                       context.maxCandidatePairs );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numCandidatePairs );
+
+    TEST_ASSERT_EQUAL( 1,
+                       context.isControlling );
+    TEST_ASSERT_EQUAL( &( transactionIdStore[ 0 ] ),
                        context.pStunBindingRequestTransactionIdStore );
     TEST_ASSERT_EQUAL( testRandomFxn,
                        context.cryptoFunctions.randomFxn );
@@ -279,7 +351,7 @@ void test_iceAddHostCandidate_BadParams( void )
     IceResult_t result;
 
     result = Ice_AddHostCandidate( NULL,
-                                   &( endPoint ));
+                                   &( endPoint ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -306,7 +378,7 @@ void test_iceAddHostCandidate_MaxCandidateThreshold( void )
     context.maxLocalCandidates = 1000;
 
     result = Ice_AddHostCandidate( &( context ),
-                                   &( endPoint ));
+                                   &( endPoint ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
                        result );
@@ -320,7 +392,7 @@ void test_iceAddHostCandidate_MaxCandidateThreshold( void )
 void test_iceAddHostCandidate( void )
 {
     IceContext_t context = { 0 };
-    IceCandidate_t localCandidates[5];
+    IceCandidate_t localCandidates[ 5 ];
     IceEndpoint_t endPoint = { 0 };
     IceResult_t result;
 
@@ -329,31 +401,38 @@ void test_iceAddHostCandidate( void )
     context.numLocalCandidates = 0;
 
     endPoint.isPointToPoint = 1;
-    const uint8_t * ipAddress = ( uint8_t * ) "192.168.1.100";
     endPoint.transportAddress.family = 0;
-    memcpy( endPoint.transportAddress.address,
-            ipAddress,
-            16 );
-    // endPoint.transportAddress.address = inet_addr(ipAddress);
     endPoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endPoint.transportAddress.address[ 0 ] ),
+            ( const void * ) "192.168.1.100",
+            strlen( "192.168.1.100" ) );
 
     result = Ice_AddHostCandidate( &( context ),
-                                   &( endPoint ));
+                                   &( endPoint ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( 1,
                        context.numLocalCandidates );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
-                       context.pLocalCandidates[0].candidateType );
+                       context.pLocalCandidates[ 0 ].candidateType );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].isRemote );
+                       context.pLocalCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pLocalCandidates[ 0 ].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( 8080,
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( endPoint.transportAddress.address[ 0 ] ),
+                                   &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+                                   strlen( "192.168.1.100" ) );
     TEST_ASSERT_EQUAL( 2113929471,
-                       context.pLocalCandidates[0].priority );
+                       context.pLocalCandidates[ 0 ].priority );
     TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
-                       context.pLocalCandidates[0].remoteProtocol );
+                       context.pLocalCandidates[ 0 ].remoteProtocol );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
-                       context.pLocalCandidates[0].state );
+                       context.pLocalCandidates[ 0 ].state );
 }
 
 /*-----------------------------------------------------------*/
