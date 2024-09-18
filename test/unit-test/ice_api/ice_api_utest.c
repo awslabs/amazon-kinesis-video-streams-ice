@@ -7,10 +7,12 @@
 #include <time.h>
 #include <string.h>
 
+
 /* API includes. */
 #include "ice_api.h"
 
 /* ===========================  EXTERN VARIABLES  =========================== */
+
 IceResult_t testRandomFxn( uint8_t * pDest,
                            size_t length )
 {
@@ -78,7 +80,6 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
     return ICE_RESULT_OK;
 }
 
-
 /* ==============================  Test Cases  ============================== */
 
 /**
@@ -86,6 +87,7 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
  */
 void test_iceInit_BadParams( void )
 {
+
     IceContext_t context = { 0 };
     IceInitInfo_t initInfo = { 0 };
     IceResult_t result;
@@ -355,4 +357,3 @@ void test_iceAddHostCandidate( void )
 }
 
 /*-----------------------------------------------------------*/
-
