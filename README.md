@@ -124,36 +124,10 @@ the rest of the session.
       use).
 - For running the coverage target, gcov and lcov are required.
 
-### Checkout KVS Stun Submodule
 
-By default, the submodules in this repository are configured with `update=none`
-in [.gitmodules](./.gitmodules) to avoid increasing clone time and disk space
-usage of other repositories.
+### Steps to Build Unit Tests
 
-To build unit tests, the submodule dependency of Stun is required. Use the
-following command to clone the submodule:
-
-```sh
-git submodule update --checkout --init --recursive source/dependency/amazon-kinesis-video-streams-stun
-```
-
-### Checkout CMock Submodule
-
-By default, the submodules in this repository are configured with `update=none`
-in [.gitmodules](./.gitmodules) to avoid increasing clone time and disk space
-usage of other repositories.
-
-To build unit tests, the submodule dependency of CMock is required. Use the
-following command to clone the submodule:
-
-```sh
-git submodule update --checkout --init --recursive test/CMock
-```
-
-### Steps to Build and Run Unit Tests
-
-1. Go to the root directory of this repository. Make sure that the CMock
-   submodule is cloned as described in [Checkout CMock Submodule](#checkout-cmock-submodule).
+1. The following command in STEP 2 also ensures that the Submodules ( CMock and KVS Stun ) are added.
 2. Run the following command to generate Makefiles:
 
     ```sh
@@ -162,35 +136,21 @@ git submodule update --checkout --init --recursive test/CMock
      -DBUILD_CLONE_SUBMODULES=ON \
      -DCMAKE_C_FLAGS='--coverage -Wall -Wextra -Werror -DNDEBUG'
     ```
-3. Run the following command to build the library and unit tests:
 
-    ```sh
-    make -C build all
-    ```
-4. Run the following command to execute all tests and view results:
+### Steps to Generate Code Coverage Report and Run Unit Tests
 
-    ```sh
-    cd build && ctest -E system --output-on-failure
-    ```
-
-### Steps to Generate Code Coverage Report
-
-1. Run Unit Tests in [Steps to Build and Run Unit Tests](#steps-to-build-and-run-unit-tests).
+1. Run Unit Tests in [Steps to Build Unit Tests](#steps-to-build-unit-tests).
 2. Generate coverage report in the `build/coverage` folder:
 
     ```
-    make coverage
+    cd build && make coverage
     ```
 
 ### Script to Run Unit Test and Generate Code Coverage Report
 
 ```sh
-git submodule update --init --recursive --checkout test/CMock
 cmake -S test/unit-test -B build/ -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DBUILD_CLONE_SUBMODULES=ON -DCMAKE_C_FLAGS='--coverage -Wall -Wextra -Werror -DNDEBUG -DLIBRARY_LOG_LEVEL=LOG_DEBUG'
-make -C build all
-cd build
-ctest -E system --output-on-failure
-make coverage
+cd build && make coverage
 ```
 
 ## Security

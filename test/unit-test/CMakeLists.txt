@@ -56,11 +56,29 @@ target_compile_definitions( coverity_analysis PUBLIC NDEBUG=1 )
 target_include_directories( coverity_analysis PUBLIC ${ICE_INCLUDE_PUBLIC_DIRS} ${MODULE_ROOT_DIR}/test/unit-test )
 
 # ========================= Test Configuration ==============================
+
+# Define a Stun resource path.
+set( STUN_DIR ${MODULE_ROOT_DIR}/source/dependency/amazon-kinesis-video-streams-stun CACHE INTERNAL "Stun library source directory." )
+
 # Define a CMock resource path.
 set( CMOCK_DIR ${MODULE_ROOT_DIR}/test/CMock CACHE INTERNAL "CMock library source directory." )
 
 # Include CMock build configuration.
 include( cmock_build.cmake )
+
+# Macro utility to clone the Stun submodule.
+macro( clone_stun )
+        find_package( Git REQUIRED )
+        message( "Cloning submodule Stun." )
+        execute_process( COMMAND rm -rf ${STUN_DIR}
+                         COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive --checkout ${STUN_DIR}
+                        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                        RESULT_VARIABLE STUN_CLONE_RESULT )
+
+        if( NOT ${STUN_CLONE_RESULT} STREQUAL "0" )
+                message( FATAL_ERROR "Failed to clone Stun submodule." )
+        endif()
+endmacro()
 
 # Check if the CMock source directory exists, and if not present, clone the submodule
 # if BUILD_CLONE_SUBMODULES configuration is enabled.
@@ -70,6 +88,17 @@ if( NOT EXISTS ${CMOCK_DIR}/source )
         clone_cmock()
     else()
         message( FATAL_ERROR "The required submodule CMock does not exist. Either clone it manually, or set BUILD_CLONE_SUBMODULES to 'ON' to automatically clone it during build." )
+    endif()
+endif()
+
+# Check if the Stun source directory exists, and if not present, clone the submodule
+# if BUILD_CLONE_SUBMODULES configuration is enabled.
+if( NOT EXISTS ${STUN_DIR}/source )
+    # Attempt to clone Stun.
+    if( ${BUILD_CLONE_SUBMODULES} )
+        clone_stun()
+    else()
+        message( FATAL_ERROR "The required submodule Stun does not exist. Either clone it manually, or set BUILD_CLONE_SUBMODULES to 'ON' to automatically clone it during build." )
     endif()
 endif()
 
