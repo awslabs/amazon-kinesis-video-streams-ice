@@ -10,7 +10,26 @@
 /* API includes. */
 #include "ice_api.h"
 
-/* ===========================  EXTERN VARIABLES  =========================== */
+/* ===========================  EXTERN VARIABLES    =========================== */
+
+/*
+ * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 1.
+ */
+#define   HOST_CANDIDATE_PRIORITY                       2113929471
+/*
+ * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 0.
+ */
+#define   HOST_CANDIDATE_PRIORITY_MULTICAST             2130706431
+#define   CRC32_POLYNOMIAL                              0xEDB88320
+
+IceInitInfo_t initInfo;
+IceCandidate_t localCandidateArray[ 10 ];
+IceCandidate_t remoteCandidateArray[ 10 ];
+IceCandidatePair_t candidatePairArray[ 100 ];
+TransactionIdStore_t transactionIdStore[ 16 ];
+
+
+/* ===========================  EXTERN FUNCTIONS   =========================== */
 
 IceResult_t testRandomFxn( uint8_t * pDest,
                            size_t length )
@@ -45,7 +64,7 @@ IceResult_t testCrc32Fxn( uint32_t initialResult,
         {
             if( ( crc32 & 1 ) != 0 )
             {
-                crc32 = ( crc32 >> 1 ) ^ 0xEDB88320;
+                crc32 = ( crc32 >> 1 ) ^ CRC32_POLYNOMIAL;
             }
             else
             {
@@ -95,6 +114,43 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
     return result;
 }
 
+/*
+   The following function is used to Initialize the initInfo For each Test case.
+ */
+void Info_Init_For_Tests( void )
+{
+    initInfo.pLocalCandidatesArray = &( localCandidateArray[ 0 ] );
+    initInfo.pRemoteCandidatesArray = &( remoteCandidateArray[ 0 ] );
+    initInfo.pCandidatePairsArray = &( candidatePairArray[ 0 ] );
+    initInfo.pStunBindingRequestTransactionIdStore = &( transactionIdStore[ 0 ] );
+    initInfo.cryptoFunctions.randomFxn = testRandomFxn;
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
+    initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
+    initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
+    initInfo.creds.pRemoteUsername = ( uint8_t * )  "remoteUsername";
+    initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
+    initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
+    initInfo.isControlling = 1;
+}
+
+void setUp( void )
+{
+    Info_Init_For_Tests();
+}
+
+void tearDown( void )
+{
+    memset( &( initInfo ),
+            0,
+            sizeof( initInfo ));
+
+    // Explicitly set the pointers to NULL
+    initInfo.pLocalCandidatesArray = NULL;
+    initInfo.pRemoteCandidatesArray = NULL;
+    initInfo.pCandidatePairsArray = NULL;
+    initInfo.pStunBindingRequestTransactionIdStore = NULL;
+}
 /* ==============================  Test Cases  ============================== */
 
 /**
@@ -104,16 +160,15 @@ void test_iceInit_BadParams( void )
 {
 
     IceContext_t context = { 0 };
-    IceInitInfo_t initInfo = { 0 };
     IceResult_t result;
-    IceCandidate_t localCandidateArray[ 1 ];
-    IceCandidatePair_t candidatePairArray[ 1 ];
-    TransactionIdStore_t transactionIdStore[ 1 ];
-    uint8_t localUsername[ 10 ], localPassword[ 10 ];
-    uint8_t remoteUsername[ 10 ], remotePassword[ 10 ];
+    uint8_t localUsername[ 10 ];
+    uint8_t localPassword[ 10 ];
+    uint8_t remoteUsername[ 10 ];
+    uint8_t remotePassword[ 10 ];
+
 
     result = Ice_Init( NULL,
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -127,7 +182,7 @@ void test_iceInit_BadParams( void )
     initInfo.pLocalCandidatesArray = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -136,7 +191,7 @@ void test_iceInit_BadParams( void )
     initInfo.pRemoteCandidatesArray = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -145,7 +200,7 @@ void test_iceInit_BadParams( void )
     initInfo.pCandidatePairsArray = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -154,7 +209,7 @@ void test_iceInit_BadParams( void )
     initInfo.pStunBindingRequestTransactionIdStore = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -163,7 +218,7 @@ void test_iceInit_BadParams( void )
     initInfo.cryptoFunctions.randomFxn = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -172,7 +227,7 @@ void test_iceInit_BadParams( void )
     initInfo.cryptoFunctions.crc32Fxn = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -181,7 +236,7 @@ void test_iceInit_BadParams( void )
     initInfo.cryptoFunctions.hmacFxn = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -190,7 +245,7 @@ void test_iceInit_BadParams( void )
     initInfo.creds.pLocalUsername = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -199,7 +254,7 @@ void test_iceInit_BadParams( void )
     initInfo.creds.pLocalPassword = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -208,7 +263,7 @@ void test_iceInit_BadParams( void )
     initInfo.creds.pRemoteUsername = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -217,7 +272,7 @@ void test_iceInit_BadParams( void )
     initInfo.creds.pRemotePassword = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -226,7 +281,7 @@ void test_iceInit_BadParams( void )
     initInfo.creds.pCombinedUsername = NULL;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -239,39 +294,11 @@ void test_iceInit_BadParams( void )
  */
 void test_iceInit( void )
 {
-    IceContext_t context;
-    IceInitInfo_t initInfo = { 0 };
+    IceContext_t context = { 0 };
     IceResult_t result;
-    IceCandidate_t localCandidateArray[ 10 ], remoteCandidateArray[ 10 ];
-    IceCandidatePair_t candidatePairArray[ 100 ];
-    TransactionIdStore_t transactionIdStore[ 16 ];
-
-    initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
-    initInfo.creds.localUsernameLength = strlen( "localUsername" );
-    initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
-    initInfo.creds.localPasswordLength = strlen( "localPassword" );
-    initInfo.creds.pRemoteUsername = ( uint8_t * )  "remoteUsername";
-    initInfo.creds.remoteUsernameLength = strlen( "remoteUsername" );
-    initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
-    initInfo.creds.remotePasswordLength = strlen( "remotePassword" );
-    initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
-    initInfo.creds.combinedUsernameLength = strlen( "combinedUsername" );
-
-    initInfo.pLocalCandidatesArray = &( localCandidateArray[ 0 ] );
-    initInfo.localCandidatesArrayLength = 10;
-    initInfo.pRemoteCandidatesArray = &( remoteCandidateArray[ 0 ] );
-    initInfo.remoteCandidatesArrayLength = 10;
-    initInfo.pCandidatePairsArray = &( candidatePairArray[ 0 ] );
-    initInfo.candidatePairsArrayLength = 100;
-
-    initInfo.isControlling = 1;
-    initInfo.pStunBindingRequestTransactionIdStore = &( transactionIdStore[ 0 ] );
-    initInfo.cryptoFunctions.randomFxn = testRandomFxn;
-    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
-    initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
 
     result = Ice_Init( &( context ),
-                       &( initInfo ));
+                       &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -337,6 +364,18 @@ void test_iceInit( void )
                        context.cryptoFunctions.crc32Fxn );
     TEST_ASSERT_EQUAL( testHmacFxn,
                        context.cryptoFunctions.hmacFxn );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.maxLocalCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numRemoteCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.maxRemoteCandidates );
+    TEST_ASSERT_EQUAL( 0,
+                       context.maxCandidatePairs );
+    TEST_ASSERT_EQUAL( 0,
+                       context.numCandidatePairs );
 }
 
 /*-----------------------------------------------------------*/
@@ -346,7 +385,7 @@ void test_iceInit( void )
  */
 void test_iceAddHostCandidate_BadParams( void )
 {
-    IceContext_t context;
+    IceContext_t context = { 0 };
     IceEndpoint_t endPoint = { 0 };
     IceResult_t result;
 
@@ -370,9 +409,15 @@ void test_iceAddHostCandidate_BadParams( void )
  */
 void test_iceAddHostCandidate_MaxCandidateThreshold( void )
 {
-    IceContext_t context;
+    IceContext_t context = { 0 };
     IceEndpoint_t endPoint = { 0 };
     IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
     context.numLocalCandidates = 1000;
     context.maxLocalCandidates = 1000;
@@ -395,13 +440,24 @@ void test_iceAddHostCandidate( void )
     IceCandidate_t localCandidates[ 5 ];
     IceEndpoint_t endPoint = { 0 };
     IceResult_t result;
+    const uint8_t * ipAddress;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
     context.pLocalCandidates = &( localCandidates[ 0 ] );
     context.maxLocalCandidates = 5;
     context.numLocalCandidates = 0;
 
     endPoint.isPointToPoint = 1;
+    ipAddress = ( uint8_t * ) "192.168.1.100";
     endPoint.transportAddress.family = 0;
+    memcpy( endPoint.transportAddress.address,
+            ipAddress,
+            16 );
     endPoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endPoint.transportAddress.address[ 0 ] ),
             ( const void * ) "192.168.1.100",
@@ -421,18 +477,79 @@ void test_iceAddHostCandidate( void )
     TEST_ASSERT_EQUAL( 1,
                        context.pLocalCandidates[ 0 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.family );
-    TEST_ASSERT_EQUAL( 8080,
-                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( endPoint.transportAddress.address[ 0 ] ),
-                                   &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
-                                   strlen( "192.168.1.100" ) );
-    TEST_ASSERT_EQUAL( 2113929471,
-                       context.pLocalCandidates[ 0 ].priority );
+                       context.pLocalCandidates[0].isRemote );
+    TEST_ASSERT_EQUAL( HOST_CANDIDATE_PRIORITY,
+                       context.pLocalCandidates[0].priority );
     TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
                        context.pLocalCandidates[ 0 ].remoteProtocol );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
-                       context.pLocalCandidates[ 0 ].state );
+                       context.pLocalCandidates[0].state );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pLocalCandidates[0].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[0].endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( 8080,
+                       context.pLocalCandidates[0].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_STRING( "192.168.1.100",
+                              context.pLocalCandidates[0].endpoint.transportAddress.address );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Host Candidate functionality for Multicast or Broadcast Connection.
+ */
+void test_iceAddHostCandidate_Multicast( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidates[5];
+    IceEndpoint_t endPoint = { 0 };
+    IceResult_t result;
+    const uint8_t * ipAddress;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    context.pLocalCandidates = &( localCandidates[ 0 ] );
+    context.maxLocalCandidates = 5;
+    context.numLocalCandidates = 0;
+
+    endPoint.isPointToPoint = 0;
+    ipAddress = ( uint8_t * ) "192.168.1.100";
+    endPoint.transportAddress.family = 0;
+    memcpy( endPoint.transportAddress.address,
+            ipAddress,
+            16 );
+    endPoint.transportAddress.port = 8080;
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endPoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
+                       context.pLocalCandidates[0].candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[0].isRemote );
+    TEST_ASSERT_EQUAL( HOST_CANDIDATE_PRIORITY_MULTICAST,
+                       context.pLocalCandidates[0].priority );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
+                       context.pLocalCandidates[0].remoteProtocol );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
+                       context.pLocalCandidates[0].state );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[0].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[0].endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( 8080,
+                       context.pLocalCandidates[0].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_STRING( "192.168.1.100",
+                              context.pLocalCandidates[0].endpoint.transportAddress.address );
 }
 
 /*-----------------------------------------------------------*/
