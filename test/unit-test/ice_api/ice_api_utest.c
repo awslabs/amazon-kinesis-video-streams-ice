@@ -15,12 +15,13 @@
 /*
  * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 1.
  */
-#define   HOST_CANDIDATE_PRIORITY                       2113929471
+#define   HOST_CANDIDATE_PRIORITY              2113929471
+
 /*
  * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 0.
  */
-#define   HOST_CANDIDATE_PRIORITY_MULTICAST             2130706431
-#define   CRC32_POLYNOMIAL                              0xEDB88320
+#define   HOST_CANDIDATE_PRIORITY_MULTICAST    2130706431
+#define   CRC32_POLYNOMIAL                     0xEDB88320
 
 IceInitInfo_t initInfo;
 IceCandidate_t localCandidateArray[ 10 ];
@@ -115,7 +116,7 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
 }
 
 /*
-   The following function is used to Initialize the initInfo For each Test case.
+ * The following function is used to Initialize the initInfo For each Test case.
  */
 void Info_Init_For_Tests( void )
 {
@@ -127,10 +128,18 @@ void Info_Init_For_Tests( void )
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
     initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
+    initInfo.creds.localUsernameLength = strlen( "localUsername" );
     initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
-    initInfo.creds.pRemoteUsername = ( uint8_t * )  "remoteUsername";
+    initInfo.creds.localPasswordLength = strlen( "localPassword" );
+    initInfo.creds.pRemoteUsername = ( uint8_t * ) "remoteUsername";
+    initInfo.creds.remoteUsernameLength = strlen( "remoteUsername" );
     initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
+    initInfo.creds.remotePasswordLength = strlen( "remotePassword" );
     initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
+    initInfo.creds.combinedUsernameLength = strlen( "combinedUsername" );
+    initInfo.localCandidatesArrayLength = 10;
+    initInfo.remoteCandidatesArrayLength = 10;
+    initInfo.candidatePairsArrayLength = 100;
     initInfo.isControlling = 1;
 }
 
@@ -143,9 +152,9 @@ void tearDown( void )
 {
     memset( &( initInfo ),
             0,
-            sizeof( initInfo ));
+            sizeof( initInfo ) );
 
-    // Explicitly set the pointers to NULL
+    /* Explicitly set the pointers to NULL */
     initInfo.pLocalCandidatesArray = NULL;
     initInfo.pRemoteCandidatesArray = NULL;
     initInfo.pCandidatePairsArray = NULL;
@@ -158,7 +167,6 @@ void tearDown( void )
  */
 void test_iceInit_BadParams( void )
 {
-
     IceContext_t context = { 0 };
     IceResult_t result;
     uint8_t localUsername[ 10 ];
@@ -367,13 +375,7 @@ void test_iceInit( void )
     TEST_ASSERT_EQUAL( 0,
                        context.numLocalCandidates );
     TEST_ASSERT_EQUAL( 0,
-                       context.maxLocalCandidates );
-    TEST_ASSERT_EQUAL( 0,
                        context.numRemoteCandidates );
-    TEST_ASSERT_EQUAL( 0,
-                       context.maxRemoteCandidates );
-    TEST_ASSERT_EQUAL( 0,
-                       context.maxCandidatePairs );
     TEST_ASSERT_EQUAL( 0,
                        context.numCandidatePairs );
 }
@@ -477,21 +479,21 @@ void test_iceAddHostCandidate( void )
     TEST_ASSERT_EQUAL( 1,
                        context.pLocalCandidates[ 0 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].isRemote );
+                       context.pLocalCandidates[ 0 ].isRemote );
     TEST_ASSERT_EQUAL( HOST_CANDIDATE_PRIORITY,
-                       context.pLocalCandidates[0].priority );
+                       context.pLocalCandidates[ 0 ].priority );
     TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
                        context.pLocalCandidates[ 0 ].remoteProtocol );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
-                       context.pLocalCandidates[0].state );
+                       context.pLocalCandidates[ 0 ].state );
     TEST_ASSERT_EQUAL( 1,
-                       context.pLocalCandidates[0].endpoint.isPointToPoint );
+                       context.pLocalCandidates[ 0 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].endpoint.transportAddress.family );
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.family );
     TEST_ASSERT_EQUAL( 8080,
-                       context.pLocalCandidates[0].endpoint.transportAddress.port );
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.port );
     TEST_ASSERT_EQUAL_STRING( "192.168.1.100",
-                              context.pLocalCandidates[0].endpoint.transportAddress.address );
+                              context.pLocalCandidates[ 0 ].endpoint.transportAddress.address );
 }
 
 /*-----------------------------------------------------------*/
@@ -502,7 +504,7 @@ void test_iceAddHostCandidate( void )
 void test_iceAddHostCandidate_Multicast( void )
 {
     IceContext_t context = { 0 };
-    IceCandidate_t localCandidates[5];
+    IceCandidate_t localCandidates[ 5 ];
     IceEndpoint_t endPoint = { 0 };
     IceResult_t result;
     const uint8_t * ipAddress;
@@ -533,23 +535,455 @@ void test_iceAddHostCandidate_Multicast( void )
     TEST_ASSERT_EQUAL( 1,
                        context.numLocalCandidates );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
-                       context.pLocalCandidates[0].candidateType );
+                       context.pLocalCandidates[ 0 ].candidateType );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].isRemote );
+                       context.pLocalCandidates[ 0 ].isRemote );
     TEST_ASSERT_EQUAL( HOST_CANDIDATE_PRIORITY_MULTICAST,
-                       context.pLocalCandidates[0].priority );
+                       context.pLocalCandidates[ 0 ].priority );
     TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
-                       context.pLocalCandidates[0].remoteProtocol );
+                       context.pLocalCandidates[ 0 ].remoteProtocol );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
-                       context.pLocalCandidates[0].state );
+                       context.pLocalCandidates[ 0 ].state );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].endpoint.isPointToPoint );
+                       context.pLocalCandidates[ 0 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 0,
-                       context.pLocalCandidates[0].endpoint.transportAddress.family );
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.family );
     TEST_ASSERT_EQUAL( 8080,
-                       context.pLocalCandidates[0].endpoint.transportAddress.port );
+                       context.pLocalCandidates[ 0 ].endpoint.transportAddress.port );
     TEST_ASSERT_EQUAL_STRING( "192.168.1.100",
-                              context.pLocalCandidates[0].endpoint.transportAddress.address );
+                              context.pLocalCandidates[ 0 ].endpoint.transportAddress.address );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Server Reflexive Candidate fail functionality for Bad Parameters.
+ */
+void test_iceAddServerReflexiveCandidate_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    u_int8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+
+    result = Ice_AddServerReflexiveCandidate( NULL,
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              NULL,
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              NULL,
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Server Reflexive Candidate fail functionality for Max Candidate Threshold.
+ */
+void test_iceAddServerReflexiveCandidate_MaxCandidateThreshold( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    u_int8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    context.numLocalCandidates = 1000;
+    context.maxLocalCandidates = 1000;
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Remote Candidate fail functionality for Bad Parameters.
+ */
+void test_iceAddRemoteCandidate_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceResult_t result;
+
+
+    result = Ice_AddRemoteCandidate( NULL,
+                                     &( remoteCandidateInfo ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Remote Candidate fail functionality for Max Candidate Threshold.
+ */
+void test_iceAddRemoteCandidate_MaxCandidateThreshold( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    context.numRemoteCandidates = 1000;
+    context.maxRemoteCandidates = 1000;
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check fail functionality for Bad Parameters.
+ */
+void test_iceCreateRequestForConnectivityCheck_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePairArray[ 100 ];
+    u_int8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+
+    result = Ice_CreateRequestForConnectivityCheck( NULL,
+                                                    &( candidatePairArray[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    NULL,
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( candidatePairArray[ 0 ] ),
+                                                    NULL,
+                                                    &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( candidatePairArray[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for nomination of valid cadidate pair fail functionality for Bad Parameters.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePairArray[ 100 ];
+    u_int8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+
+    result = Ice_CreateRequestForNominatingCandidatePair( NULL,
+                                                          &( candidatePairArray[ 0 ] ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          NULL,
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( candidatePairArray[ 0 ] ),
+                                                          NULL,
+                                                          &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( candidatePairArray[ 0 ] ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for Response to Stun Binding Packet fail functionality for Bad Parameters.
+ */
+void test_iceCreateResponseForRequest_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePairArray[ 100 ];
+    u_int8_t transactionId[ 8 ];
+    u_int8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+
+    result = Ice_CreateResponseForRequest( NULL,
+                                           &( candidatePairArray[ 0 ] ),
+                                           &( transactionId[ 0 ] ),
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           NULL,
+                                           &( transactionId[ 0 ] ),
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           &( candidatePairArray[ 0 ] ),
+                                           NULL,
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           &( stunMessageBufferLength ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           &( candidatePairArray[ 0 ] ),
+                                           &( transactionId[ 0 ] ),
+                                           NULL,
+                                           &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           &( candidatePairArray[ 0 ] ),
+                                           &( transactionId[ 0 ] ),
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+
+
+/**
+ * @brief Validate ICE Get Local Candidate Count fail functionality for Bad Parameters.
+ */
+void test_iceGetLocalCandidateCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numLocalCandidates = 3;
+    IceResult_t result;
+
+
+    result = Ice_GetLocalCandidateCount( NULL,
+                                         &( numLocalCandidates ) );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_GetLocalCandidateCount( &( context ),
+                                         NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Get Local Candidate Count functionality.
+ */
+void test_iceGetLocalCandidateCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numLocalCandidates = 3;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_GetLocalCandidateCount( &( context ),
+                                         &( numLocalCandidates ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numLocalCandidates,
+                       context.numLocalCandidates );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Get Remote Candidate Count fail functionality for Bad Parameters.
+ */
+void test_iceGetRemoteCandidateCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numRemoteCandidates = 3;
+    IceResult_t result;
+
+
+    result = Ice_GetRemoteCandidateCount( NULL,
+                                          &( numRemoteCandidates ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_GetRemoteCandidateCount( &( context ),
+                                          NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Get Remote Candidate Count functionality.
+ */
+void test_iceGetRemoteCandidateCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numRemoteCandidates = 3;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_GetRemoteCandidateCount( &( context ),
+                                          &( numRemoteCandidates ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numRemoteCandidates,
+                       context.numRemoteCandidates );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Get Candidate Pair Count fail functionality for Bad Parameters.
+ */
+void test_iceGetCandidatePairCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numCandidatePairs = 3;
+    IceResult_t result;
+
+
+    result = Ice_GetCandidatePairCount( NULL,
+                                        &( numCandidatePairs ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_GetCandidatePairCount( &( context ),
+                                        NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Get Candidate Pair Count functionality.
+ */
+void test_iceGetCandidatePairCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numCandidatePairs = 3;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_GetCandidatePairCount( &( context ),
+                                        &( numCandidatePairs ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numCandidatePairs,
+                       context.numCandidatePairs );
 }
 
 /*-----------------------------------------------------------*/
