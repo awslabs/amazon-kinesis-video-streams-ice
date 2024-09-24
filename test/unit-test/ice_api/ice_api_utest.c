@@ -15,26 +15,27 @@
 /*
  * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 1.
  */
-#define HOST_CANDIDATE_PRIORITY             2113929471
+#define HOST_CANDIDATE_PRIORITY                  2113929471
 
 /*
  * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 0.
  */
-#define HOST_CANDIDATE_PRIORITY_MULTICAST   2130706431
-#define CRC32_POLYNOMIAL                    0xEDB88320
+#define HOST_CANDIDATE_PRIORITY_MULTICAST        2130706431
+#define SERVER_REFLEXIVE_CANDIDATE_PRIORITY      1694498815
+#define CRC32_POLYNOMIAL                         0xEDB88320
 
 /*
  * IP Address used in the tests.
  */
-#define IP_ADDRESS                          "192.168.1.100"
+#define IP_ADDRESS                               "192.168.1.100"
 
 /*
  * Arrays used in the tests.
  */
-#define LOCAL_CANDIDATE_ARRAY_SIZE              10
-#define REMOTE_CANDIDATE_ARRAY_SIZE             10
-#define CANDIDATE_PAIR_ARRAY_SIZE               100
-#define TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE   32
+#define LOCAL_CANDIDATE_ARRAY_SIZE               10
+#define REMOTE_CANDIDATE_ARRAY_SIZE              10
+#define CANDIDATE_PAIR_ARRAY_SIZE                100
+#define TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE    32
 
 IceInitInfo_t initInfo;
 TransactionIdStore_t transactionIdStore;
@@ -128,6 +129,8 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
     return result;
 }
 
+/*-----------------------------------------------------------*/
+
 /*
  * The following function is used to Initialize the initInfo For each Test case.
  */
@@ -164,6 +167,8 @@ static void Info_Init_For_Tests( void )
     initInfo.isControlling = 1;
 }
 
+/*-----------------------------------------------------------*/
+
 void setUp( void )
 {
     memset( &( localCandidateArray[ 0 ] ),
@@ -180,7 +185,7 @@ void setUp( void )
 
     memset( &( transactionIdSlots[ 0 ] ),
             0,
-            TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE * sizeof( IceCandidate_t ) );
+            TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE * sizeof( TransactionIdSlot_t ) );
 
     memset( &( initInfo ),
             0,
@@ -193,9 +198,12 @@ void setUp( void )
     Info_Init_For_Tests();
 }
 
+/*-----------------------------------------------------------*/
+
 void tearDown( void )
 {
 }
+
 /* ==============================  Test Cases  ============================== */
 
 /**
@@ -632,7 +640,7 @@ void test_iceAddServerReflexiveCandidate_MaxCandidateThreshold( void )
 {
     IceContext_t context = { 0 };
     IceEndpoint_t endPoint = { 0 };
-    u_int8_t stunMessageBuffer[ 10 ];
+    uint8_t stunMessageBuffer[ 10 ];
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     IceResult_t result;
 
@@ -652,6 +660,128 @@ void test_iceAddServerReflexiveCandidate_MaxCandidateThreshold( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
                        result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Server Reflexive Candidate fail functionality when stun library returns error.
+ */
+void test_iceAddServerReflexiveCandidate_StunError( void )
+{
+    IceResult_t result;
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    uint8_t stunMessageBuffer[] = { 0 };
+    /* STUN library returns error because the STUN message is too small. */
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Server Reflexive Candidate fail functionality while Inserting Transaction ID.
+ */
+void test_iceAddServerReflexiveCandidate_TransactionIDStoreError( void )
+{
+    IceResult_t result;
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Setting the Transaction ID Store to NULL so that we fail to insert the
+     * transaction ID. */
+    context.pStunBindingRequestTransactionIdStore = NULL;
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Server Reflexive Candidate functionality.
+ */
+void test_iceAddServerReflexiveCandidate( void )
+{
+    IceResult_t result;
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 8 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x08,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03,
+        0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x54DA6D71 as calculated by testCrc32Fxn. */
+        0x54, 0xDA, 0x6D, 0x71,
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endPoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE,
+                       context.pLocalCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( SERVER_REFLEXIVE_CANDIDATE_PRIORITY,
+                       context.pLocalCandidates[ 0 ].priority );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
+                       context.pLocalCandidates[ 0 ].remoteProtocol );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_NEW,
+                       context.pLocalCandidates[ 0 ].state );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
 }
 
 /*-----------------------------------------------------------*/
@@ -703,6 +833,96 @@ void test_iceAddRemoteCandidate_MaxCandidateThreshold( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
                        result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Remote Candidate functionality.
+ */
+void test_iceAddRemoteCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo2 = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) IP_ADDRESS,
+            strlen( IP_ADDRESS ) );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.transportAddress.family = 1;
+    endpoint.transportAddress.port = 8009;
+
+    remoteCandidateInfo2.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+    remoteCandidateInfo2.remoteProtocol = ICE_SOCKET_PROTOCOL_TCP;
+    remoteCandidateInfo2.priority = 500;
+    remoteCandidateInfo2.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo2 ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 2,
+                       context.numRemoteCandidates );
+    /* Verify first remote candidate. */
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
+                       context.pRemoteCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_UDP,
+                       context.pRemoteCandidates[ 0 ].remoteProtocol );
+    TEST_ASSERT_EQUAL( 1000,
+                       context.pRemoteCandidates[ 0 ].priority );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 8080,
+                       context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
+                                   context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address,
+                                   strlen( IP_ADDRESS ) );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family );
+    /* Verify second remote candidate. */
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE,
+                       context.pRemoteCandidates[ 1 ].candidateType );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 1 ].isRemote );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_TCP,
+                       context.pRemoteCandidates[ 1 ].remoteProtocol );
+    TEST_ASSERT_EQUAL( 500,
+                       context.pRemoteCandidates[ 1 ].priority );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 1 ].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 8009,
+                       context.pRemoteCandidates[ 1 ].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
+                                   context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address,
+                                   strlen( IP_ADDRESS ) );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 1 ].endpoint.transportAddress.family );
 }
 
 /*-----------------------------------------------------------*/
