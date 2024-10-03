@@ -109,7 +109,6 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
         pHostCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
         /* Create candidate pairs with all the existing remote candidates. */
-
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
         {
             if( pContext->pRemoteCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
@@ -216,7 +215,6 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
     if( result == ICE_RESULT_OK )
     {
         /* Create candidate pairs with all the existing remote candidates. */
-
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
         {
             if( pContext->pRemoteCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )

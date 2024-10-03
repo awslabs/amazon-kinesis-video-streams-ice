@@ -1017,7 +1017,7 @@ void test_iceAddCandidatePair_PostRemoteCandidate( void )
     TEST_ASSERT_EQUAL( 1,
                        context.numCandidatePairs );
 
-    /* Now adding Server Reflexive Local Candidate */
+    /* Now add a Server Reflexive Local Candidate. */
     result = Ice_AddServerReflexiveCandidate( &( context ),
                                               &( endpoint ),
                                               &( stunMessageBuffer[ 0 ] ),
@@ -1025,7 +1025,8 @@ void test_iceAddCandidatePair_PostRemoteCandidate( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    /* Verify candidate pair Info. Here ( 2 Local ) X ( 1 Remote ) should give 2 Candidate Pairs. */
+    /* Verify candidate pair Info. ( 2 Local ) X ( 1 Remote ) should give 2
+     * Candidate Pairs. */
     TEST_ASSERT_EQUAL( 2,
                        context.numCandidatePairs );
 }
