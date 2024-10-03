@@ -914,6 +914,8 @@ void test_iceAddCandidatePair( void )
                        result );
 
     /* Verify candidate pair Info. */
+    TEST_ASSERT_EQUAL( 1,
+                       context.numCandidatePairs );
     TEST_ASSERT_EQUAL( 0,
                        context.pCandidatePairs[ 0 ].connectivityCheckFlags );
     TEST_ASSERT_EQUAL( 4299195154943, /* For the given Host Candidate and Remote Candidate this is the generated Priority. */
@@ -923,8 +925,6 @@ void test_iceAddCandidatePair( void )
     TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedTransactionID[ 0 ] ),
                                    &( context.pCandidatePairs[ 0 ].transactionId[ 0 ] ),
                                    expectedTransactionIDLength );
-    TEST_ASSERT_EQUAL( 1,
-                       context.numCandidatePairs );
 
     /* Verify local candidate Info in the Candidate Pair. */
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
@@ -963,6 +963,71 @@ void test_iceAddCandidatePair( void )
                               context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.address );
     TEST_ASSERT_EQUAL( 0,
                        context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.family );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Remote Candidate functionality when local candidates are added after a remote candidate is added.
+ */
+void test_iceAddCandidatePair_PostRemoteCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Verify candidate pair Info. */
+    TEST_ASSERT_EQUAL( 0,
+                       context.numCandidatePairs );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) IP_ADDRESS,
+            strlen( IP_ADDRESS ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Verify candidate pair Info. */
+    TEST_ASSERT_EQUAL( 1,
+                       context.numCandidatePairs );
+
+    /* Now adding Server Reflexive Local Candidate */
+    result = Ice_AddServerReflexiveCandidate( &( context ),
+                                              &( endpoint ),
+                                              &( stunMessageBuffer[ 0 ] ),
+                                              &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    /* Verify candidate pair Info. Here ( 2 Local ) X ( 1 Remote ) should give 2 Candidate Pairs. */
+    TEST_ASSERT_EQUAL( 2,
+                       context.numCandidatePairs );
 }
 
 /*-----------------------------------------------------------*/

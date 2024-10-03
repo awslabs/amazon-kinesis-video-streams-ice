@@ -75,6 +75,7 @@ IceResult_t Ice_Init( IceContext_t * pContext,
 IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
                                   const IceEndpoint_t * pEndpoint )
 {
+    size_t i;
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pHostCandidate = NULL;
 
@@ -106,6 +107,18 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
                                                                  pEndpoint->isPointToPoint );
         pHostCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pHostCandidate->state = ICE_CANDIDATE_STATE_VALID;
+
+        /* Create candidate pairs with all the existing remote candidates. */
+
+        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
+        {
+            if( pContext->pRemoteCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
+            {
+                result = Ice_AddCandidatePair( pContext,
+                                               pHostCandidate,
+                                               &( pContext->pRemoteCandidates[ i ] ) );
+            }
+        }
     }
 
     return result;
@@ -118,6 +131,7 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
                                              uint8_t * pStunMessageBuffer,
                                              size_t * pStunMessageBufferLength )
 {
+    size_t i;
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
@@ -196,6 +210,21 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
         if( transactionIdStoreResult != TRANSACTION_ID_STORE_RESULT_OK )
         {
             result = ICE_RESULT_TRANSACTION_ID_STORE_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Create candidate pairs with all the existing remote candidates. */
+
+        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
+        {
+            if( pContext->pRemoteCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
+            {
+                result = Ice_AddCandidatePair( pContext,
+                                               pServerReflexiveCandidate,
+                                               &( pContext->pRemoteCandidates[ i ] ) );
+            }
         }
     }
 
@@ -472,7 +501,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
             if( pContext->isControlling == 0 )
             {
                 stunResult = StunSerializer_AddAttributeIceControlled( &( stunCtx ),
-                                                                        pContext->tieBreaker );
+                                                                       pContext->tieBreaker );
             }
             else
             {
