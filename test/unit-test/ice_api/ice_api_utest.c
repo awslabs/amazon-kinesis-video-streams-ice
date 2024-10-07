@@ -1209,7 +1209,7 @@ void test_iceCreateRequestForNominatingCandidatePair_StunError( void )
     IceContext_t context = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     IceEndpoint_t endpoint = { 0 };
-    uint8_t stunMessageBuffer[ 10 ];  /* Stun Message can't be generated with this size */
+    uint8_t stunMessageBuffer[ 10 ]; /* Too small to be able to contain a Stun message. */
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     IceResult_t result;
 
@@ -1262,11 +1262,11 @@ void test_iceCreateRequestForNominatingCandidatePair( void )
     IceContext_t context = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     IceEndpoint_t endpoint = { 0 };
-    uint8_t stunMessageBuffer[ 92 ];
+    uint8_t stunMessageBuffer[ 128 ];
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     uint8_t expectedStunMessage[] =
     {
-        /* STUN header: Message Type = Binding Request (0x0001), Length = 44 bytes (excluding 20 bytes header). */
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 72 bytes (excluding 20 bytes header). */
         0x00, 0x01, 0x00, 0x48,
         /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
@@ -1281,11 +1281,11 @@ void test_iceCreateRequestForNominatingCandidatePair( void )
         0x00, 0x24, 0x00, 0x04,
         /* Attribute Value = 0x7E0000FF. */
         0x7E, 0x00, 0x00, 0xFF,
-        /* Attribute type = ICE-CONTROLLING ( 0x802A ), Length = 8 bytes. */
+        /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE ( 0x0025 )*/    /* Main Attribute USE-CANDIDATE */
+        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 16 bytes. */
         0x00, 0x08, 0x00, 0x10,

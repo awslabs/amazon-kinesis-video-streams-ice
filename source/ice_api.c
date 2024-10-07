@@ -567,53 +567,53 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
     {
         switch( stunHeader.messageType )
         {
-        case STUN_MESSAGE_TYPE_BINDING_REQUEST:
-        {
-            handleStunPacketResult = Ice_HandleStunBindingRequest( pContext,
-                                                                   &( stunCtx ),
-                                                                   pLocalCandidateEndpoint,
-                                                                   pRemoteCandidateEndpoint,
-                                                                   ppIceCandidatePair );
-        }
-        break;
-
-        case STUN_MESSAGE_TYPE_BINDING_SUCCESS_RESPONSE:
-        {
-            transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                 stunHeader.pTransactionId );
-
-            if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+            case STUN_MESSAGE_TYPE_BINDING_REQUEST:
             {
-                handleStunPacketResult = Ice_HandleServerReflexiveResponse( pContext,
-                                                                            &( stunCtx ),
-                                                                            pLocalCandidateEndpoint );
-
-                ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                    stunHeader.pTransactionId );
+                handleStunPacketResult = Ice_HandleStunBindingRequest( pContext,
+                                                                       &( stunCtx ),
+                                                                       pLocalCandidateEndpoint,
+                                                                       pRemoteCandidateEndpoint,
+                                                                       ppIceCandidatePair );
             }
-            else
+            break;
+
+            case STUN_MESSAGE_TYPE_BINDING_SUCCESS_RESPONSE:
             {
-                handleStunPacketResult = Ice_HandleConnectivityCheckResponse( pContext,
-                                                                              &( stunCtx ),
-                                                                              &( stunHeader ),
-                                                                              pLocalCandidateEndpoint,
-                                                                              pRemoteCandidateEndpoint,
-                                                                              ppIceCandidatePair );
+                transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                                                     stunHeader.pTransactionId );
+
+                if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                {
+                    handleStunPacketResult = Ice_HandleServerReflexiveResponse( pContext,
+                                                                                &( stunCtx ),
+                                                                                pLocalCandidateEndpoint );
+
+                    ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                        stunHeader.pTransactionId );
+                }
+                else
+                {
+                    handleStunPacketResult = Ice_HandleConnectivityCheckResponse( pContext,
+                                                                                  &( stunCtx ),
+                                                                                  &( stunHeader ),
+                                                                                  pLocalCandidateEndpoint,
+                                                                                  pRemoteCandidateEndpoint,
+                                                                                  ppIceCandidatePair );
+                }
             }
-        }
-        break;
+            break;
 
-        case STUN_MESSAGE_TYPE_BINDING_INDICATION:
-        {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION;
-        }
-        break;
+            case STUN_MESSAGE_TYPE_BINDING_INDICATION:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION;
+            }
+            break;
 
-        default:
-        {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_INVALID_PACKET_TYPE;
-        }
-        break;
+            default:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_INVALID_PACKET_TYPE;
+            }
+            break;
         }
 
         *ppTransactionId = stunHeader.pTransactionId;
