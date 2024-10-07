@@ -132,6 +132,7 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
                                              uint8_t * pStunMessageBuffer,
                                              size_t * pStunMessageBufferLength )
 {
+    size_t i;
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
@@ -210,6 +211,20 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
         if( transactionIdStoreResult != TRANSACTION_ID_STORE_RESULT_OK )
         {
             result = ICE_RESULT_TRANSACTION_ID_STORE_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Create candidate pairs with all the existing remote candidates. */
+        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
+        {
+            if( pContext->pRemoteCandidates[ i ].state == ICE_CANDIDATE_STATE_VALID )
+            {
+                result = Ice_AddCandidatePair( pContext,
+                                               pServerReflexiveCandidate,
+                                               &( pContext->pRemoteCandidates[ i ] ) );
+            }
         }
     }
 
