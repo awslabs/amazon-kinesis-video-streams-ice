@@ -39,7 +39,9 @@ IceResult_t Ice_Init( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        memset( pContext, 0, sizeof( IceContext_t ) );
+        memset( pContext,
+                0,
+                sizeof( IceContext_t ) );
 
         pContext->creds = pInitInfo->creds;
 
