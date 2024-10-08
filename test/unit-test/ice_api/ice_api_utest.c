@@ -27,7 +27,7 @@
 /*
  * IP Address used in the tests.
  */
-uint8_t IP_ADDRESS[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100" */
+uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
 
 /*
  * Arrays used in the tests.
@@ -495,8 +495,8 @@ void test_iceAddHostCandidate( void )
     endPoint.transportAddress.family = 0;
     endPoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endPoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endPoint ) );
@@ -521,8 +521,8 @@ void test_iceAddHostCandidate( void )
                        context.pLocalCandidates[ 0 ].endpoint.transportAddress.family );
     TEST_ASSERT_EQUAL( 8080,
                        context.pLocalCandidates[ 0 ].endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
-                                   context.pLocalCandidates[ 0 ].endpoint.transportAddress.address, sizeof( IP_ADDRESS ) );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   context.pLocalCandidates[ 0 ].endpoint.transportAddress.address, sizeof( ipAddress ) );
 }
 
 /*-----------------------------------------------------------*/
@@ -798,8 +798,8 @@ void test_iceAddRemoteCandidate( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -840,9 +840,9 @@ void test_iceAddRemoteCandidate( void )
                        context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 8080,
                        context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
                                    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address,
-                                   sizeof( IP_ADDRESS ) );
+                                   sizeof( ipAddress ) );
     TEST_ASSERT_EQUAL( 0,
                        context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family );
     /* Verify second remote candidate. */
@@ -858,9 +858,9 @@ void test_iceAddRemoteCandidate( void )
                        context.pRemoteCandidates[ 1 ].endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 8009,
                        context.pRemoteCandidates[ 1 ].endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
                                    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address,
-                                   sizeof( IP_ADDRESS ) );
+                                   sizeof( ipAddress ) );
     TEST_ASSERT_EQUAL( 1,
                        context.pRemoteCandidates[ 1 ].endpoint.transportAddress.family );
 }
@@ -893,8 +893,8 @@ void test_iceAddCandidatePair( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -943,8 +943,8 @@ void test_iceAddCandidatePair( void )
                        context.pCandidatePairs[ 0 ].pLocalCandidate->endpoint.transportAddress.family );
     TEST_ASSERT_EQUAL( 8080,
                        context.pCandidatePairs[ 0 ].pLocalCandidate->endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
-                                   context.pCandidatePairs[ 0 ].pLocalCandidate->endpoint.transportAddress.address, sizeof( IP_ADDRESS ) );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   context.pCandidatePairs[ 0 ].pLocalCandidate->endpoint.transportAddress.address, sizeof( ipAddress ) );
 
     /* Verify remote candidate Info in the Candidate Pair. */
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
@@ -959,8 +959,8 @@ void test_iceAddCandidatePair( void )
                        context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.isPointToPoint );
     TEST_ASSERT_EQUAL( 8080,
                        context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.port );
-    TEST_ASSERT_EQUAL_UINT8_ARRAY( IP_ADDRESS,
-                                   context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.address, sizeof( IP_ADDRESS ) );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.address, sizeof( ipAddress ) );
     TEST_ASSERT_EQUAL( 0,
                        context.pCandidatePairs[ 0 ].pRemoteCandidate->endpoint.transportAddress.family );
 }
@@ -1002,8 +1002,8 @@ void test_iceAddCandidatePair_PostRemoteCandidate( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1118,8 +1118,8 @@ void test_iceCreateRequestForConnectivityCheck( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1223,8 +1223,8 @@ void test_iceCreateRequestForNominatingCandidatePair_StunError( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1310,8 +1310,8 @@ void test_iceCreateRequestForNominatingCandidatePair( void )
     endpoint.transportAddress.family = 0;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1414,13 +1414,13 @@ void test_iceCreateResponseForRequest_StunError( void )
     IceContext_t context = { 0 };
     IceEndpoint_t endpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    uint8_t stunMessageBuffer[ 8 ] = { 0 }; /* Too small to be able to contain a Stun message. */
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
     uint8_t transactionId[] =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
     };
-    uint8_t stunMessageBuffer[ 8 ] = { 0 };          /* Very less Buffer size to build the STUN packet. */
-    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
-    IceResult_t result;
 
     result = Ice_Init( &( context ),
                        &( initInfo ) );
@@ -1432,8 +1432,8 @@ void test_iceCreateResponseForRequest_StunError( void )
     endpoint.transportAddress.family = 0x01;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1457,6 +1457,7 @@ void test_iceCreateResponseForRequest_StunError( void )
                                            &( transactionId[ 0 ] ),
                                            &( stunMessageBuffer[ 0 ] ),
                                            &( stunMessageBufferLength ) );
+
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
                        result );
 }
@@ -1471,33 +1472,34 @@ void test_iceCreateResponseForRequest( void )
     IceContext_t context = { 0 };
     IceEndpoint_t endpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    uint8_t stunMessageBuffer[ 128 ] = { 0 };
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     uint8_t transactionId[] =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
     };
-    uint8_t stunMessageBuffer[ 128 ] = { 0 };
-    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     uint8_t expectedStunMessage[] =
     {
-        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 34 bytes (excluding 20 bytes header). */
+        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 52 (0x34) bytes (excluding 20 bytes header). */
         0x01, 0x01, 0x00, 0x34,
         /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
         /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
-        0x00, 0x01, 0x02, 0x03,0x04,  0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
         0x00, 0x20, 0x00, 0x08,
-        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
-        0x00, 0x01, 0x3E, 0x82,0xE1,  0xBA, 0xA5, 0x26,
-        /* Attribute type = ICE-CONTROLLING ( 0x802A ), Length = 8 bytes. */
+        /* Address family = IPv4, Port = 0x3E82 (8080 XOR'd with 2 msb of cookie),
+         * IP Address = 0xE1BAA526 (192.168.1.100 XOR'd with cookie). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
-        0x07, 0x06, 0x05, 0x04,0x03,  0x02, 0x01, 0x00,
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 16 bytes. */
         0x00, 0x08, 0x00, 0x10,
         /* Attribute Value = HMAC value as computed by testHmacFxn. */
-        0x6D, 0x6E, 0x63, 0x51,0x4D,  0x42, 0xC5, 0x31,
-        0x73, 0x76, 0x6D, 0x71,0x60,  0x69, 0x69, 0x64,
+        0x6D, 0x6E, 0x63, 0x51, 0x4D, 0x42, 0xC5, 0x31,
+        0x73, 0x76, 0x6D, 0x71, 0x60, 0x69, 0x69, 0x64,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
         /* Attribute Value: 0x927D6914 as calculated by testCrc32Fxn. */
@@ -1516,8 +1518,8 @@ void test_iceCreateResponseForRequest( void )
     endpoint.transportAddress.family = 0x01;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1541,6 +1543,7 @@ void test_iceCreateResponseForRequest( void )
                                            &( transactionId[ 0 ] ),
                                            &( stunMessageBuffer[ 0 ] ),
                                            &( stunMessageBufferLength ) );
+
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( expectedStunMessageLength,
@@ -1560,33 +1563,34 @@ void test_iceCreateResponseForRequest_Controlled( void )
     IceContext_t context = { 0 };
     IceEndpoint_t endpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    uint8_t stunMessageBuffer[ 128 ] = { 0 };
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     uint8_t transactionId[] =
     {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
     };
-    uint8_t stunMessageBuffer[ 128 ] = { 0 };
-    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     uint8_t expectedStunMessage[] =
     {
-        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 34 bytes (excluding 20 bytes header). */
+        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 52 (0x34) bytes (excluding 20 bytes header). */
         0x01, 0x01, 0x00, 0x34,
         /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
         /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
-        0x00, 0x01, 0x02, 0x03,0x04,  0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
         0x00, 0x20, 0x00, 0x08,
-        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
-        0x00, 0x01, 0x3E, 0x82,0xE1,  0xBA, 0xA5, 0x26,
-        /* Attribute type = ICE-CONTROLLED  ( 0x8029 ), Length = 8 bytes. */
+        /* Address family = IPv4, Port = 0x3E82 (8080 XOR'd with 2 msb of cookie),
+         * IP Address = 0xE1BAA526 (192.168.1.100 XOR'd with cookie). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
         0x80, 0x29, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
-        0x07, 0x06, 0x05, 0x04,0x03,  0x02, 0x01, 0x00,
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 16 bytes. */
         0x00, 0x08, 0x00, 0x10,
         /* Attribute Value = HMAC value as computed by testHmacFxn. */
-        0x6D, 0x6E, 0x63, 0x51,0x4D,  0x42, 0xC5, 0x31,
-        0x73, 0x76, 0x6D, 0x71,0x60,  0x69, 0x69, 0x64,
+        0x6D, 0x6E, 0x63, 0x51, 0x4D, 0x42, 0xC5, 0x31,
+        0x73, 0x76, 0x6D, 0x71, 0x60, 0x69, 0x69, 0x64,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
         /* Attribute Value: 0x81555067 as calculated by testCrc32Fxn. */
@@ -1606,8 +1610,8 @@ void test_iceCreateResponseForRequest_Controlled( void )
     endpoint.transportAddress.family = 0x01;
     endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-            ( const void * ) IP_ADDRESS,
-            sizeof( IP_ADDRESS ) );
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
     result = Ice_AddHostCandidate( &( context ),
                                    &( endpoint ) );
@@ -1631,6 +1635,7 @@ void test_iceCreateResponseForRequest_Controlled( void )
                                            &( transactionId[ 0 ] ),
                                            &( stunMessageBuffer[ 0 ] ),
                                            &( stunMessageBufferLength ) );
+
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( expectedStunMessageLength,
