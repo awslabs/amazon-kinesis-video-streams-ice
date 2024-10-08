@@ -1595,6 +1595,7 @@ void test_iceCreateResponseForRequest_Controlled( void )
     size_t expectedStunMessageLength = sizeof( expectedStunMessage );
     IceResult_t result;
 
+    initInfo.isControlling = 0;
     result = Ice_Init( &( context ),
                        &( initInfo ) );
 
@@ -1624,8 +1625,6 @@ void test_iceCreateResponseForRequest_Controlled( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-
-    context.isControlling = 0;
 
     result = Ice_CreateResponseForRequest( &( context ),
                                            &( context.pCandidatePairs[ 0 ] ),
