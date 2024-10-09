@@ -1668,37 +1668,67 @@ void test_iceHandleStunPacket_BadParams( void )
     IceHandleStunPacketResult_t result;
 
     result = Ice_HandleStunPacket( NULL,
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( endpoint ), &( endpoint ), &( transactionId[ 0 ] ), &( candidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( endpoint ),
+                                   &( endpoint ),
+                                   &( transactionId[ 0 ] ),
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   NULL, 0, &( endpoint ), &( endpoint ), &( transactionId[ 0 ] ), &( candidatePair ) );
+                                   NULL,
+                                   0,
+                                   &( endpoint ),
+                                   &( endpoint ),
+                                   &( transactionId[ 0 ] ),
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, NULL, &( endpoint ), &( transactionId[ 0 ] ), &( candidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   NULL,
+                                   &( endpoint ),
+                                   &( transactionId[ 0 ] ),
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( endpoint ), NULL, &( transactionId[ 0 ] ), &( candidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( endpoint ),
+                                   NULL,
+                                   &( transactionId[ 0 ] ),
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( endpoint ), &( endpoint ), NULL, &( candidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( endpoint ),
+                                   &( endpoint ),
+                                   NULL,
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( endpoint ), &( endpoint ), &( transactionId[ 0 ] ), NULL );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( endpoint ),
+                                   &( endpoint ),
+                                   &( transactionId[ 0 ] ),
+                                   NULL );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -1720,7 +1750,12 @@ void test_iceHandleStunPacket_DeseralizeError( void )
     IceHandleStunPacketResult_t result;
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( endpoint ), &( endpoint ), &( transactionId[ 0 ] ), &( candidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( endpoint ),
+                                   &( endpoint ),
+                                   &( transactionId[ 0 ] ),
+                                   &( candidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR,
                        result );
@@ -1814,11 +1849,54 @@ void test_iceHandleStunPacket_BindingRequest( void )
     pCandidatePair = &context.pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( localEndpoint ), &( remoteEndpoint ), &( pTransactionId ), &( pCandidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( localEndpoint ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK,
                        result );
     TEST_ASSERT_EQUAL_PTR( &stunMessageBuffer[ 8 ], pTransactionId );
+
+    /* Verify local candidate Info in the Candidate Pair. */
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
+                       pCandidatePair->pLocalCandidate->candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       pCandidatePair->pLocalCandidate->isRemote );
+    TEST_ASSERT_EQUAL( HOST_CANDIDATE_PRIORITY,
+                       pCandidatePair->pLocalCandidate->priority );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
+                       pCandidatePair->pLocalCandidate->remoteProtocol );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
+                       pCandidatePair->pLocalCandidate->state );
+    TEST_ASSERT_EQUAL( 1,
+                       pCandidatePair->pLocalCandidate->endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 1,
+                       pCandidatePair->pLocalCandidate->endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( 8080,
+                       pCandidatePair->pLocalCandidate->endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   pCandidatePair->pLocalCandidate->endpoint.transportAddress.address, sizeof( ipAddress ) );
+
+    /* Verify remote candidate Info in the Candidate Pair. */
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
+                       pCandidatePair->pRemoteCandidate->candidateType );
+    TEST_ASSERT_EQUAL( 1,
+                       pCandidatePair->pRemoteCandidate->isRemote );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_UDP,
+                       pCandidatePair->pRemoteCandidate->remoteProtocol );
+    TEST_ASSERT_EQUAL( 1000,
+                       pCandidatePair->pRemoteCandidate->priority );
+    TEST_ASSERT_EQUAL( 1,
+                       pCandidatePair->pRemoteCandidate->endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 8080,
+                       pCandidatePair->pRemoteCandidate->endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   pCandidatePair->pRemoteCandidate->endpoint.transportAddress.address, sizeof( ipAddress ) );
+    TEST_ASSERT_EQUAL( 1,
+                       pCandidatePair->pRemoteCandidate->endpoint.transportAddress.family );
 }
 
 /*-----------------------------------------------------------*/
@@ -1868,21 +1946,26 @@ void test_iceHandleStunPacket_IntegrityMismatch( void )
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     IceEndpoint_t localEndpoint = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
-    uint8_t* pTransactionId;
-    IceCandidatePair_t* pCandidatePair;
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
     IceResult_t resultIce;
     IceHandleStunPacketResult_t result;
 
     resultIce = Ice_Init( &( context ),
-                       &( initInfo ) );
+                          &( initInfo ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        resultIce );
 
     result = Ice_HandleStunPacket( &( context ),
-                                         &( stunMessageBuffer[ 0 ] ),stunMessageBufferLength, &( localEndpoint ), &( remoteEndpoint ), &( pTransactionId ),&(pCandidatePair));
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( localEndpoint ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
 
-    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR,
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_INTEGRITY_MISMATCH,
                        result );
 }
 
@@ -1947,9 +2030,14 @@ void test_iceHandleStunPacket_FingerPrintMismatch( void )
     remoteEndpoint = localEndpoint; /* For simplicity, use the same endpoint for remote */
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( localEndpoint ), &( remoteEndpoint ), &( pTransactionId ), &( pCandidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( localEndpoint ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
 
-    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR,       /* Should have been ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH */
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH,     
                        result );
 }
 
@@ -2034,7 +2122,12 @@ void test_iceHandleStunPacket_BindingResponseSuccess( void )
     pCandidatePair = &context.pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ), stunMessageBufferLength, &( localEndpoint ), &( remoteEndpoint ), &( pTransactionId ), &( pCandidatePair ) );
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   stunMessageBufferLength,
+                                   &( localEndpoint ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_OK,
                        result );
@@ -2042,7 +2135,6 @@ void test_iceHandleStunPacket_BindingResponseSuccess( void )
 }
 
 /*-----------------------------------------------------------*/
-
 
 /**
  * @brief Validate ICE Get Local Candidate Count fail functionality for Bad Parameters.

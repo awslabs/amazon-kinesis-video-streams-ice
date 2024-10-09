@@ -450,7 +450,7 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
         }
     }
 
-    if( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND )
+    if( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND && result == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
     }
