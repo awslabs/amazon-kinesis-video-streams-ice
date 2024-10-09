@@ -113,7 +113,7 @@ add_cmock_targets()
 include( ${MODULE_ROOT_DIR}/test/unit-test/cmock/create_test.cmake )
 
 # Include unit-test build configuration.
-# include( ${UNIT_TEST_DIR}/ice_api_private/ut.cmake )
+include( ${UNIT_TEST_DIR}/ice_api_private/ut.cmake )
 include( ${UNIT_TEST_DIR}/ice_api/ut.cmake )
 
 #  ==================================== Coverage Analysis configuration ========================================
@@ -123,5 +123,6 @@ add_custom_target( coverage
     -P ${MODULE_ROOT_DIR}/test/unit-test/cmock/coverage.cmake
     DEPENDS cmock unity
     ice_api_utest
+    ice_api_private_utest
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

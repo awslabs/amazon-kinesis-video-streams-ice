@@ -80,7 +80,7 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
 {
     IceResult_t result = ICE_RESULT_OK;
     uint64_t candidatePairPriority;
-    size_t i, candidatePairIndex = pContext->numCandidatePairs;
+    size_t i, candidatePairIndex;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
 
     if( ( pContext == NULL ) ||
@@ -91,7 +91,9 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
     }
 
     if( result == ICE_RESULT_OK )
-    {
+    {   
+        candidatePairIndex = pContext->numCandidatePairs;
+        
         if( pContext->numCandidatePairs == pContext->maxCandidatePairs )
         {
             result = ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD;
@@ -262,7 +264,7 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
                                                            &( messageIntegrity[ 0 ] ),
                                                            &( messageIntegrityLength ) );
 
-            if( iceResult == ICE_RESULT_OK )
+            if( iceResult == ICE_RESULT_OK && messageIntegrityLength == STUN_HMAC_VALUE_LENGTH )
             {
                 stunResult = StunSerializer_AddAttributeIntegrity( pStunCtx,
                                                                    &( messageIntegrity[ 0 ] ),
@@ -397,6 +399,7 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
 
                             if( ( iceResult != ICE_RESULT_OK ) ||
                                 ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
+                                ( stunAttribute.attributeValueLength != STUN_HMAC_VALUE_LENGTH ) ||
                                 ( memcmp( &( messageIntegrity[ 0 ] ),
                                           stunAttribute.pAttributeValue,
                                           stunAttribute.attributeValueLength ) != 0 ) )
