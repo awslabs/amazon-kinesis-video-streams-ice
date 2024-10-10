@@ -546,7 +546,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                             pReceivedStunMessage,
                                             receivedStunMessageLength,
                                             &( stunHeader ) );
-        
+
         if( stunResult == STUN_RESULT_OK )
         {
             switch( stunHeader.messageType )
@@ -554,17 +554,17 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                 case STUN_MESSAGE_TYPE_BINDING_REQUEST:
                 {
                     handleStunPacketResult = Ice_HandleStunBindingRequest( pContext,
-                                                                        &( stunCtx ),
-                                                                        pLocalCandidateEndpoint,
-                                                                        pRemoteCandidateEndpoint,
-                                                                        ppIceCandidatePair );
+                                                                           &( stunCtx ),
+                                                                           pLocalCandidateEndpoint,
+                                                                           pRemoteCandidateEndpoint,
+                                                                           ppIceCandidatePair );
                 }
                 break;
 
                 case STUN_MESSAGE_TYPE_BINDING_SUCCESS_RESPONSE:
                 {
                     transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                        stunHeader.pTransactionId );
+                                                                         stunHeader.pTransactionId );
 
                     if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
                     {
@@ -578,11 +578,11 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     else
                     {
                         handleStunPacketResult = Ice_HandleConnectivityCheckResponse( pContext,
-                                                                                    &( stunCtx ),
-                                                                                    &( stunHeader ),
-                                                                                    pLocalCandidateEndpoint,
-                                                                                    pRemoteCandidateEndpoint,
-                                                                                    ppIceCandidatePair );
+                                                                                      &( stunCtx ),
+                                                                                      &( stunHeader ),
+                                                                                      pLocalCandidateEndpoint,
+                                                                                      pRemoteCandidateEndpoint,
+                                                                                      ppIceCandidatePair );
                     }
                 }
                 break;
@@ -611,7 +611,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
     return handleStunPacketResult;
 }
 
-/*------------------------------------------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 /* Ice_GetValidLocalCandidateCount - Get Local Candidate count.
  */

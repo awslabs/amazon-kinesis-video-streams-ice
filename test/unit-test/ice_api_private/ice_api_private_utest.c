@@ -14,21 +14,9 @@
 /* ===========================  EXTERN VARIABLES    =========================== */
 
 /*
- * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 1.
+ * Used in the CRC32 calculation.
  */
-#define HOST_CANDIDATE_PRIORITY                2113929471
-
-/*
- * The priority is calculated for a host candidate where pCandidate.isPointToPoint = 0.
- */
-#define HOST_CANDIDATE_PRIORITY_MULTICAST      2130706431
-#define SERVER_REFLEXIVE_CANDIDATE_PRIORITY    1694498815
 #define CRC32_POLYNOMIAL                       0xEDB88320
-
-/*
- * IP Address used in the tests.
- */
-uint8_t IP_ADDRESS[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100" */
 
 /*
  * Arrays used in the tests.
@@ -104,7 +92,7 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
                          uint8_t * pOutputBuffer,
                          uint16_t * pOutputBufferLength )
 {
-    /* Assume a fixed HMAC output length of 20 bytes (-bit). */
+    /* Assume a fixed HMAC output length of 20 bytes (160 bits). */
     const uint16_t hmacLength = 20;
     uint16_t i;
     IceResult_t result = ICE_RESULT_OK;
@@ -158,8 +146,8 @@ static void Info_Init_For_Tests( void )
     initInfo.creds.localPasswordLength = strlen( "localPassword" );
     initInfo.creds.pRemoteUsername = ( uint8_t * ) "remoteUsername";
     initInfo.creds.remoteUsernameLength = strlen( "remoteUsername" );
-    initInfo.creds.pRemotePassword = ( uint8_t * ) "localPassword";
-    initInfo.creds.remotePasswordLength = strlen( "localPassword" );
+    initInfo.creds.pRemotePassword = ( uint8_t * ) "remotePassword";
+    initInfo.creds.remotePasswordLength = strlen( "remotePassword" );
     initInfo.creds.pCombinedUsername = ( uint8_t * ) "combinedUsername";
     initInfo.creds.combinedUsernameLength = strlen( "combinedUsername" );
     initInfo.localCandidatesArrayLength = LOCAL_CANDIDATE_ARRAY_SIZE;
@@ -217,7 +205,6 @@ void test_iceAddCandidatePair_BadParams( void )
     IceCandidate_t remoteCandidate = { 0 };
     IceResult_t result;
 
-
     result = Ice_AddCandidatePair( NULL,
                                    &( localCandidate ),
                                    &( remoteCandidate ) );
@@ -243,7 +230,7 @@ void test_iceAddCandidatePair_BadParams( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Add Candidate Pair fail functionality for Bad Parameters.
+ * @brief Validate ICE Add Candidate Pair fail functionality for max threshold.
  */
 void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
 {
@@ -266,12 +253,12 @@ void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Add Candidate Pair fail functionality for Bad Parameters.
+ * @brief Validate ICE Add Candidate Pair fail functionality for small buffer.
  */
-void test_iceFinalizeStunPacket_StunError_LowBuffer( void )
+void test_iceFinalizeStunPacket_StunError_SmallBuffer( void )
 {
     IceContext_t context = { 0 };
-    size_t bufferLength = 10;
+    size_t bufferLength = 10; /* Too small to be able to contain a Stun message. */
     IceResult_t result;
 
     result = Ice_Init( &( context ),
@@ -282,7 +269,7 @@ void test_iceFinalizeStunPacket_StunError_LowBuffer( void )
 
     result = Ice_FinalizeStunPacket( &( context ),
                                      NULL,
-                                     ( context.creds.pLocalPassword ),
+                                     context.creds.pLocalPassword,
                                      context.creds.localPasswordLength,
                                      &( bufferLength ) );
 

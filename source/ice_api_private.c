@@ -91,9 +91,7 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
     }
 
     if( result == ICE_RESULT_OK )
-    {   
-        candidatePairIndex = pContext->numCandidatePairs;
-        
+    {
         if( pContext->numCandidatePairs == pContext->maxCandidatePairs )
         {
             result = ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD;
@@ -111,6 +109,8 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         candidatePairPriority = Ice_ComputeCandidatePairPriority( pLocalCandidate->priority,
                                                                   pRemoteCandidate->priority,
                                                                   pContext->isControlling );
+
+        candidatePairIndex = pContext->numCandidatePairs;
 
         /* ICE Candidate pairs are sorted by priority. Find the correct location
          * of the new candidate pair in the candidate pair array. */
@@ -264,11 +264,18 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
                                                            &( messageIntegrity[ 0 ] ),
                                                            &( messageIntegrityLength ) );
 
-            if( iceResult == ICE_RESULT_OK && messageIntegrityLength == STUN_HMAC_VALUE_LENGTH )
+            if( iceResult == ICE_RESULT_OK )
             {
-                stunResult = StunSerializer_AddAttributeIntegrity( pStunCtx,
-                                                                   &( messageIntegrity[ 0 ] ),
-                                                                   messageIntegrityLength );
+                if( messageIntegrityLength == STUN_HMAC_VALUE_LENGTH )
+                {
+                    stunResult = StunSerializer_AddAttributeIntegrity( pStunCtx,
+                                                                       &( messageIntegrity[ 0 ] ),
+                                                                       messageIntegrityLength );
+                }
+                else
+                {
+                    iceResult = ICE_RESULT_HMAC_ERROR;
+                }
             }
         }
     }
@@ -398,8 +405,8 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                                            &( messageIntegrityLength ) );
 
                             if( ( iceResult != ICE_RESULT_OK ) ||
+                                ( messageIntegrityLength != STUN_HMAC_VALUE_LENGTH ) ||
                                 ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
-                                ( stunAttribute.attributeValueLength != STUN_HMAC_VALUE_LENGTH ) ||
                                 ( memcmp( &( messageIntegrity[ 0 ] ),
                                           stunAttribute.pAttributeValue,
                                           stunAttribute.attributeValueLength ) != 0 ) )
