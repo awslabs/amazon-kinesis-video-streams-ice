@@ -2189,8 +2189,8 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
         /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
         0x00, 0x06, 0x00, 0x10,
         /* Attribute Value = "combinedUsername". */
-        0x63, 0x6F, 0x6D, 0x62,0x69,  0x6E, 0x65, 0x64,
-        0x55, 0x73, 0x65, 0x72,0x6E,  0x61, 0x6D, 0x65,
+        0x63, 0x6F, 0x6D, 0x62 ,0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
         /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
         0x00, 0x24, 0x00, 0x04,
         /* Attribute Value = 0x7E0000FF. */
@@ -2198,7 +2198,7 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
         /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
-        0x07, 0x06, 0x05, 0x04,0x03,  0x02, 0x01, 0x00,
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
         /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
@@ -2222,7 +2222,7 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
     IceResult_t resultIce;
     IceHandleStunPacketResult_t result;
 
-    initInfo.creds.localPasswordLength = 0;
+    initInfo.creds.localPasswordLength = 0;        /* The Local Password Length is 0 */
     resultIce = Ice_Init( &( context ),
                           &( initInfo ) );
 
@@ -2556,7 +2556,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_StartNomination( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        resultIce );
 
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = 13;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |  ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG; /* Wait for local response. */
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessageBuffer[ 0 ] ),
@@ -2650,7 +2650,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_ValidCandidatePair( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        resultIce );
 
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = 13;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |  ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG; /* Wait for local response. */
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessageBuffer[ 0 ] ),
@@ -2744,7 +2744,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_CandidatePairReady( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        resultIce );
 
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = 13;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |  ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG; /* Wait for local response. */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
 
     result = Ice_HandleStunPacket( &( context ),
