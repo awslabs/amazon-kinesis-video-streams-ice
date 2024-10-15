@@ -2425,7 +2425,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess( void )
         0x65, 0x66, 0x7E, 0x6E,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
-        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn whereas Attribute Value being Passed: 0xB1D5BE24. */
+        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn of the sender's ICE Agent. */
         0x36, 0x68, 0x06, 0x1D
     };
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
@@ -2512,7 +2512,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_StartNomination( void )
         0x65, 0x66, 0x7E, 0x6E,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
-        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn whereas Attribute Value being Passed: 0xB1D5BE24. */
+        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn of the sender's ICE Agent. */
         0x36, 0x68, 0x06, 0x1D
     };
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
@@ -2605,7 +2605,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_ValidCandidatePair( void )
         0x65, 0x66, 0x7E, 0x6E,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
-        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn whereas Attribute Value being Passed: 0xB1D5BE24. */
+        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn of the sender's ICE Agent. */
         0x36, 0x68, 0x06, 0x1D
     };
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
@@ -2699,7 +2699,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_CandidatePairReady( void )
         0x65, 0x66, 0x7E, 0x6E,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
-        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn whereas Attribute Value being Passed: 0xB1D5BE24. */
+        /* Attribute Actual Value: 0x3668061D as calculated by testCrc32Fxn of the sender's ICE Agent. */
         0x36, 0x68, 0x06, 0x1D
     };
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
