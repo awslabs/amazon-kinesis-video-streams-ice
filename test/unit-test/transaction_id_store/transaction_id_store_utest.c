@@ -37,27 +37,26 @@ void tearDown( void )
 void test_iceTransactionIdStore_Init_BadParams( void )
 {
     TransactionIdStore_t transactionIdStore;
-    TransactionIdSlot_t transactionIdSlot = { 0 };
-    size_t numTransactionIdSlots = 1;
+    TransactionIdSlot_t transactionIdSlotArray[ 32 ];
+    size_t transactionIdSlotArraySize = 32;
     TransactionIdStoreResult_t result;
 
-
     result = TransactionIdStore_Init( NULL,
-                                      &( transactionIdSlot ),
-                                      numTransactionIdSlots );
+                                      &( transactionIdSlotArray[ 0 ] ),
+                                      transactionIdSlotArraySize );
 
     TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_BAD_PARAM,
                        result );
 
     result = TransactionIdStore_Init( &( transactionIdStore ),
                                       NULL,
-                                      numTransactionIdSlots );
+                                      transactionIdSlotArraySize );
 
     TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_BAD_PARAM,
                        result );
 
     result = TransactionIdStore_Init( &( transactionIdStore ),
-                                      &( transactionIdSlot ),
+                                      &( transactionIdSlotArray[ 0 ] ),
                                       0 );
 
     TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_BAD_PARAM,
@@ -74,7 +73,6 @@ void test_iceTransactionIdStore_Insert_BadParams( void )
     TransactionIdStore_t transactionIdStore;
     uint8_t transactionID[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
     TransactionIdStoreResult_t result;
-
 
     result = TransactionIdStore_Insert( NULL,
                                         &( transactionID[ 0 ] ) );
@@ -100,7 +98,6 @@ void test_iceTransactionIdStore_HasId_BadParams( void )
     uint8_t transactionID[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
     TransactionIdStoreResult_t result;
 
-
     result = TransactionIdStore_HasId( NULL,
                                        &( transactionID[ 0 ] ) );
 
@@ -124,7 +121,6 @@ void test_iceTransactionIdStore_Remove_BadParams( void )
     TransactionIdStore_t transactionIdStore;
     uint8_t transactionID[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
     TransactionIdStoreResult_t result;
-
 
     result = TransactionIdStore_Remove( NULL,
                                         &( transactionID[ 0 ] ) );

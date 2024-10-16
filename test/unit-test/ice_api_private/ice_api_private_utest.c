@@ -18,7 +18,7 @@
 /*
  * IP Address used in the tests.
  */
-uint8_t IP_ADDRESS[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100" */
+uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
 
 /*
  * Arrays used in the tests.
@@ -241,8 +241,14 @@ void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
     IceCandidate_t remoteCandidate = { 0 };
     IceResult_t result;
 
-    context.numCandidatePairs = 1000;
-    context.maxCandidatePairs = 1000;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Simulate having max possible candidate pairs. */
+    context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
@@ -255,12 +261,12 @@ void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Add Candidate Pair fail functionality for small buffer.
+ * @brief Validate ICE Add Candidate Pair fail functionality for NULL stun context.
  */
-void test_iceFinalizeStunPacket_StunError_SmallBuffer( void )
+void test_iceFinalizeStunPacket_StunError_NullStunContext( void )
 {
     IceContext_t context = { 0 };
-    size_t bufferLength = 10; /* Too small to be able to contain a Stun message. */
+    size_t bufferLength = 128;
     IceResult_t result;
 
     result = Ice_Init( &( context ),
@@ -288,13 +294,12 @@ void test_iceIsSameTransportAddress_BadParms( void )
 {
     IceTransportAddress_t transportAddress1;
     IceTransportAddress_t transportAddress2;
-    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
     uint8_t result;
 
     transportAddress1.port = 3478;
     transportAddress1.family = 0;
     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-            ( const void * ) ipAddress,
+            ( const void * ) &( ipAddress[ 0 ] ),
             sizeof( ipAddress ) );
 
     transportAddress2.port = 3478;
@@ -302,7 +307,6 @@ void test_iceIsSameTransportAddress_BadParms( void )
     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
-
 
     result = Ice_IsSameTransportAddress( NULL,
                                          &( transportAddress2 ) );
@@ -322,25 +326,23 @@ void test_iceIsSameTransportAddress_BadParms( void )
 /**
  * @brief Validate ICE Same Transport Address check fail functionality.
  */
-void test_iceIsSameTransportAddress_Diff_Family( void )
+void test_iceIsSameTransportAddress_DifferentFamily( void )
 {
     IceTransportAddress_t transportAddress1;
     IceTransportAddress_t transportAddress2;
-    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
     uint8_t result;
 
     transportAddress1.port = 3478;
     transportAddress1.family = 0;
     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-            ( const void * ) ipAddress,
+            ( const void * ) &( ipAddress[ 0 ] ),
             sizeof( ipAddress ) );
 
     transportAddress2.port = 3478;
     transportAddress2.family = 1;
     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-            ( const void * ) ipAddress,
+            ( const void * ) &( ipAddress[ 0 ] ),
             sizeof( ipAddress ) );
-
 
     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
                                          &( transportAddress2 ) );
@@ -354,25 +356,23 @@ void test_iceIsSameTransportAddress_Diff_Family( void )
 /**
  * @brief Validate ICE Same Transport Address check fail functionality.
  */
-void test_iceIsSameTransportAddress_Diff_Port( void )
+void test_iceIsSameTransportAddress_DifferentPort( void )
 {
     IceTransportAddress_t transportAddress1;
     IceTransportAddress_t transportAddress2;
-    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
     uint8_t result;
 
     transportAddress1.port = 3478;
     transportAddress1.family = 1;
     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-            ( const void * ) ipAddress,
+            ( const void * ) &( ipAddress[ 0 ] ),
             sizeof( ipAddress ) );
 
     transportAddress2.port = 2002;
     transportAddress2.family = 1;
     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-            ( const void * ) ipAddress,
+            ( const void * ) &( ipAddress[ 0 ] ),
             sizeof( ipAddress ) );
-
 
     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
                                          &( transportAddress2 ) );
@@ -386,24 +386,24 @@ void test_iceIsSameTransportAddress_Diff_Port( void )
 /**
  * @brief Validate ICE Same Transport Address check fail functionality.
  */
-void test_iceIsSameTransportAddress_Diff_Address( void )
+void test_iceIsSameTransportAddress_DifferentIpAddress( void )
 {
     IceTransportAddress_t transportAddress1;
     IceTransportAddress_t transportAddress2;
-    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
-    uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E };       /* "192.168.1.110". */
+    uint8_t ipAddress1[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
+    uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E }; /* "192.168.1.110". */
     uint8_t result;
 
     transportAddress1.port = 3478;
     transportAddress1.family = 1;
     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-            ( const void * ) ipAddress,
-            sizeof( ipAddress ) );
+            ( const void * ) &( ipAddress1[ 0 ] ),
+            sizeof( ipAddress1 ) );
 
     transportAddress2.port = 3478;
     transportAddress2.family = 1;
     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-            ( const void * ) ipAddress2,
+            ( const void * ) &( ipAddress2[ 0 ] ),
             sizeof( ipAddress2 ) );
 
 
@@ -425,15 +425,17 @@ void test_iceComputeCandidatePriority_Invalid( void )
     uint8_t isPointToPoint;
     uint64_t result;
 
-    candidateType = 5; /* Unkown Type */
+    candidateType = 5; /* Unkown Type. */
     isPointToPoint = 1;
 
-    /* priority = (2^24)*(type preference) +
-     *   (2^8)*(local preference) +
-     *   (2^0)*(256 - component ID) */
-
-
-    /* ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) +  255     =   255  */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
+     */
 
     result = Ice_ComputeCandidatePriority( candidateType,
                                            isPointToPoint );
@@ -456,12 +458,14 @@ void test_iceComputeCandidatePriority_PeerReflexive( void )
     candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
     isPointToPoint = 1;
 
-    /* priority = (2^24)*(type preference) +
-     *   (2^8)*(local preference) +
-     *   (2^0)*(256 - component ID) */
-
-
-    /* ( 2^24 ) * ( 110 ) + ( 2^8 ) * ( 0 ) +  255     =   1845494015  */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 110 ) + ( 2^8 ) * ( 0 ) + 255 = 1845494015.
+     */
 
     result = Ice_ComputeCandidatePriority( candidateType,
                                            isPointToPoint );
@@ -484,12 +488,14 @@ void test_iceComputeCandidatePriority_Relayed( void )
     candidateType = ICE_CANDIDATE_TYPE_RELAYED;
     isPointToPoint = 1;
 
-    /* priority = (2^24)*(type preference) +
-     *   (2^8)*(local preference) +
-     *   (2^0)*(256 - component ID) */
-
-
-    /* ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) +  255     =   255  */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
+     */
 
     result = Ice_ComputeCandidatePriority( candidateType,
                                            isPointToPoint );

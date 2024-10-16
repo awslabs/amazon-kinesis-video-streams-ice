@@ -114,8 +114,8 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
         {
             result = Ice_AddCandidatePair( pContext,
-                                            pHostCandidate,
-                                            &( pContext->pRemoteCandidates[ i ] ) );
+                                           pHostCandidate,
+                                           &( pContext->pRemoteCandidates[ i ] ) );
         }
     }
 
