@@ -2231,7 +2231,7 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
     IceCandidatePair_t * pCandidatePair;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t stunMessageBuffer[] =
+    uint8_t stunMessage[] =
     {
         /* STUN header: Message Type = Binding Request (0x0001), Length = 84 bytes (excluding 20 bytes header). */
         0x00, 0x01, 0x00, 0x54,
@@ -2271,7 +2271,7 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
         /* Attribute Value: 0x010267E8. */
         0x01, 0x02, 0x67, 0xE8,
     };
-    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    size_t stunMessageLength = sizeof( stunMessage );
 
     iceResult = Ice_Init( &( context ),
                           &( initInfo ) );
@@ -2306,8 +2306,8 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
                        iceResult );
 
     result = Ice_HandleStunPacket( &( context ),
-                                   &( stunMessageBuffer[ 0 ] ),
-                                   stunMessageBufferLength,
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
                                    &( localEndpoint ),
                                    &( remoteEndpoint ),
                                    &( pTransactionId ),
