@@ -3535,7 +3535,9 @@ void test_iceHandleStunPacket_BindingResponseSuccess_FoundPeerReflexiveCandidate
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0;
 
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 0;
-    memcpy( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId, 0, 0 );       /* Imitating the Ice_HandleServerReflexiveResponse() functionality ] */
+    memset( &( transactionIdStore ),
+            0,
+            sizeof( TransactionIdStore_t ) );      /* Imitating the Ice_HandleServerReflexiveResponse() functionality ] */
 
     /* Here a valid state Server Reflexive Local Candidate is created by this process. */
 
@@ -3725,7 +3727,9 @@ void test_iceHandleStunPacket_BindingResponseSuccess_SuccessLocalResponse( void 
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0;
 
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 0;
-    memcpy( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId, 0, 0 );       /* Imitating the Ice_HandleServerReflexiveResponse() functionality  ] */
+    memset( &( transactionIdStore ),
+            0,
+            sizeof( TransactionIdStore_t ) );      /* Imitating the Ice_HandleServerReflexiveResponse() functionality  ] */
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
