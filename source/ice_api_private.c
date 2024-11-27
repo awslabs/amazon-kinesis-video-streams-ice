@@ -240,8 +240,8 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
 {
     IceResult_t iceResult = ICE_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
-    uint8_t messageIntegrity[ STUN_HMAC_VALUE_LENGTH ];
-    uint16_t messageIntegrityLength = STUN_HMAC_VALUE_LENGTH;
+    uint8_t messageIntegrity[ STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ];
+    uint16_t messageIntegrityLength = STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH;
     uint8_t * pIntegrityCalculationData = NULL;
     uint16_t integrityCalculationDataLength = 0;
     uint8_t * pFingerprintCalculationData = NULL;
@@ -266,7 +266,7 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
 
             if( iceResult == ICE_RESULT_OK )
             {
-                if( messageIntegrityLength == STUN_HMAC_VALUE_LENGTH )
+                if( messageIntegrityLength == STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH )
                 {
                     stunResult = StunSerializer_AddAttributeIntegrity( pStunCtx,
                                                                        &( messageIntegrity[ 0 ] ),
@@ -336,8 +336,8 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
     uint16_t errorPhaseLength = 0;
     uint8_t * pIntegrityCalculationData = NULL;
     uint16_t integrityCalculationDataLength = 0;
-    uint8_t messageIntegrity[ STUN_HMAC_VALUE_LENGTH ];
-    uint16_t messageIntegrityLength = STUN_HMAC_VALUE_LENGTH;
+    uint8_t messageIntegrity[ STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ];
+    uint16_t messageIntegrityLength = STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH;
     uint8_t * pFingerprintCalculationData = NULL;
     uint16_t fingerprintCalculationDataLength = 0;
     uint32_t fingerprint;
@@ -405,7 +405,7 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                                            &( messageIntegrityLength ) );
 
                             if( ( iceResult != ICE_RESULT_OK ) ||
-                                ( messageIntegrityLength != STUN_HMAC_VALUE_LENGTH ) ||
+                                ( messageIntegrityLength != STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ) ||
                                 ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
                                 ( memcmp( &( messageIntegrity[ 0 ] ),
                                           stunAttribute.pAttributeValue,
