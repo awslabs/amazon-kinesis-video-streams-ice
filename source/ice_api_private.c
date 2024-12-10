@@ -538,41 +538,42 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                     pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_NOMINATION_FLAG;
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
                 }
-
-                /* Is the entire handshaking process and nomination completed. */
-                if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
-                {
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
-                }
             }
-
-            /* Received a connectivity check request from the remote candidate. */
-            if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_RECEIVED_FLAG ) == 0 )
+            /* Is the entire handshaking process and nomination completed. */
+            if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
             {
-                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
-            }
-
-            if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_SENT_FLAG ) == 0 )
-            {
-                /* We have not sent the connectivity check request to this
-                 * candidate. The application needs to send 2 stun packets-
-                 * 1. The connectivity check request from local to remote.
-                 * 2. The response to the connectivity check request
-                 *    received from remote. */
-                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_SENT_FLAG;
-                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
-
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK;
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
             }
             else
             {
-                    /* We have sent the connectivity check request to this
-                    * candidate. The application needs to send 1 stun packet-
-                    * 1. The response to the connectivity check request
-                    *    received from remote. */
-                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
+                /* Received a connectivity check request from the remote candidate. */
+                if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_RECEIVED_FLAG ) == 0 )
+                {
+                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
+                }
 
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
+                if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_SENT_FLAG ) == 0 )
+                {
+                    /* We have not sent the connectivity check request to this
+                    * candidate. The application needs to send 2 stun packets-
+                    * 1. The connectivity check request from local to remote.
+                    * 2. The response to the connectivity check request
+                    *    received from remote. */
+                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_SENT_FLAG;
+                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
+
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK;
+                }
+                else
+                {
+                        /* We have sent the connectivity check request to this
+                        * candidate. The application needs to send 1 stun packet-
+                        * 1. The response to the connectivity check request
+                        *    received from remote. */
+                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
+
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
+                }
             }
         }
         else
