@@ -533,13 +533,10 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             /* Did we receive a request for nomination? */
             if( deserializePacketInfo.useCandidateFlag == 1 )
             {
-                if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_NOMINATION_FLAG ) == 0 )
-                {
-                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_NOMINATION_FLAG;
-                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                }
+                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
             }
-            /* Is the entire handshaking process and nomination completed. */
+
+            /* Is the 4-way handshake complete? */
             if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
             {
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;

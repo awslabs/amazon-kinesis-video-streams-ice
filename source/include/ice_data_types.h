@@ -18,14 +18,12 @@
 #define ICE_STUN_RESPONSE_RECEIVED_FLAG     ( 1 << 1 )
 #define ICE_STUN_REQUEST_RECEIVED_FLAG      ( 1 << 2 )
 #define ICE_STUN_RESPONSE_SENT_FLAG         ( 1 << 3 )
-#define ICE_STUN_REQUEST_NOMINATION_FLAG    ( 1 << 4 )
 
 #define ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( connectivityCheckFlags )    \
     ( ( connectivityCheckFlags ) == ( ICE_STUN_REQUEST_SENT_FLAG |          \
                                       ICE_STUN_RESPONSE_RECEIVED_FLAG |     \
                                       ICE_STUN_REQUEST_RECEIVED_FLAG |      \
-                                      ICE_STUN_RESPONSE_SENT_FLAG |         \
-                                      ICE_STUN_REQUEST_NOMINATION_FLAG ) )
+                                      ICE_STUN_RESPONSE_SENT_FLAG ) )
 
 /*----------------------------------------------------------------------------*/
 
