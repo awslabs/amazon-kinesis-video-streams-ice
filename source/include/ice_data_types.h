@@ -25,6 +25,33 @@
                                       ICE_STUN_REQUEST_RECEIVED_FLAG |      \
                                       ICE_STUN_RESPONSE_SENT_FLAG ) )
 
+#define ICE_SERVER_CONFIG_MAX_CONFIG_COUNT ( 5 )
+#define ICE_SERVER_CONFIG_MAX_URIS_COUNT ( 3 )
+#define ICE_SERVER_CONFIG_MAX_URI_LENGTH ( 256 )
+
+// Max stun username attribute len: https://tools.ietf.org/html/rfc5389#section-15.3
+#define ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ( 512 )
+
+/**
+ * Maximum allowed ICE configuration password length
+ * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password
+ */
+#define ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ( 256 )
+
+/* https://tools.ietf.org/html/rfc5389#section-15.7 */
+#define ICE_SERVER_CONFIG_MAX_REALM_LENGTH ( 128 )
+
+/* https://tools.ietf.org/html/rfc5389#section-15.8 */
+#define ICE_SERVER_CONFIG_MAX_NONCE_LENGTH ( 128 )
+
+/*
+ * According to https://datatracker.ietf.org/doc/html/rfc5389#section-15.4,
+ * long-term credentials are generated using MD5 hash, resulting in a fixed size of 16 bytes.
+ */
+#define ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH ( 16 )
+
+#define ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS ( 600 )
+
 /*----------------------------------------------------------------------------*/
 
 typedef enum IceCandidateType
@@ -32,13 +59,14 @@ typedef enum IceCandidateType
     ICE_CANDIDATE_TYPE_HOST,
     ICE_CANDIDATE_TYPE_PEER_REFLEXIVE,
     ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE,
-    ICE_CANDIDATE_TYPE_RELAYED,
+    ICE_CANDIDATE_TYPE_RELAY
 } IceCandidateType_t;
 
 typedef enum IceCandidateState
 {
     ICE_CANDIDATE_STATE_INVALID,
     ICE_CANDIDATE_STATE_NEW,
+    ICE_CANDIDATE_STATE_ALLOCATING, /* Dedicate for relay candidate to allocate resource with TURN server. */
     ICE_CANDIDATE_STATE_VALID
 } IceCandidateState_t;
 
@@ -49,7 +77,9 @@ typedef enum IceCandidatePairState
     ICE_CANDIDATE_PAIR_STATE_WAITING,
     ICE_CANDIDATE_PAIR_STATE_VALID,
     ICE_CANDIDATE_PAIR_STATE_NOMINATED,
-    ICE_CANDIDATE_PAIR_STATE_SUCCEEDED
+    ICE_CANDIDATE_PAIR_STATE_SUCCEEDED,
+    ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION, /* Dedicate for relay candidate to create permission for remote candidate. */
+    ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND /* Dedicate for relay candidate to associate channel number with remote candidate. */
 } IceCandidatePairState_t;
 
 typedef enum IceSocketProtocol
@@ -63,14 +93,24 @@ typedef enum IceResult
 {
     ICE_RESULT_OK,
     ICE_RESULT_BAD_PARAM,
+    ICE_RESULT_NO_NEXT_ACTION,
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
     ICE_RESULT_STUN_ERROR,
+    ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
+    ICE_RESULT_STUN_ERROR_ADD_REQUESTED_TRANSPORT,
+    ICE_RESULT_STUN_ERROR_ADD_USERNAME,
+    ICE_RESULT_STUN_ERROR_ADD_REALM,
+    ICE_RESULT_STUN_ERROR_ADD_NONCE,
+    ICE_RESULT_SNPRINTF_ERROR,
     ICE_RESULT_RANDOM_GENERATION_ERROR,
     ICE_RESULT_CRC32_ERROR,
     ICE_RESULT_HMAC_ERROR,
+    ICE_RESULT_MD5_ERROR,
     ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
-    ICE_RESULT_OUT_OF_MEMORY
+    ICE_RESULT_OUT_OF_MEMORY,
+    ICE_RESULT_INVALID_CANDIDATE_TYPE,
+    ICE_RESULT_INVALID_CANDIDATE
 } IceResult_t;
 
 typedef enum IceHandleStunPacketResult
@@ -82,6 +122,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
     ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION,
+    ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_COMPLETE,
 
     /* Error codes. */
     ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
@@ -90,16 +131,23 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH,
     ICE_HANDLE_STUN_PACKET_RESULT_INVALID_PACKET_TYPE,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND,
+    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE,
+    ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE,
+    ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED,
+    ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED,
+    ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATE_UNKNOWN_ERROR,
+    ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR,
 
     /* Application needs to take action. */
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK,
     ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION,
-    ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST,
 } IceHandleStunPacketResult_t;
 
 /*----------------------------------------------------------------------------*/
@@ -116,6 +164,10 @@ typedef IceResult_t ( * IceHmac_t ) ( const uint8_t * pPassword,
                                       size_t bufferLength,
                                       uint8_t * pOutputBuffer,
                                       uint16_t * pOutputBufferLength );
+typedef IceResult_t ( * IceMd5_t ) ( const uint8_t * pBuffer,
+                                     size_t bufferLength,
+                                     uint8_t * pOutputBuffer,
+                                     uint16_t * pOutputBufferLength );
 
 /*----------------------------------------------------------------------------*/
 
@@ -127,6 +179,20 @@ typedef struct IceEndpoint
     uint8_t isPointToPoint;
 } IceEndpoint_t;
 
+typedef struct IceServerConfig
+{
+    uint8_t userName[ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH];                                        //!< Username for the server
+    size_t userNameLength;                                                                                          //!< Length of username
+    uint8_t password[ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH];                                         //!< Password for the server
+    size_t passwordLength;                                                                                          //!< Length of password
+    uint8_t nonce[ICE_SERVER_CONFIG_MAX_NONCE_LENGTH];                                         //!< Nonce for the server
+    size_t nonceLength;                                                                                          //!< Length of Nonce
+    uint8_t realm[ICE_SERVER_CONFIG_MAX_REALM_LENGTH];                                         //!< Realm for the server
+    size_t realmLength;                                                                                          //!< Length of realm
+    uint8_t longTermPassword[ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH];                                         //!< Long term password for the server
+    size_t longTermPasswordLength;                                                                                          //!< Length of long term password
+} IceServerInfo_t;
+
 typedef struct IceCandidate
 {
     IceCandidateType_t candidateType;
@@ -135,6 +201,10 @@ typedef struct IceCandidate
     IceCandidateState_t state;
     uint32_t priority;
     IceSocketProtocol_t remoteProtocol;
+    uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
+
+    /* Below fields are for relay candidate. */
+    IceServerInfo_t iceServerInfo;
 } IceCandidate_t;
 
 typedef struct IceCandidatePair
@@ -152,6 +222,7 @@ typedef struct IceCryptoFunctions
     IceRandom_t randomFxn;
     IceCrc32_t crc32Fxn;
     IceHmac_t hmacFxn;
+    IceMd5_t md5Fxn;
 } IceCryptoFunctions_t;
 
 typedef struct IceCredentials
@@ -180,6 +251,7 @@ typedef struct IceContext
     IceCandidatePair_t * pCandidatePairs;
     size_t maxCandidatePairs;
     size_t numCandidatePairs;
+    IceCandidatePair_t * pNominatePairs;
     uint64_t tieBreaker;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
@@ -214,6 +286,13 @@ typedef struct IceStunDeserializedPacketInfo
     uint16_t errorCode;
     uint32_t priority;
     IceTransportAddress_t transportAddress;
+
+    /* Below fields are for relay candidate. */
+    uint8_t * pNonce;
+    size_t nonceLength;
+    uint8_t * pRealm;
+    size_t realmLength;
+    uint32_t lifetimeSeconds;
 } IceStunDeserializedPacketInfo_t;
 
 /*----------------------------------------------------------------------------*/

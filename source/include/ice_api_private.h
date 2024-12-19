@@ -56,6 +56,16 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair );
 
+IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t * pContext,
+                                                                   StunContext_t * pStunCtx,
+                                                                   const StunHeader_t * pStunHeader,
+                                                                   const IceEndpoint_t * pLocalCandidateEndpoint );
+
+IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * pContext,
+                                                                 StunContext_t * pStunCtx,
+                                                                 const StunHeader_t * pStunHeader,
+                                                                 const IceEndpoint_t * pLocalCandidateEndpoint );
+
 /*----------------------------------------------------------------------------*/
 
 #endif /* ICE_API_PRIVATE_H */

@@ -23,6 +23,57 @@
 
 /*----------------------------------------------------------------------------*/
 
+/* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4 to get the
+ * long-term credential string. */
+static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
+                                                IceServerInfo_t * pIceServerInfo )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    const int bufferLength = ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH + ICE_SERVER_CONFIG_MAX_REALM_LENGTH + ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH + 2;
+    char stringBuffer[ bufferLength ]; // 2 for two ":" between each value
+    int snprintfRetVal;
+    uint16_t outputBufferLength;
+
+    if( ( pIceServerInfo->userNameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
+        ( pIceServerInfo->realmLength > ICE_SERVER_CONFIG_MAX_REALM_LENGTH ) ||
+        ( pIceServerInfo->passwordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        snprintfRetVal = snprintf( stringBuffer, bufferLength,
+                                   "%.*s:%.*s:%.*s",
+                                   ( int ) pIceServerInfo->userNameLength, pIceServerInfo->userName,
+                                   ( int ) pIceServerInfo->realmLength, pIceServerInfo->realm,
+                                   ( int ) pIceServerInfo->passwordLength, pIceServerInfo->password );
+
+        /* LCOV_EXCL_START */
+        if( snprintfRetVal < 0 )
+        {
+            result = ICE_RESULT_SNPRINTF_ERROR;
+        }
+        /* LCOV_EXCL_STOP  */
+        else if( snprintfRetVal >= bufferLength )
+        {
+            result = ICE_RESULT_OUT_OF_MEMORY;
+        }
+        else
+        {
+            outputBufferLength = ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH;
+            result = pContext->cryptoFunctions.md5Fxn( stringBuffer, snprintfRetVal, pIceServerInfo->longTermPassword, &outputBufferLength );
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        pIceServerInfo->longTermPasswordLength = outputBufferLength;
+    }
+
+    return result;
+}
+
 uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddress1,
                                     const IceTransportAddress_t * pTransportAddress2 )
 {
@@ -32,7 +83,7 @@ uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddr
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                                                                            STUN_IPV6_ADDRESS_SIZE;
+                          STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( pTransportAddress1->port == pTransportAddress2->port ) &&
@@ -58,7 +109,7 @@ uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                                                                            STUN_IPV6_ADDRESS_SIZE;
+                          STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( memcmp( &( pTransportAddress1->address[ 0 ] ),
@@ -131,10 +182,18 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         }
 
         /* Insert the candidate pair at candidatePairIndex. */
+        /* Set relay candidate to permission creation state to authorize remote candidate access through TURN server. */
+        if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+        {
+            pContext->pCandidatePairs[ candidatePairIndex ].state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
+        }
+        else
+        {
+            pContext->pCandidatePairs[ candidatePairIndex ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+        }
         pContext->pCandidatePairs[ candidatePairIndex ].pLocalCandidate = pLocalCandidate;
         pContext->pCandidatePairs[ candidatePairIndex ].pRemoteCandidate = pRemoteCandidate;
         pContext->pCandidatePairs[ candidatePairIndex ].priority = candidatePairPriority;
-        pContext->pCandidatePairs[ candidatePairIndex ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
         pContext->pCandidatePairs[ candidatePairIndex ].connectivityCheckFlags = 0;
         memcpy( &( pContext->pCandidatePairs[ candidatePairIndex ].transactionId[ 0 ] ),
                 &( transactionId[ 0 ] ),
@@ -170,7 +229,7 @@ uint32_t Ice_ComputeCandidatePriority( IceCandidateType_t candidateType,
             typePreference = ICE_PRIORITY_PEER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE;
             break;
 
-        case ICE_CANDIDATE_TYPE_RELAYED:
+        case ICE_CANDIDATE_TYPE_RELAY:
             typePreference = ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE;
             break;
 
@@ -320,8 +379,7 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-/* Ice_DeserializeStunPacket - This API deserializes a received STUN packet.
-*/
+/* Ice_DeserializeStunPacket - This API deserializes a received STUN packet. */
 IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                        StunContext_t * pStunCtx,
                                                        const uint8_t * pPassword,
@@ -365,6 +423,7 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                 }
                 break;
 
+                case STUN_ATTRIBUTE_TYPE_XOR_RELAYED_ADDRESS:
                 case STUN_ATTRIBUTE_TYPE_XOR_MAPPED_ADDRESS:
                 {
                     stunResult = StunDeserializer_ParseAttributeAddress( pStunCtx,
@@ -451,13 +510,35 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                 }
                 break;
 
+                case STUN_ATTRIBUTE_TYPE_NONCE:
+                {
+                    pDeserializedPacketInfo->nonceLength = stunAttribute.attributeValueLength;
+                    pDeserializedPacketInfo->pNonce = stunAttribute.pAttributeValue;
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_REALM:
+                {
+                    pDeserializedPacketInfo->realmLength = stunAttribute.attributeValueLength;
+                    pDeserializedPacketInfo->pRealm = stunAttribute.pAttributeValue;
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_LIFETIME:
+                {
+                    stunResult = StunDeserializer_ParseAttributeLifetime( pStunCtx,
+                                                                          &( stunAttribute ),
+                                                                          &( pDeserializedPacketInfo->lifetimeSeconds ) );
+                }
+                break;
+
                 default:
                     break;
             }
         }
     }
 
-    if( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND && result == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    if( ( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND ) && ( result == ICE_HANDLE_STUN_PACKET_RESULT_OK ) )
     {
         result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
     }
@@ -479,6 +560,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
+    IceResult_t result = ICE_RESULT_OK;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                         pStunCtx,
@@ -531,7 +613,8 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
         if( pIceCandidatePair != NULL )
         {
             /* Did we receive a request for nomination? */
-            if( ( deserializePacketInfo.useCandidateFlag == 1 ) &&
+            if( ( pContext->isControlling == 0 ) &&
+                ( deserializePacketInfo.useCandidateFlag == 1 ) &&
                 ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
             {
                 pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
@@ -556,13 +639,29 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                 }
                 else
                 {
-                     /* We have sent the connectivity check request to this
-                      * candidate. The application needs to send 1 stun packet-
-                      * 1. The response to the connectivity check request
-                      *    received from remote. */
+                    /* We have sent the connectivity check request to this
+                     * candidate. The application needs to send 1 stun packet-
+                     * 1. The response to the connectivity check request
+                     *    received from remote. */
                     pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
 
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
+                }
+
+                if( ( pContext->isControlling == 1 ) &&
+                    ( pContext->pNominatePairs == NULL ) )
+                {
+                    /* We are the controlling agent. We need to nominate the
+                     * remote candidate. We pick the first pair completing connectivity check as
+                     * the nominated pair. */
+                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+                    pContext->pNominatePairs = pIceCandidatePair;
+                    result = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
+                                                                  STUN_HEADER_TRANSACTION_ID_LENGTH );
+                    if( result != ICE_RESULT_OK )
+                    {
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
+                    }
                 }
             }
         }
@@ -656,6 +755,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
+    IceResult_t result = ICE_RESULT_OK;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                         pStunCtx,
@@ -696,10 +796,21 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                         }
                         else
                         {
-                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
+                            pIceCandidatePair->state = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
                             if( pContext->isControlling == 1 )
                             {
-                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
+                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
+                                if( pContext->pNominatePairs == NULL )
+                                {
+                                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+                                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
+                                    result = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
+                                                                                  STUN_HEADER_TRANSACTION_ID_LENGTH );
+                                    if( result != ICE_RESULT_OK )
+                                    {
+                                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
+                                    }
+                                }
                             }
                             else
                             {
@@ -750,6 +861,188 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
         else
         {
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+        }
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t * pContext,
+                                                                   StunContext_t * pStunCtx,
+                                                                   const StunHeader_t * pStunHeader,
+                                                                   const IceEndpoint_t * pLocalCandidateEndpoint )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    IceStunDeserializedPacketInfo_t deserializePacketInfo;
+    IceCandidate_t * pIceCandidate = NULL;
+    IceResult_t iceResult = ICE_RESULT_OK;
+    size_t i;
+
+    for( i = 0; i < pContext->numLocalCandidates; i++ )
+    {
+        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
+                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
+        {
+            pIceCandidate = &( pContext->pLocalCandidates[i] );
+            break;
+        }
+    }
+
+    if( pIceCandidate == NULL )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
+    }
+    else if( pIceCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
+    }
+    else
+    {
+
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            pIceCandidate->iceServerInfo.longTermPassword,
+                                                            pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        memcpy( &( pIceCandidate->endpoint.transportAddress ),
+                &( deserializePacketInfo.transportAddress ),
+                sizeof( IceTransportAddress_t ) );
+        pIceCandidate->endpoint.isPointToPoint = 0;
+
+        pIceCandidate->state = ICE_CANDIDATE_STATE_VALID;
+
+        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
+        {
+            iceResult = Ice_AddCandidatePair( pContext,
+                                              pIceCandidate,
+                                              &( pContext->pRemoteCandidates[ i ] ) );
+
+        }
+
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS;
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * pContext,
+                                                                 StunContext_t * pStunCtx,
+                                                                 const StunHeader_t * pStunHeader,
+                                                                 const IceEndpoint_t * pLocalCandidateEndpoint )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    IceStunDeserializedPacketInfo_t deserializePacketInfo;
+    IceCandidate_t * pIceCandidate = NULL;
+    IceResult_t result = ICE_RESULT_OK;
+    size_t i;
+
+    for( i = 0; i < pContext->numLocalCandidates; i++ )
+    {
+        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
+                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
+        {
+            pIceCandidate = &( pContext->pLocalCandidates[i] );
+            break;
+        }
+    }
+
+    if( pIceCandidate == NULL )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            pIceCandidate->iceServerInfo.longTermPassword,
+                                                            pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        switch( deserializePacketInfo.errorCode )
+        {
+            case STUN_ATTRIBUTE_ERROR_CODE_SUCCESS:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_COMPLETE;
+            }
+            break;
+
+            case STUN_ATTRIBUTE_ERROR_CODE_UNAUTHORIZED:
+            {
+                /**
+                 * Resend Allocation Request with Realm and Nonce
+                 * after receiving 401 (Unauthorized) error.
+                 */
+                if( deserializePacketInfo.nonceLength > ICE_SERVER_CONFIG_MAX_NONCE_LENGTH )
+                {
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED;
+                }
+                else if( deserializePacketInfo.realmLength > ICE_SERVER_CONFIG_MAX_REALM_LENGTH )
+                {
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED;
+                }
+                else
+                {
+                    memcpy( pIceCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
+                    pIceCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
+                    memcpy( pIceCandidate->iceServerInfo.realm, deserializePacketInfo.pRealm, deserializePacketInfo.realmLength );
+                    pIceCandidate->iceServerInfo.realmLength = deserializePacketInfo.realmLength;
+
+                    result = CalculateLongTermCredential( pContext, &pIceCandidate->iceServerInfo );
+                    if( result != ICE_RESULT_OK )
+                    {
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR;
+                    }
+                    else
+                    {
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST;
+                    }
+                }
+            }
+            break;
+
+            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
+            {
+                /**
+                 * Resend Allocation Request with new Nonce
+                 * after receiving 438 (Stale Nonce) error.
+                 */
+                if( deserializePacketInfo.nonceLength > ICE_SERVER_CONFIG_MAX_NONCE_LENGTH )
+                {
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED;
+                }
+                else
+                {
+                    memcpy( pIceCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
+                    pIceCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
+
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST;
+                }
+            }
+            break;
+
+            default:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATE_UNKNOWN_ERROR;
+            }
+            break;
         }
     }
 

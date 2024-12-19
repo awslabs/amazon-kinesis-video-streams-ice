@@ -485,7 +485,7 @@ void test_iceComputeCandidatePriority_Relayed( void )
     uint8_t isPointToPoint;
     uint64_t result;
 
-    candidateType = ICE_CANDIDATE_TYPE_RELAYED;
+    candidateType = ICE_CANDIDATE_TYPE_RELAY;
     isPointToPoint = 1;
 
     /* Priority calculation formula:
