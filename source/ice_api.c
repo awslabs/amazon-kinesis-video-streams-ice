@@ -202,6 +202,254 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+/* CreateRequestForCreatePermission - This API creates Stun Packet for
+ * TURN create permission.
+ */
+static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
+                                                     IceCandidatePair_t * pIceCandidatePair,
+                                                     uint8_t * pStunMessageBuffer,
+                                                     size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    StunContext_t stunCtx;
+    StunHeader_t stunHeader;
+    StunResult_t stunResult = STUN_RESULT_OK;
+    TransactionIdStoreResult_t transactionIdStoreResult;
+
+    /* Other input parameters are checked before calling. */
+    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
+        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        result = ICE_RESULT_INVALID_CANDIDATE_TYPE;
+    }
+    else if( ( pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength <= 0 ) )
+    {
+        result = ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunHeader.messageType = STUN_MESSAGE_TYPE_CREATE_PERMISSION_REQUEST;
+        stunHeader.pTransactionId = pIceCandidatePair->transactionId;
+
+        stunResult = StunSerializer_Init( &stunCtx,
+                                          pStunMessageBuffer,
+                                          *pStunMessageBufferLength,
+                                          &stunHeader );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeAddress( &stunCtx,
+                                                         &pIceCandidatePair->pRemoteCandidate->endpoint.transportAddress,
+                                                         STUN_ATTRIBUTE_TYPE_XOR_PEER_ADDRESS );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_XOR_PEER_ADDRESS;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.userName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_USERNAME;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.realm, pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonce, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength > 0 )
+        {
+            /* We already have long-term key retrieved from username, realm and password. */
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &stunCtx,
+                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
+                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                             pStunMessageBufferLength );
+        }
+        else
+        {
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &stunCtx,
+                                             NULL,
+                                             0,
+                                             pStunMessageBufferLength );
+        }
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/* CreateRequestForChannelBind - This API creates Stun Packet for
+ * TURN channel bind.
+ */
+static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
+                                                IceCandidatePair_t * pIceCandidatePair,
+                                                uint8_t * pStunMessageBuffer,
+                                                size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    StunContext_t stunCtx;
+    StunHeader_t stunHeader;
+    StunResult_t stunResult = STUN_RESULT_OK;
+    TransactionIdStoreResult_t transactionIdStoreResult;
+
+    /* Other input parameters are checked before calling. */
+    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
+        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        result = ICE_RESULT_INVALID_CANDIDATE_TYPE;
+    }
+    else if( ( pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength <= 0 ) )
+    {
+        result = ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunHeader.messageType = STUN_MESSAGE_TYPE_CHANNEL_BIND_REQUEST;
+        stunHeader.pTransactionId = pIceCandidatePair->transactionId;
+
+        stunResult = StunSerializer_Init( &stunCtx,
+                                          pStunMessageBuffer,
+                                          *pStunMessageBufferLength,
+                                          &stunHeader );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeAddress( &stunCtx,
+                                                         &pIceCandidatePair->pRemoteCandidate->endpoint.transportAddress,
+                                                         STUN_ATTRIBUTE_TYPE_XOR_PEER_ADDRESS );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_XOR_PEER_ADDRESS;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeChannelNumber( &stunCtx, pIceCandidatePair->turnChannelNumber );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_CHANNEL_NUMBER;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.userName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_USERNAME;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.realm, pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonce, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength > 0 )
+        {
+            /* We already have long-term key retrieved from username, realm and password. */
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &stunCtx,
+                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
+                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                             pStunMessageBufferLength );
+        }
+        else
+        {
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &stunCtx,
+                                             NULL,
+                                             0,
+                                             pStunMessageBufferLength );
+        }
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 IceResult_t Ice_Init( IceContext_t * pContext,
                       const IceInitInfo_t * pInitInfo )
 {
@@ -221,7 +469,8 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         ( pInitInfo->creds.pLocalPassword == NULL ) ||
         ( pInitInfo->creds.pRemoteUsername == NULL ) ||
         ( pInitInfo->creds.pRemotePassword == NULL ) ||
-        ( pInitInfo->creds.pCombinedUsername == NULL ) )
+        ( pInitInfo->creds.pCombinedUsername == NULL ) ||
+        ( pInitInfo->getCurrentTimeSecondsFxn == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
@@ -250,6 +499,9 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         pContext->pStunBindingRequestTransactionIdStore = pInitInfo->pStunBindingRequestTransactionIdStore;
 
         pContext->cryptoFunctions = pInitInfo->cryptoFunctions;
+        pContext->getCurrentTimeSecondsFxn = pInitInfo->getCurrentTimeSecondsFxn;
+
+        Stun_InitReadWriteFunctions( &( pContext->readWriteFunctions ) );
     }
 
     if( result == ICE_RESULT_OK )
@@ -845,6 +1097,26 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                 }
                 break;
 
+                case STUN_MESSAGE_TYPE_CREATE_PERMISSION_SUCCESS_RESPONSE:
+                {
+                    handleStunPacketResult = Ice_HandleTurnCreatePermissionSuccessResponse( pContext,
+                                                                                            &( stunCtx ),
+                                                                                            &( stunHeader ),
+                                                                                            pLocalCandidateEndpoint,
+                                                                                            ppIceCandidatePair );
+                }
+                break;
+
+                case STUN_MESSAGE_TYPE_CHANNEL_BIND_SUCCESS_RESPONSE:
+                {
+                    handleStunPacketResult = Ice_HandleTurnChannelBindSuccessResponse( pContext,
+                                                                                       &( stunCtx ),
+                                                                                       &( stunHeader ),
+                                                                                       pLocalCandidateEndpoint,
+                                                                                       ppIceCandidatePair );
+                }
+                break;
+
                 case STUN_MESSAGE_TYPE_BINDING_INDICATION:
                 {
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION;
@@ -1057,10 +1329,28 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
             }
             break;
 
+            case ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION:
+            {
+                /* Generate STUN request for TURN create permission. */
+                result = CreateRequestForCreatePermission( pContext,
+                                                           pIceCandidatePair,
+                                                           pStunMessageBuffer,
+                                                           pStunMessageBufferLength );
+            }
+            break;
+
+            case ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND:
+            {
+                /* Generate STUN request for TURN create permission. */
+                result = CreateRequestForChannelBind( pContext,
+                                                      pIceCandidatePair,
+                                                      pStunMessageBuffer,
+                                                      pStunMessageBufferLength );
+            }
+            break;
+
             case ICE_CANDIDATE_PAIR_STATE_VALID:
             case ICE_CANDIDATE_PAIR_STATE_SUCCEEDED:
-            case ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION:
-            case ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND:
             default:
             {
                 /* Do nothing. */
@@ -1075,29 +1365,60 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-IceResult_t Ice_ConstructTurnChannelMessage( IceContext_t * pContext,
-                                             IceCandidatePair_t * pIceCandidatePair,
-                                             uint8_t * pInputBuffer,
-                                             size_t inputBufferLength,
-                                             uint8_t * pOutputBuffer,
-                                             size_t outputBufferLength )
+IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
+                                         IceCandidatePair_t * pIceCandidatePair,
+                                         uint8_t * pBuffer,
+                                         size_t * pBufferLength,
+                                         size_t maxBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
-        ( pInputBuffer == NULL ) ||
-        ( pOutputBuffer == NULL ) )
+        ( pBuffer == NULL ) ||
+        ( pBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( *pBufferLength + 4U > maxBufferLength )
+    {
+        /* We always append 4 bytes prefix into TURN channel message. */
+        result = ICE_RESULT_OUT_OF_MEMORY;
+    }
+    else if( ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_WAITING ) &&
+             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_VALID ) &&
+             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) &&
+             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+    {
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else
+    {
+        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
     {
+        IceTurnChannelMessageHeader_t * pTurnChannelMessageHdr = ( IceTurnChannelMessageHeader_t * ) pBuffer;
+        memmove( pBuffer + 4U, pBuffer, *pBufferLength );
 
+        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->channelNumber, pIceCandidatePair->turnChannelNumber );
+        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, *pBufferLength );
+        *pBufferLength += 4U;
     }
 
     return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
+                                         IceCandidate_t * pIceLocalCandidate,
+                                         uint8_t * pBuffer,
+                                         size_t * pBufferLength,
+                                         IceCandidatePair_t ** ppIceCandidatePair )
+{
+
 }
 
 /*----------------------------------------------------------------------------*/

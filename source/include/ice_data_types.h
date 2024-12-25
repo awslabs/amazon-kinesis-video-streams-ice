@@ -52,6 +52,13 @@
 
 #define ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS ( 600 )
 
+/*
+ * According to https://datatracker.ietf.org/doc/html/rfc8656#section-12,
+ * TURN channel numbers must be in range of 0x4000 ~ 0x4FFF.
+ */
+#define ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN ( 0x4000 )
+#define ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX ( 0x4FFF )
+
 /*----------------------------------------------------------------------------*/
 
 typedef enum IceCandidateType
@@ -96,12 +103,15 @@ typedef enum IceResult
     ICE_RESULT_NO_NEXT_ACTION,
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
+    ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
     ICE_RESULT_STUN_ERROR,
     ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
     ICE_RESULT_STUN_ERROR_ADD_REQUESTED_TRANSPORT,
     ICE_RESULT_STUN_ERROR_ADD_USERNAME,
     ICE_RESULT_STUN_ERROR_ADD_REALM,
     ICE_RESULT_STUN_ERROR_ADD_NONCE,
+    ICE_RESULT_STUN_ERROR_ADD_XOR_PEER_ADDRESS,
+    ICE_RESULT_STUN_ERROR_ADD_CHANNEL_NUMBER,
     ICE_RESULT_SNPRINTF_ERROR,
     ICE_RESULT_RANDOM_GENERATION_ERROR,
     ICE_RESULT_CRC32_ERROR,
@@ -109,8 +119,10 @@ typedef enum IceResult
     ICE_RESULT_MD5_ERROR,
     ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
     ICE_RESULT_OUT_OF_MEMORY,
+    ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL,
     ICE_RESULT_INVALID_CANDIDATE_TYPE,
-    ICE_RESULT_INVALID_CANDIDATE
+    ICE_RESULT_INVALID_CANDIDATE,
+    ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
 } IceResult_t;
 
 typedef enum IceHandleStunPacketResult
@@ -119,6 +131,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_OK,
     ICE_HANDLE_STUN_PACKET_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE,
     ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS,
+    ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS,
     ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
     ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION,
@@ -132,6 +145,8 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_INVALID_PACKET_TYPE,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING,
+    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_PAIR_NOT_CREATING_PERMISSION,
+    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_PAIR_NOT_CHANNEL_BINDING,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND,
@@ -141,6 +156,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED,
     ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATE_UNKNOWN_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR,
+    ICE_HANDLE_STUN_PACKET_RESULT_ADD_REMOTE_CANDIDATE_FAILED,
 
     /* Application needs to take action. */
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
@@ -148,6 +164,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_CHANNEL_BIND_REQUEST,
 } IceHandleStunPacketResult_t;
 
 /*----------------------------------------------------------------------------*/
@@ -168,6 +185,7 @@ typedef IceResult_t ( * IceMd5_t ) ( const uint8_t * pBuffer,
                                      size_t bufferLength,
                                      uint8_t * pOutputBuffer,
                                      uint16_t * pOutputBufferLength );
+typedef uint64_t ( * IceGetCurrentTimeSeconds_t ) ( void );
 
 /*----------------------------------------------------------------------------*/
 
@@ -205,6 +223,8 @@ typedef struct IceCandidate
 
     /* Below fields are for relay candidate. */
     IceServerInfo_t iceServerInfo;
+    uint16_t nextAvailableTurnChannelNumber;
+    uint64_t turnExpirationSeconds;
 } IceCandidate_t;
 
 typedef struct IceCandidatePair
@@ -215,6 +235,9 @@ typedef struct IceCandidatePair
     IceCandidatePairState_t state;
     uint32_t connectivityCheckFlags;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
+
+    /* Below fields are for TURN. */
+    uint16_t turnChannelNumber;
 } IceCandidatePair_t;
 
 typedef struct IceCryptoFunctions
@@ -256,6 +279,8 @@ typedef struct IceContext
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     IceCryptoFunctions_t cryptoFunctions;
+    IceGetCurrentTimeSeconds_t getCurrentTimeSecondsFxn;
+    StunReadWriteFunctions_t readWriteFunctions;
 } IceContext_t;
 
 typedef struct IceInitInfo
@@ -270,6 +295,7 @@ typedef struct IceInitInfo
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     IceCryptoFunctions_t cryptoFunctions;
+    IceGetCurrentTimeSeconds_t getCurrentTimeSecondsFxn;
 } IceInitInfo_t;
 
 typedef struct IceRemoteCandidateInfo
@@ -294,6 +320,12 @@ typedef struct IceStunDeserializedPacketInfo
     size_t realmLength;
     uint32_t lifetimeSeconds;
 } IceStunDeserializedPacketInfo_t;
+
+typedef struct IceTurnChannelMessageHeader
+{
+    uint16_t channelNumber;
+    uint16_t messageLength;
+} IceTurnChannelMessageHeader_t;
 
 /*----------------------------------------------------------------------------*/
 

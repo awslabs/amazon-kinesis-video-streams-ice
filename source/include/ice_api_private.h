@@ -66,6 +66,18 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
                                                                  const StunHeader_t * pStunHeader,
                                                                  const IceEndpoint_t * pLocalCandidateEndpoint );
 
+IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceContext_t * pContext,
+                                                                           StunContext_t * pStunCtx,
+                                                                           const StunHeader_t * pStunHeader,
+                                                                           const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                           IceCandidatePair_t ** ppIceCandidatePair );
+
+IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext_t * pContext,
+                                                                      StunContext_t * pStunCtx,
+                                                                      const StunHeader_t * pStunHeader,
+                                                                      const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                      IceCandidatePair_t ** ppIceCandidatePair );
+
 /*----------------------------------------------------------------------------*/
 
 #endif /* ICE_API_PRIVATE_H */
