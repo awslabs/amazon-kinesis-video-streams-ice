@@ -556,7 +556,8 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
         {
             result = Ice_AddCandidatePair( pContext,
                                            pHostCandidate,
-                                           &( pContext->pRemoteCandidates[ i ] ) );
+                                           &( pContext->pRemoteCandidates[ i ] ),
+                                           NULL );
         }
     }
 
@@ -690,6 +691,7 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
     size_t i;
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pRemoteCandidate = NULL;
+    IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pContext == NULL ) ||
         ( pRemoteCandidateInfo == NULL ) )
@@ -741,7 +743,15 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                 {
                     result = Ice_AddCandidatePair( pContext,
                                                    &( pContext->pLocalCandidates[ i ] ),
-                                                   pRemoteCandidate );
+                                                   pRemoteCandidate,
+                                                   &pIceCandidatePair );
+
+                    /* Update turn channel number when the local candidate type is relay. */
+                    if( ( result == ICE_RESULT_OK ) && ( pContext->pLocalCandidates[ i ].candidateType == ICE_CANDIDATE_TYPE_RELAY ) )
+                    {
+                        pIceCandidatePair->turnChannelNumber = pContext->pLocalCandidates[ i ].nextAvailableTurnChannelNumber;
+                        pContext->pLocalCandidates[ i ].nextAvailableTurnChannelNumber++;
+                    }
                 }
             }
         }
@@ -1107,6 +1117,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                 }
                 break;
 
+                case STUN_MESSAGE_TYPE_CREATE_PERMISSION_ERROR_RESPONSE:
+                {
+                    handleStunPacketResult = Ice_HandleTurnCreatePermissionErrorResponse( pContext,
+                                                                                          &( stunCtx ),
+                                                                                          &( stunHeader ),
+                                                                                          pLocalCandidateEndpoint,
+                                                                                          ppIceCandidatePair );
+                }
+                break;
+
                 case STUN_MESSAGE_TYPE_CHANNEL_BIND_SUCCESS_RESPONSE:
                 {
                     handleStunPacketResult = Ice_HandleTurnChannelBindSuccessResponse( pContext,
@@ -1114,6 +1134,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                                                        &( stunHeader ),
                                                                                        pLocalCandidateEndpoint,
                                                                                        ppIceCandidatePair );
+                }
+                break;
+
+                case STUN_MESSAGE_TYPE_CHANNEL_BIND_ERROR_RESPONSE:
+                {
+                    handleStunPacketResult = Ice_HandleTurnChannelBindErrorResponse( pContext,
+                                                                                     &( stunCtx ),
+                                                                                     &( stunHeader ),
+                                                                                     pLocalCandidateEndpoint,
+                                                                                     ppIceCandidatePair );
                 }
                 break;
 

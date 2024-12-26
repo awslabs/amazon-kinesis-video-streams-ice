@@ -18,7 +18,8 @@ uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
 
 IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
                                   IceCandidate_t * pLocalCandidate,
-                                  IceCandidate_t * pRemoteCandidate );
+                                  IceCandidate_t * pRemoteCandidate,
+                                  IceCandidatePair_t ** ppIceCandidatePair );
 
 uint32_t Ice_ComputeCandidatePriority( IceCandidateType_t candidateType,
                                        uint8_t isPointToPoint );
@@ -72,11 +73,23 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
                                                                            const IceEndpoint_t * pLocalCandidateEndpoint,
                                                                            IceCandidatePair_t ** ppIceCandidatePair );
 
+IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceContext_t * pContext,
+                                                                         StunContext_t * pStunCtx,
+                                                                         const StunHeader_t * pStunHeader,
+                                                                         const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                         IceCandidatePair_t ** ppIceCandidatePair );
+
 IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext_t * pContext,
                                                                       StunContext_t * pStunCtx,
                                                                       const StunHeader_t * pStunHeader,
                                                                       const IceEndpoint_t * pLocalCandidateEndpoint,
                                                                       IceCandidatePair_t ** ppIceCandidatePair );
+
+IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t * pContext,
+                                                                    StunContext_t * pStunCtx,
+                                                                    const StunHeader_t * pStunHeader,
+                                                                    const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                    IceCandidatePair_t ** ppIceCandidatePair );
 
 /*----------------------------------------------------------------------------*/
 

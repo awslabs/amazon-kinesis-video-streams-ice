@@ -165,6 +165,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_CHANNEL_BIND_REQUEST,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_CONNECTIVITY_BINDING_REQUEST,
 } IceHandleStunPacketResult_t;
 
 /*----------------------------------------------------------------------------*/
@@ -311,7 +312,8 @@ typedef struct IceStunDeserializedPacketInfo
     uint8_t useCandidateFlag;
     uint16_t errorCode;
     uint32_t priority;
-    IceTransportAddress_t transportAddress;
+    IceTransportAddress_t peerTransportAddress;
+    IceTransportAddress_t relayTransportAddress;
 
     /* Below fields are for relay candidate. */
     uint8_t * pNonce;
