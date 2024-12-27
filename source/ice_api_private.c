@@ -74,6 +74,68 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     return result;
 }
 
+/*----------------------------------------------------------------------------*/
+
+static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
+                                                      const IceCandidate_t * pLocalCandidate,
+                                                      const IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                      IceCandidatePair_t * pInputIceCandidatePair,
+                                                      IceCandidatePair_t ** ppOutputIceCandidatePair )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    size_t i;
+
+    if( ppOutputIceCandidatePair == NULL )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM;
+    }
+    else
+    {
+        *ppOutputIceCandidatePair = NULL;
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+        {
+            /* For local relay candidate, the remote endpoint is always the TURN server.
+             * Thus we can retrieve the candidate pair pointer from input parameter, which
+             * is parsed from Ice_RemoveTurnChannelHeader. */
+            if( pInputIceCandidatePair == NULL )
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
+            }
+            else
+            {
+                *ppOutputIceCandidatePair = pInputIceCandidatePair;
+            }
+        }
+        else
+        {
+            for( i = 0; i < pContext->numCandidatePairs; i++ )
+            {
+                if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
+                                                  &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                    ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
+                                                  &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
+                {
+                    *ppOutputIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
+                    break;
+                }
+            }
+
+            if( *ppOutputIceCandidatePair == NULL )
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
+            }
+        }
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
 uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddress1,
                                     const IceTransportAddress_t * pTransportAddress2 )
 {
@@ -564,16 +626,16 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
 
 IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContext,
                                                           StunContext_t * pStunCtx,
-                                                          const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                          const IceCandidate_t * pLocalCandidate,
                                                           const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                           IceCandidatePair_t ** ppIceCandidatePair )
 {
-    size_t i;
     IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
+    size_t i;
+    IceRemoteCandidateInfo_t remoteCandidateInfo;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                         pStunCtx,
@@ -581,8 +643,15 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                                                         pContext->creds.localPasswordLength,
                                                         &( deserializePacketInfo ) );
 
-    if( ( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK ) &&
-        ( deserializePacketInfo.errorCode == 0 ) )
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        if( deserializePacketInfo.errorCode != 0 )
+        {
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         /* Do we already have a remote candidate with the same transport address
          * as pRemoteCandidateEndpoint->transportAddress? */
@@ -607,80 +676,66 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
             iceResult = Ice_AddRemoteCandidate( pContext, &( remoteCandidateInfo ) );
         }
+    }
 
-        if( iceResult == ICE_RESULT_OK )
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = FindCandidatePair( pContext, pLocalCandidate, pRemoteCandidateEndpoint, *ppIceCandidatePair, &pIceCandidatePair );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        /* Did we receive a request for nomination? */
+        if( ( pContext->isControlling == 0 ) &&
+            ( deserializePacketInfo.useCandidateFlag == 1 ) &&
+            ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
         {
-            for( i = 0; i < pContext->numCandidatePairs; i++ )
-            {
-                if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
-                                                  &( pLocalCandidateEndpoint->transportAddress ) ) == 1 ) &&
-                    ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
-                                                  &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
-                {
-                    pIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
-                    break;
-                }
-            }
-        }
-
-        if( pIceCandidatePair != NULL )
-        {
-            /* Did we receive a request for nomination? */
-            if( ( pContext->isControlling == 0 ) &&
-                ( deserializePacketInfo.useCandidateFlag == 1 ) &&
-                ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
-            {
-                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
-            }
-            else
-            {
-                /* Received a connectivity check request from the remote candidate. */
-                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
-
-                if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_SENT_FLAG ) == 0 )
-                {
-                    /* We have not sent the connectivity check request to this
-                     * candidate. The application needs to send 2 stun packets-
-                     * 1. The connectivity check request from local to remote.
-                     * 2. The response to the connectivity check request
-                     *    received from remote. */
-                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_SENT_FLAG;
-                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
-
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK;
-                }
-                else
-                {
-                    /* We have sent the connectivity check request to this
-                     * candidate. The application needs to send 1 stun packet-
-                     * 1. The response to the connectivity check request
-                     *    received from remote. */
-                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
-
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
-                }
-
-                if( ( pContext->isControlling == 1 ) &&
-                    ( pContext->pNominatePairs == NULL ) )
-                {
-                    /* We are the controlling agent. We need to nominate the
-                     * remote candidate. We pick the first pair completing connectivity check as
-                     * the nominated pair. */
-                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                    pContext->pNominatePairs = pIceCandidatePair;
-                    iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
-                                                                     STUN_HEADER_TRANSACTION_ID_LENGTH );
-                    if( iceResult != ICE_RESULT_OK )
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
-                    }
-                }
-            }
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
         }
         else
         {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
+            /* Received a connectivity check request from the remote candidate. */
+            pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
+
+            if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_SENT_FLAG ) == 0 )
+            {
+                /* We have not sent the connectivity check request to this
+                 * candidate. The application needs to send 2 stun packets-
+                 * 1. The connectivity check request from local to remote.
+                 * 2. The response to the connectivity check request
+                 *    received from remote. */
+                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_SENT_FLAG;
+                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
+
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK;
+            }
+            else
+            {
+                /* We have sent the connectivity check request to this
+                 * candidate. The application needs to send 1 stun packet-
+                 * 1. The response to the connectivity check request
+                 *    received from remote. */
+                pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
+
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
+            }
+
+            if( ( pContext->isControlling == 1 ) &&
+                ( pContext->pNominatePairs == NULL ) )
+            {
+                /* We are the controlling agent. We need to nominate the
+                 * remote candidate. We pick the first pair completing connectivity check as
+                 * the nominated pair. */
+                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+                pContext->pNominatePairs = pIceCandidatePair;
+                iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
+                                                                 STUN_HEADER_TRANSACTION_ID_LENGTH );
+                if( iceResult != ICE_RESULT_OK )
+                {
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
+                }
+            }
         }
     }
 
@@ -696,13 +751,12 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
 IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pContext,
                                                                StunContext_t * pStunCtx,
-                                                               const IceEndpoint_t * pLocalCandidateEndpoint )
+                                                               IceCandidate_t * pLocalCandidate )
 {
     size_t i;
     IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceCandidate_t * pLocalCandidate = NULL;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                         pStunCtx,
@@ -710,46 +764,47 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
                                                         0,
                                                         &( deserializePacketInfo ) );
 
-    if( ( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK ) &&
-        ( deserializePacketInfo.errorCode == 0 ) &&
-        ( deserializePacketInfo.peerTransportAddress.family != 0 ) )
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /* Do we have a server reflexive candidate with the same transport
-         * address as pLocalCandidateEndpoint->transportAddress? */
-        for( i = 0; i < pContext->numLocalCandidates; i++ )
+        if( deserializePacketInfo.errorCode != 0 )
         {
-            if( ( pContext->pLocalCandidates[ i ].candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[ i ].endpoint.transportAddress ),
-                                              &( pLocalCandidateEndpoint->transportAddress ) ) == 1 ) )
-            {
-                pLocalCandidate = &( pContext->pLocalCandidates[ i ] );
-                break;
-            }
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        if( deserializePacketInfo.peerTransportAddress.family == 0 )
+        {
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_INVALID_FAMILY_TYPE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE )
+        {
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_INVALID_CANDIDATE_TYPE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        memcpy( &( pLocalCandidate->endpoint.transportAddress ),
+                &( deserializePacketInfo.peerTransportAddress ),
+                sizeof( IceTransportAddress_t ) );
+        pLocalCandidate->endpoint.isPointToPoint = 0;
+        pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
+
+        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
+        {
+            iceResult = Ice_AddCandidatePair( pContext,
+                                              pLocalCandidate,
+                                              &( pContext->pRemoteCandidates[ i ] ),
+                                              NULL );
         }
 
-        if( pLocalCandidate != NULL )
-        {
-            memcpy( &( pLocalCandidate->endpoint.transportAddress ),
-                    &( deserializePacketInfo.peerTransportAddress ),
-                    sizeof( IceTransportAddress_t ) );
-            pLocalCandidate->endpoint.isPointToPoint = 0;
-
-            pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
-
-            for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
-            {
-                iceResult = Ice_AddCandidatePair( pContext,
-                                                  pLocalCandidate,
-                                                  &( pContext->pRemoteCandidates[ i ] ),
-                                                  NULL );
-            }
-
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS;
-        }
-        else
-        {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-        }
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS;
     }
 
     return handleStunPacketResult;
@@ -760,7 +815,7 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
 IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * pContext,
                                                                  StunContext_t * pStunCtx,
                                                                  const StunHeader_t * pStunHeader,
-                                                                 const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                 const IceCandidate_t * pLocalCandidate,
                                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair )
 {
@@ -778,103 +833,92 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        if( deserializePacketInfo.errorCode == 0 )
+        if( deserializePacketInfo.errorCode != 0 )
         {
-            for( i = 0; i < pContext->numCandidatePairs; i++ )
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = FindCandidatePair( pContext, pLocalCandidate, pRemoteCandidateEndpoint, *ppIceCandidatePair, &pIceCandidatePair );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        if( memcmp( &( pIceCandidatePair->transactionId[ 0 ] ),
+                    pStunHeader->pTransactionId,
+                    STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
+        {
+            pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_RECEIVED_FLAG;
+
+            if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
             {
-                if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
-                                                  &( pLocalCandidateEndpoint->transportAddress ) ) == 1 ) &&
-                    ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
-                                                  &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
+                if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                 {
-                    pIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
-                    break;
+                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
                 }
-            }
-
-            if( pIceCandidatePair != NULL )
-            {
-                if( memcmp( &( pIceCandidatePair->transactionId[ 0 ] ),
-                            pStunHeader->pTransactionId,
-                            STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
+                else
                 {
-                    pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_RECEIVED_FLAG;
-
-                    if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
+                    pIceCandidatePair->state = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
+                    if( pContext->isControlling == 1 )
                     {
-                        if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
+                        if( pContext->pNominatePairs == NULL )
                         {
-                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-                            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
-                        }
-                        else
-                        {
-                            pIceCandidatePair->state = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
-                            if( pContext->isControlling == 1 )
+                            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+                            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
+                            result = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
+                                                                          STUN_HEADER_TRANSACTION_ID_LENGTH );
+                            if( result != ICE_RESULT_OK )
                             {
-                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
-                                if( pContext->pNominatePairs == NULL )
-                                {
-                                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
-                                    result = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
-                                                                                  STUN_HEADER_TRANSACTION_ID_LENGTH );
-                                    if( result != ICE_RESULT_OK )
-                                    {
-                                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
+                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
                             }
                         }
                     }
                     else
                     {
-                        if( deserializePacketInfo.peerTransportAddress.family != 0 )
-                        {
-                            if( ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                                ( pIceCandidatePair->pRemoteCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
-                                ( Ice_IsSameIpAddress( &( deserializePacketInfo.peerTransportAddress ),
-                                                       &( pIceCandidatePair->pLocalCandidate->endpoint.transportAddress ) ) == 0 ) )
-                            {
-                                pIceCandidatePair->pLocalCandidate->candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
+                    }
+                }
+            }
+            else
+            {
+                if( deserializePacketInfo.peerTransportAddress.family != 0 )
+                {
+                    if( ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                        ( pIceCandidatePair->pRemoteCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ) &&
+                        ( Ice_IsSameIpAddress( &( deserializePacketInfo.peerTransportAddress ),
+                                               &( pIceCandidatePair->pLocalCandidate->endpoint.transportAddress ) ) == 0 ) )
+                    {
+                        pIceCandidatePair->pLocalCandidate->candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
 
-                                memcpy( &( pIceCandidatePair->pLocalCandidate->endpoint.transportAddress ),
-                                        &( deserializePacketInfo.peerTransportAddress ),
-                                        sizeof( IceTransportAddress_t ) );
-                                pIceCandidatePair->pLocalCandidate->endpoint.isPointToPoint = 0;
+                        memcpy( &( pIceCandidatePair->pLocalCandidate->endpoint.transportAddress ),
+                                &( deserializePacketInfo.peerTransportAddress ),
+                                sizeof( IceTransportAddress_t ) );
+                        pIceCandidatePair->pLocalCandidate->endpoint.isPointToPoint = 0;
 
-                                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE;
-                            }
-                        }
-                        else
-                        {
-                            /* No mapped address attribute found in STUN response. Dropping Packet. */
-                            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND;
-                        }
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FOUND_PEER_REFLEXIVE_CANDIDATE;
                     }
                 }
                 else
                 {
-                    /* Dropping response packet because transaction id does not match.*/
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND;
+                    /* No mapped address attribute found in STUN response. Dropping Packet. */
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND;
                 }
-
-                *ppIceCandidatePair = pIceCandidatePair;
-            }
-            else
-            {
-                /* Candidate Pair was not found using the local and remote addresses. */
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
             }
         }
         else
         {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+            /* Dropping response packet because transaction id does not match.*/
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND;
         }
+    }
+
+    if( pIceCandidatePair != NULL )
+    {
+        *ppIceCandidatePair = pIceCandidatePair;
     }
 
     return handleStunPacketResult;
@@ -885,31 +929,15 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
 IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t * pContext,
                                                                    StunContext_t * pStunCtx,
                                                                    const StunHeader_t * pStunHeader,
-                                                                   const IceEndpoint_t * pLocalCandidateEndpoint )
+                                                                   IceCandidate_t * pLocalCandidate )
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceCandidate_t * pIceCandidate = NULL;
     IceResult_t iceResult = ICE_RESULT_OK;
-    size_t i;
     IceCandidatePair_t * pIceCandidatePair = NULL;
+    size_t i;
 
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
-    }
-
-    if( pIceCandidate == NULL )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-    }
-    else if( pIceCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
+    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
     }
@@ -922,38 +950,38 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pIceCandidate->iceServerInfo.longTermPassword,
-                                                            pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        memcpy( &( pIceCandidate->endpoint.transportAddress ),
+        memcpy( &( pLocalCandidate->endpoint.transportAddress ),
                 &( deserializePacketInfo.relayTransportAddress ),
                 sizeof( IceTransportAddress_t ) );
-        pIceCandidate->endpoint.isPointToPoint = 0;
-        pIceCandidate->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
-        pIceCandidate->turnExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        pLocalCandidate->endpoint.isPointToPoint = 0;
+        pLocalCandidate->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
+        pLocalCandidate->turnExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
 
-        pIceCandidate->state = ICE_CANDIDATE_STATE_VALID;
+        pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
         {
-            if( pIceCandidate->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
+            if( pLocalCandidate->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
             {
                 iceResult = ICE_RESULT_MAX_CHANNEL_NUMBER_ID;
                 break;
             }
 
             iceResult = Ice_AddCandidatePair( pContext,
-                                              pIceCandidate,
+                                              pLocalCandidate,
                                               &( pContext->pRemoteCandidates[ i ] ),
                                               &pIceCandidatePair );
             if( iceResult == ICE_RESULT_OK )
             {
-                pIceCandidatePair->turnChannelNumber = pIceCandidate->nextAvailableTurnChannelNumber;
-                pIceCandidate->nextAvailableTurnChannelNumber++;
+                pIceCandidatePair->turnChannelNumber = pLocalCandidate->nextAvailableTurnChannelNumber;
+                pLocalCandidate->nextAvailableTurnChannelNumber++;
             }
         }
 
@@ -968,36 +996,28 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * pContext,
                                                                  StunContext_t * pStunCtx,
                                                                  const StunHeader_t * pStunHeader,
-                                                                 const IceEndpoint_t * pLocalCandidateEndpoint )
+                                                                 IceCandidate_t * pLocalCandidate )
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceCandidate_t * pIceCandidate = NULL;
     IceResult_t result = ICE_RESULT_OK;
     size_t i;
 
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
+    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
     }
-
-    if( pIceCandidate == NULL )
+    else
     {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
+        /* Empty else marker. */
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pIceCandidate->iceServerInfo.longTermPassword,
-                                                            pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1027,12 +1047,12 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
                 }
                 else
                 {
-                    memcpy( pIceCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
-                    pIceCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
-                    memcpy( pIceCandidate->iceServerInfo.realm, deserializePacketInfo.pRealm, deserializePacketInfo.realmLength );
-                    pIceCandidate->iceServerInfo.realmLength = deserializePacketInfo.realmLength;
+                    memcpy( pLocalCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
+                    pLocalCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
+                    memcpy( pLocalCandidate->iceServerInfo.realm, deserializePacketInfo.pRealm, deserializePacketInfo.realmLength );
+                    pLocalCandidate->iceServerInfo.realmLength = deserializePacketInfo.realmLength;
 
-                    result = CalculateLongTermCredential( pContext, &pIceCandidate->iceServerInfo );
+                    result = CalculateLongTermCredential( pContext, &pLocalCandidate->iceServerInfo );
                     if( result != ICE_RESULT_OK )
                     {
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR;
@@ -1057,8 +1077,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
                 }
                 else
                 {
-                    memcpy( pIceCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
-                    pIceCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
+                    memcpy( pLocalCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
+                    pLocalCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
 
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST;
                 }
@@ -1081,7 +1101,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
 IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceContext_t * pContext,
                                                                            StunContext_t * pStunCtx,
                                                                            const StunHeader_t * pStunHeader,
-                                                                           const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                           const IceCandidate_t * pLocalCandidate,
                                                                            IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
@@ -1090,30 +1110,13 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
-    IceCandidate_t * pIceLocalCandidate = NULL;
-
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceLocalCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
-    }
-
-    if( pIceLocalCandidate == NULL )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            ( uint8_t * ) pIceLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pIceLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1179,7 +1182,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
 IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceContext_t * pContext,
                                                                          StunContext_t * pStunCtx,
                                                                          const StunHeader_t * pStunHeader,
-                                                                         const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                         const IceCandidate_t * pLocalCandidate,
                                                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
@@ -1188,30 +1191,13 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
-    IceCandidate_t * pIceLocalCandidate = NULL;
-
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceLocalCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
-    }
-
-    if( pIceLocalCandidate == NULL )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            ( uint8_t * ) pIceLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pIceLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1255,7 +1241,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
 IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext_t * pContext,
                                                                       StunContext_t * pStunCtx,
                                                                       const StunHeader_t * pStunHeader,
-                                                                      const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                      const IceCandidate_t * pLocalCandidate,
                                                                       IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
@@ -1264,30 +1250,13 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
-    IceCandidate_t * pIceLocalCandidate = NULL;
-
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceLocalCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
-    }
-
-    if( pIceLocalCandidate == NULL )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            ( uint8_t * ) pIceLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pIceLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1353,7 +1322,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t * pContext,
                                                                     StunContext_t * pStunCtx,
                                                                     const StunHeader_t * pStunHeader,
-                                                                    const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                                    const IceCandidate_t * pLocalCandidate,
                                                                     IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
@@ -1362,30 +1331,13 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
-    IceCandidate_t * pIceLocalCandidate = NULL;
-
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( Ice_IsSameTransportAddress( &( pContext->pLocalCandidates[i].endpoint.transportAddress ),
-                                          &( pLocalCandidateEndpoint->transportAddress ) ) != 0 ) )
-        {
-            pIceLocalCandidate = &( pContext->pLocalCandidates[i] );
-            break;
-        }
-    }
-
-    if( pIceLocalCandidate == NULL )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND;
-    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            ( uint8_t * ) pIceLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pIceLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 

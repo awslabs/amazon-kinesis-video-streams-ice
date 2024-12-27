@@ -43,7 +43,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   uint8_t * pReceivedStunMessage,
                                                   size_t receivedStunMessageLength,
-                                                  const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                  IceCandidate_t * pLocalCandidate,
                                                   const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                   uint8_t ** ppTransactionId,
                                                   IceCandidatePair_t ** ppIceCandidatePair );

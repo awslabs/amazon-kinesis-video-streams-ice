@@ -995,7 +995,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   uint8_t * pReceivedStunMessage,
                                                   size_t receivedStunMessageLength,
-                                                  const IceEndpoint_t * pLocalCandidateEndpoint,
+                                                  IceCandidate_t * pLocalCandidate,
                                                   const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                   uint8_t ** ppTransactionId,
                                                   IceCandidatePair_t ** ppIceCandidatePair )
@@ -1008,7 +1008,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
     if( ( pContext == NULL ) ||
         ( pReceivedStunMessage == NULL ) ||
-        ( pLocalCandidateEndpoint == NULL ) ||
+        ( pLocalCandidate == NULL ) ||
         ( pRemoteCandidateEndpoint == NULL ) ||
         ( ppTransactionId == NULL ) ||
         ( ppIceCandidatePair == NULL ) )
@@ -1031,7 +1031,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                 {
                     handleStunPacketResult = Ice_HandleStunBindingRequest( pContext,
                                                                            &( stunCtx ),
-                                                                           pLocalCandidateEndpoint,
+                                                                           pLocalCandidate,
                                                                            pRemoteCandidateEndpoint,
                                                                            ppIceCandidatePair );
                 }
@@ -1046,7 +1046,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     {
                         handleStunPacketResult = Ice_HandleServerReflexiveResponse( pContext,
                                                                                     &( stunCtx ),
-                                                                                    pLocalCandidateEndpoint );
+                                                                                    pLocalCandidate );
 
                         ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
                                                             stunHeader.pTransactionId );
@@ -1056,7 +1056,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                         handleStunPacketResult = Ice_HandleConnectivityCheckResponse( pContext,
                                                                                       &( stunCtx ),
                                                                                       &( stunHeader ),
-                                                                                      pLocalCandidateEndpoint,
+                                                                                      pLocalCandidate,
                                                                                       pRemoteCandidateEndpoint,
                                                                                       ppIceCandidatePair );
                     }
@@ -1073,7 +1073,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                         handleStunPacketResult = Ice_HandleTurnAllocateSuccessResponse( pContext,
                                                                                         &( stunCtx ),
                                                                                         &( stunHeader ),
-                                                                                        pLocalCandidateEndpoint );
+                                                                                        pLocalCandidate );
 
                         ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
                                                             stunHeader.pTransactionId );
@@ -1095,7 +1095,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                         handleStunPacketResult = Ice_HandleTurnAllocateErrorResponse( pContext,
                                                                                       &( stunCtx ),
                                                                                       &( stunHeader ),
-                                                                                      pLocalCandidateEndpoint );
+                                                                                      pLocalCandidate );
 
                         ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
                                                             stunHeader.pTransactionId );
@@ -1112,7 +1112,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     handleStunPacketResult = Ice_HandleTurnCreatePermissionSuccessResponse( pContext,
                                                                                             &( stunCtx ),
                                                                                             &( stunHeader ),
-                                                                                            pLocalCandidateEndpoint,
+                                                                                            pLocalCandidate,
                                                                                             ppIceCandidatePair );
                 }
                 break;
@@ -1122,7 +1122,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     handleStunPacketResult = Ice_HandleTurnCreatePermissionErrorResponse( pContext,
                                                                                           &( stunCtx ),
                                                                                           &( stunHeader ),
-                                                                                          pLocalCandidateEndpoint,
+                                                                                          pLocalCandidate,
                                                                                           ppIceCandidatePair );
                 }
                 break;
@@ -1132,7 +1132,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     handleStunPacketResult = Ice_HandleTurnChannelBindSuccessResponse( pContext,
                                                                                        &( stunCtx ),
                                                                                        &( stunHeader ),
-                                                                                       pLocalCandidateEndpoint,
+                                                                                       pLocalCandidate,
                                                                                        ppIceCandidatePair );
                 }
                 break;
@@ -1142,7 +1142,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     handleStunPacketResult = Ice_HandleTurnChannelBindErrorResponse( pContext,
                                                                                      &( stunCtx ),
                                                                                      &( stunHeader ),
-                                                                                     pLocalCandidateEndpoint,
+                                                                                     pLocalCandidate,
                                                                                      ppIceCandidatePair );
                 }
                 break;
@@ -1448,7 +1448,72 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
                                          size_t * pBufferLength,
                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
+    IceResult_t result = ICE_RESULT_OK;
+    const size_t channelMessageHeaderLength = 4U;
+    int i;
 
+    if( ( pContext == NULL ) ||
+        ( pIceLocalCandidate == NULL ) ||
+        ( pBuffer == NULL ) ||
+        ( pBufferLength == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( *pBufferLength < channelMessageHeaderLength )
+    {
+        /* The data is less than channel message header. */
+        result = ICE_RESULT_OUT_OF_MEMORY;
+    }
+    else if( pIceLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else if( pIceLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
+    {
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else if( pBuffer[0] & 0xF0 != 0x40 )
+    {
+        /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        IceTurnChannelMessageHeader_t turnChannelMessageHdr;
+
+        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 0 ] );
+        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 2 ] );
+
+        for( i = 0 && ppIceCandidatePair != NULL; i < pContext->numCandidatePairs; i++ )
+        {
+            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
+                                              &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                ( turnChannelMessageHdr.channelNumber == pContext->pCandidatePairs[i].turnChannelNumber ) )
+            {
+                *ppIceCandidatePair = &pContext->pCandidatePairs[i];
+                break;
+            }
+        }
+
+        if( i == pContext->numCandidatePairs )
+        {
+            result = ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Move the buffer for 4 bytes to remove channel message header. */
+        memmove( pBuffer, pBuffer + channelMessageHeaderLength, *pBufferLength - channelMessageHeaderLength );
+        *pBufferLength -= channelMessageHeaderLength;
+    }
+
+    return result;
 }
 
 /*----------------------------------------------------------------------------*/
