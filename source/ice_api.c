@@ -202,6 +202,127 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
+                                         IceCandidate_t * pIceCandidate,
+                                         uint32_t lifetime,
+                                         uint8_t * pStunMessageBuffer,
+                                         size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    StunContext_t stunCtx;
+    StunHeader_t stunHeader;
+    StunResult_t stunResult = STUN_RESULT_OK;
+    TransactionIdStoreResult_t transactionIdStoreResult;
+
+    /* Other input parameters are checked before calling. */
+    if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore, pIceCandidate->transactionId ) != TRANSACTION_ID_STORE_RESULT_OK )
+    {
+        result = pContext->cryptoFunctions.randomFxn( pIceCandidate->transactionId,
+                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
+
+        if( result == ICE_RESULT_OK )
+        {
+            transactionIdStoreResult = TransactionIdStore_Insert( pContext->pStunBindingRequestTransactionIdStore,
+                                                                  pIceCandidate->transactionId );
+
+            if( transactionIdStoreResult != TRANSACTION_ID_STORE_RESULT_OK )
+            {
+                result = ICE_RESULT_TRANSACTION_ID_STORE_ERROR;
+            }
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunHeader.messageType = STUN_MESSAGE_TYPE_REFRESH_REQUEST;
+        stunHeader.pTransactionId = pIceCandidate->transactionId;
+
+        stunResult = StunSerializer_Init( &stunCtx,
+                                          pStunMessageBuffer,
+                                          *pStunMessageBufferLength,
+                                          &stunHeader );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        stunResult = StunSerializer_AddAttributeLifetime( &stunCtx, lifetime );
+
+        if( stunResult != STUN_RESULT_OK )
+        {
+            result = ICE_RESULT_STUN_ERROR_ADD_LIFETIME;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidate->iceServerInfo.userNameLength > 0U )
+        {
+            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.userName, pIceCandidate->iceServerInfo.userNameLength );
+
+            if( stunResult != STUN_RESULT_OK )
+            {
+                result = ICE_RESULT_STUN_ERROR_ADD_USERNAME;
+            }
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidate->iceServerInfo.realmLength > 0U )
+        {
+            stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidate->iceServerInfo.realm, pIceCandidate->iceServerInfo.realmLength );
+
+            if( stunResult != STUN_RESULT_OK )
+            {
+                result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+            }
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidate->iceServerInfo.nonceLength > 0U )
+        {
+            stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidate->iceServerInfo.nonce, pIceCandidate->iceServerInfo.nonceLength );
+
+            if( stunResult != STUN_RESULT_OK )
+            {
+                result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+            }
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pIceCandidate->iceServerInfo.realmLength > 0 )
+        {
+            /* We already have long-term key retrieved from username, realm and password. */
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &( stunCtx ),
+                                             pIceCandidate->iceServerInfo.longTermPassword,
+                                             pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                             pStunMessageBufferLength );
+        }
+        else
+        {
+            result = Ice_FinalizeStunPacket( pContext,
+                                             &( stunCtx ),
+                                             NULL,
+                                             0,
+                                             pStunMessageBufferLength );
+        }
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 /* CreateRequestForCreatePermission - This API creates Stun Packet for
  * TURN create permission.
  */
@@ -1147,6 +1268,50 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                 }
                 break;
 
+                case STUN_MESSAGE_TYPE_REFRESH_SUCCESS_RESPONSE:
+                {
+                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                                                         stunHeader.pTransactionId );
+
+                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    {
+                        handleStunPacketResult = Ice_HandleTurnRefreshSuccessResponse( pContext,
+                                                                                       &( stunCtx ),
+                                                                                       &( stunHeader ),
+                                                                                       pLocalCandidate );
+
+                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                            stunHeader.pTransactionId );
+                    }
+                    else
+                    {
+                        /* Drop the packet if we haven't sent the allocation request. */
+                    }
+                }
+                break;
+
+                case STUN_MESSAGE_TYPE_REFRESH_ERROR_RESPONSE:
+                {
+                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                                                         stunHeader.pTransactionId );
+
+                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    {
+                        handleStunPacketResult = Ice_HandleTurnRefreshErrorResponse( pContext,
+                                                                                     &( stunCtx ),
+                                                                                     &( stunHeader ),
+                                                                                     pLocalCandidate );
+
+                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                            stunHeader.pTransactionId );
+                    }
+                    else
+                    {
+                        /* Drop the packet if we haven't sent the allocation request. */
+                    }
+                }
+                break;
+
                 case STUN_MESSAGE_TYPE_BINDING_INDICATION:
                 {
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION;
@@ -1287,12 +1452,20 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
         else if( pIceCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
             /* Generate TURN Allocation request for relay candidate to allocate TURN resource. */
-            if( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID )
+            if( pIceCandidate->state == ICE_CANDIDATE_STATE_ALLOCATING )
             {
                 result = CreateAllocationRequest( pContext,
                                                   pIceCandidate,
                                                   pStunMessageBuffer,
                                                   pStunMessageBufferLength );
+            }
+            else if( pIceCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
+            {
+                result = CreateRefreshRequest( pContext,
+                                               pIceCandidate,
+                                               0U,
+                                               pStunMessageBuffer,
+                                               pStunMessageBufferLength );
             }
             else
             {

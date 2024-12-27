@@ -136,6 +136,28 @@ static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+static void ReleaseOtherRelayCandidates( IceContext_t * pContext,
+                                         const IceCandidatePair_t * pNominatedPair )
+{
+    size_t i;
+
+    for( i = 0; i < pContext->numLocalCandidates; i++ )
+    {
+        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+            ( &pContext->pLocalCandidates[i] != pNominatedPair->pLocalCandidate ) )
+        {
+            pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
+
+            if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                          pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+            {
+                ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                    pContext->pLocalCandidates[i].transactionId );
+            }
+        }
+    }
+}
+
 uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddress1,
                                     const IceTransportAddress_t * pTransportAddress2 )
 {
@@ -690,8 +712,9 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             ( deserializePacketInfo.useCandidateFlag == 1 ) &&
             ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
         {
-            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
+            ReleaseOtherRelayCandidates( pContext, pIceCandidatePair );
         }
         else
         {
@@ -858,6 +881,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
+                    ReleaseOtherRelayCandidates( pContext, pIceCandidatePair );
                 }
                 else
                 {
@@ -1371,6 +1395,50 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
     if( pIceCandidatePair != NULL )
     {
         *ppIceCandidatePair = pIceCandidatePair;
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t * pContext,
+                                                                  StunContext_t * pStunCtx,
+                                                                  const StunHeader_t * pStunHeader,
+                                                                  IceCandidate_t * pLocalCandidate )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+
+    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_RELEASING )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_REFRESHING;
+    }
+    else
+    {
+        /* Set state to released whatever the response we received. */
+        pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASED;
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * pContext,
+                                                                StunContext_t * pStunCtx,
+                                                                const StunHeader_t * pStunHeader,
+                                                                IceCandidate_t * pLocalCandidate )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+
+    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_RELEASING )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_REFRESHING;
+    }
+    else
+    {
+        /* Set state to released whatever the response we received. */
+        pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASED;
     }
 
     return handleStunPacketResult;

@@ -90,6 +90,15 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
                                                                     const StunHeader_t * pStunHeader,
                                                                     const IceCandidate_t * pLocalCandidate,
                                                                     IceCandidatePair_t ** ppIceCandidatePair );
+IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t * pContext,
+                                                                  StunContext_t * pStunCtx,
+                                                                  const StunHeader_t * pStunHeader,
+                                                                  IceCandidate_t * pLocalCandidate );
+
+IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * pContext,
+                                                                StunContext_t * pStunCtx,
+                                                                const StunHeader_t * pStunHeader,
+                                                                IceCandidate_t * pLocalCandidate );
 
 /*----------------------------------------------------------------------------*/
 
