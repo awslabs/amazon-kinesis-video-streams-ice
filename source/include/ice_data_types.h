@@ -59,6 +59,12 @@
 #define ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN ( 0x4000 )
 #define ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX ( 0x4FFF )
 
+/*
+ * According to https://datatracker.ietf.org/doc/html/rfc8656#name-the-channeldata-message,
+ * TURN channel header must be 4 bytes long.
+ */
+#define ICE_TURN_CHANNEL_DATA_HEADER_LENGTH ( 4 )
+
 /*----------------------------------------------------------------------------*/
 
 typedef enum IceCandidateType

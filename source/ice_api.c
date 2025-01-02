@@ -1622,7 +1622,6 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
     IceResult_t result = ICE_RESULT_OK;
-    const size_t channelMessageHeaderLength = 4U;
     int i;
 
     if( ( pContext == NULL ) ||
@@ -1632,7 +1631,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( *pBufferLength < channelMessageHeaderLength )
+    else if( *pBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
     {
         /* The data is less than channel message header. */
         result = ICE_RESULT_OUT_OF_MEMORY;
@@ -1662,7 +1661,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
         turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 0 ] );
         turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 2 ] );
 
-        for( i = 0 && ppIceCandidatePair != NULL; i < pContext->numCandidatePairs; i++ )
+        for( i = 0; i < pContext->numCandidatePairs && ppIceCandidatePair != NULL; i++ )
         {
             if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
                                               &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
@@ -1682,8 +1681,8 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     if( result == ICE_RESULT_OK )
     {
         /* Move the buffer for 4 bytes to remove channel message header. */
-        memmove( pBuffer, pBuffer + channelMessageHeaderLength, *pBufferLength - channelMessageHeaderLength );
-        *pBufferLength -= channelMessageHeaderLength;
+        memmove( pBuffer, pBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, *pBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH );
+        *pBufferLength -= ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
     }
 
     return result;
