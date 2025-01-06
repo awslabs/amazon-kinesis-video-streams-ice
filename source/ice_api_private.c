@@ -136,8 +136,8 @@ static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-static void ReleaseOtherRelayCandidates( IceContext_t * pContext,
-                                         const IceCandidatePair_t * pNominatedPair )
+static void ReleaseOtherCandidates( IceContext_t * pContext,
+                                    const IceCandidatePair_t * pNominatedPair )
 {
     size_t i;
 
@@ -154,6 +154,11 @@ static void ReleaseOtherRelayCandidates( IceContext_t * pContext,
                 ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
                                                     pContext->pLocalCandidates[i].transactionId );
             }
+        }
+        else
+        {
+            /* Reset other candidates' states to invalid to avoid sending binding request. */
+            pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_INVALID;
         }
     }
 }
@@ -714,7 +719,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
         {
             pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
-            ReleaseOtherRelayCandidates( pContext, pIceCandidatePair );
+            ReleaseOtherCandidates( pContext, pIceCandidatePair );
         }
         else
         {
@@ -881,7 +886,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
-                    ReleaseOtherRelayCandidates( pContext, pIceCandidatePair );
+                    ReleaseOtherCandidates( pContext, pIceCandidatePair );
                 }
                 else
                 {

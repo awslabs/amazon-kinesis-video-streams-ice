@@ -24,6 +24,9 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
 IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                                     const IceRemoteCandidateInfo_t * pRemoteCandidateInfo );
 
+IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
+                                    IceCandidatePair_t * pIceCandidatePair );
+
 IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
                                                    IceCandidatePair_t * pIceCandidatePair,
                                                    uint8_t * pStunMessageBuffer,
@@ -59,7 +62,7 @@ IceResult_t Ice_GetCandidatePairCount( IceContext_t * pContext,
 
 /**
  * Generates STUN/TURN requests for ICE candidate gathering:
- * - srflx candidate: STUN Binding request
+ * - srflx candidate: STUN Binding request (query external IP/port)
  * - relay candidate: TURN Allocation request
  */
 IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
@@ -67,6 +70,11 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
                                             uint8_t * pStunMessageBuffer,
                                             size_t * pStunMessageBufferLength );
 
+/**
+ * Generates STUN/TURN requests for ICE candidate pair:
+ * - common candidate pair: STUN Binding request (connectivity check/nomination)
+ * - relay candidate pair: TURN Create Permission/Channel Binding request
+ */
 IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        IceCandidatePair_t * pIceCandidatePair,
                                        uint8_t * pStunMessageBuffer,

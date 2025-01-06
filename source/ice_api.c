@@ -883,6 +883,44 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
+                                    IceCandidatePair_t * pIceCandidatePair )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    size_t i;
+
+    if( ( pContext == NULL ) ||
+        ( pIceCandidatePair == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        for( i = 0; i < pContext->numCandidatePairs; i++ )
+        {
+            if( &pContext->pCandidatePairs[i] == pIceCandidatePair )
+            {
+                break;
+            }
+        }
+
+        if( i == pContext->numCandidatePairs )
+        {
+            result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_FROZEN;
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 /* Ice_CreateRequestForConnectivityCheck - This API creates Stun Packet for
  * connectivity check to the remote candidate.
  */
@@ -1435,7 +1473,7 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
         if( pIceCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE )
         {
             /* Generate STUN request for srflx candidate to query external IP address. */
-            if( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID )
+            if( pIceCandidate->state == ICE_CANDIDATE_STATE_NEW )
             {
                 result = CreateServerReflexiveBindingRequest( pContext,
                                                               pIceCandidate,
@@ -1554,6 +1592,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
             case ICE_CANDIDATE_PAIR_STATE_VALID:
             case ICE_CANDIDATE_PAIR_STATE_SUCCEEDED:
+            case ICE_CANDIDATE_PAIR_STATE_FROZEN:
             default:
             {
                 /* Do nothing. */
