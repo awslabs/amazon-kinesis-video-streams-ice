@@ -143,22 +143,24 @@ static void ReleaseOtherCandidates( IceContext_t * pContext,
 
     for( i = 0; i < pContext->numLocalCandidates; i++ )
     {
-        if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-            ( &pContext->pLocalCandidates[i] != pNominatedPair->pLocalCandidate ) )
+        if( &pContext->pLocalCandidates[i] != pNominatedPair->pLocalCandidate )
         {
-            pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
-
-            if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                          pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+            if( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY )
             {
-                ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                    pContext->pLocalCandidates[i].transactionId );
+                pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
+
+                if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                            pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+                {
+                    ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                        pContext->pLocalCandidates[i].transactionId );
+                }
             }
-        }
-        else
-        {
-            /* Reset other candidates' states to invalid to avoid sending binding request. */
-            pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_INVALID;
+            else
+            {
+                /* Reset other candidates' states to invalid to avoid sending binding request. */
+                pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_INVALID;
+            }
         }
     }
 }
