@@ -1730,23 +1730,50 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_CheckTurnConnection( IceContext_t * pContext,
-                                     IceCandidate_t * pIceCandidate )
+                                     IceCandidatePair_t * pIceCandidatePair )
 {
     IceResult_t result = ICE_RESULT_OK;
+    IceCandidate_t * pLocalCandidate = NULL;
+    uint64_t currentTime;
 
-    if( ( pContext == NULL ) || ( pIceCandidate == NULL ) )
+    if( ( pContext == NULL ) || ( pIceCandidatePair == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnExpirationSeconds ) )
+
+    if( result == ICE_RESULT_OK )
+    {
+        pLocalCandidate = pIceCandidatePair->pLocalCandidate;
+
+        if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+            ( pLocalCandidate->state != ICE_CANDIDATE_STATE_VALID ) )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+    }
+
+    /* Check allocation expiration. */
+    if( result == ICE_RESULT_OK )
+    {
+        currentTime = pContext->getCurrentTimeSecondsFxn();
+        if( currentTime + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS >= pLocalCandidate->turnAllocationExpirationSeconds )
+        {
+            result = ICE_RESULT_NEED_REFRESH_CANDIDATE;
+        }
+    }
+
+    /* Check permission expiration. */
+    if( result == ICE_RESULT_OK )
+    {
+        if( currentTime + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->turnPermissionExpirationSeconds )
+        {
+            result = ICE_RESULT_NEED_REFRESH_PERMISSION;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
     {
         result = ICE_RESULT_NO_NEXT_ACTION;
-    }
-    else
-    {
-        /* Empty else marker. */
     }
 
     return result;
@@ -1768,7 +1795,7 @@ IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
     }
     else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
              ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnExpirationSeconds ) )
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
     {
         result = ICE_RESULT_NO_NEXT_ACTION;
     }
@@ -1784,6 +1811,55 @@ IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
                                        ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
                                        pStunMessageBuffer,
                                        pStunMessageBufferLength );
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceResult_t Ice_CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
+                                                    IceCandidatePair_t * pIceCandidatePair,
+                                                    uint8_t * pStunMessageBuffer,
+                                                    size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    uint64_t currentTime;
+    IceCandidate_t * pLocalCandidate = NULL;
+
+    if( ( pContext == NULL ) || ( pIceCandidatePair == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        pLocalCandidate = pIceCandidatePair->pLocalCandidate;
+
+        if( ( pLocalCandidate == NULL ) ||
+            ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+    }
+
+    /* Check permission expiration. */
+    if( result == ICE_RESULT_OK )
+    {
+        currentTime = pContext->getCurrentTimeSecondsFxn();
+        if( currentTime + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidatePair->turnPermissionExpirationSeconds )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        result = CreateRequestForCreatePermission( pContext,
+                                                   pIceCandidatePair,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
     }
 
     return result;

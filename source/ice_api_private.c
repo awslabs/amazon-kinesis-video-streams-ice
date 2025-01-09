@@ -1046,7 +1046,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
                 sizeof( IceTransportAddress_t ) );
         pLocalCandidate->endpoint.isPointToPoint = 0;
         pLocalCandidate->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
-        pLocalCandidate->turnExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        pLocalCandidate->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
 
         pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
@@ -1186,12 +1186,15 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
         {
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
         }
-        else if( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION )
+        else if( ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION ) &&
+                 ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
         {
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_PAIR_NOT_CREATING_PERMISSION;
         }
         else
         {
+            pIceCandidatePair->turnPermissionExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS;
+
             /* Regenerate transaction ID for TURN channel binding. */
             iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
                                                              STUN_HEADER_TRANSACTION_ID_LENGTH );
@@ -1202,7 +1205,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
         }
     }
 
-    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    if( ( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK ) && ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION ) )
     {
         /* Once the candidate pair received create permission success response,
          * we continue to do channel binding. */
@@ -1448,7 +1451,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         /* Update the new expiry time for this TURN session. */
-        pLocalCandidate->turnExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        pLocalCandidate->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE;
     }
 

@@ -81,12 +81,17 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        size_t * pStunMessageBufferLength );
 
 IceResult_t Ice_CheckTurnConnection( IceContext_t * pContext,
-                                     IceCandidate_t * pIceCandidate );
+                                     IceCandidatePair_t * pIceCandidatePair );
 
 IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
                                           IceCandidate_t * pIceCandidate,
                                           uint8_t * pStunMessageBuffer,
                                           size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
+                                                    IceCandidatePair_t * pIceCandidatePair,
+                                                    uint8_t * pStunMessageBuffer,
+                                                    size_t * pStunMessageBufferLength );
 
 IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidatePair_t * pIceCandidatePair,

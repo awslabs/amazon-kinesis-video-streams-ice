@@ -52,6 +52,8 @@
 
 #define ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS ( 600 )
 #define ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS ( 30 )
+#define ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS ( 300 )
+#define ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS ( 30 )
 
 /*
  * According to https://datatracker.ietf.org/doc/html/rfc8656#section-12,
@@ -110,6 +112,8 @@ typedef enum IceResult
     ICE_RESULT_OK,
     ICE_RESULT_BAD_PARAM,
     ICE_RESULT_NO_NEXT_ACTION,
+    ICE_RESULT_NEED_REFRESH_CANDIDATE,
+    ICE_RESULT_NEED_REFRESH_PERMISSION,
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
     ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
@@ -167,6 +171,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE,
+    ICE_HANDLE_STUN_PACKET_RESULT_ZERO_LIFETIME,
     ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE,
     ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED,
     ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED,
@@ -243,7 +248,7 @@ typedef struct IceCandidate
     /* Below fields are for relay candidate. */
     IceServerInfo_t iceServerInfo;
     uint16_t nextAvailableTurnChannelNumber;
-    uint64_t turnExpirationSeconds;
+    uint64_t turnAllocationExpirationSeconds;
 } IceCandidate_t;
 
 typedef struct IceCandidatePair
@@ -257,6 +262,7 @@ typedef struct IceCandidatePair
 
     /* Below fields are for TURN. */
     uint16_t turnChannelNumber;
+    uint64_t turnPermissionExpirationSeconds;
 } IceCandidatePair_t;
 
 typedef struct IceCryptoFunctions
