@@ -1728,3 +1728,65 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
 }
 
 /*----------------------------------------------------------------------------*/
+
+IceResult_t Ice_CheckTurnConnection( IceContext_t * pContext,
+                                     IceCandidate_t * pIceCandidate )
+{
+    IceResult_t result = ICE_RESULT_OK;
+
+    if( ( pContext == NULL ) || ( pIceCandidate == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnExpirationSeconds ) )
+    {
+        result = ICE_RESULT_NO_NEXT_ACTION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
+IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
+                                          IceCandidate_t * pIceCandidate,
+                                          uint8_t * pStunMessageBuffer,
+                                          size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    uint64_t currentTime = pContext->getCurrentTimeSecondsFxn();
+
+    if( ( pContext == NULL ) || ( pIceCandidate == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnExpirationSeconds ) )
+    {
+        result = ICE_RESULT_NO_NEXT_ACTION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        result = CreateRefreshRequest( pContext,
+                                       pIceCandidate,
+                                       ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
+                                       pStunMessageBuffer,
+                                       pStunMessageBufferLength );
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/

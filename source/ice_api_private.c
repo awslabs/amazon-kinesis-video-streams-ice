@@ -76,6 +76,58 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+/* While receiving allocation/refresh unauthorized response (401), update
+ * nonce, realm, and calculate the long term password based on new relam. */
+static IceHandleStunPacketResult_t UpdateIceServerInfo( IceContext_t * pContext,
+                                                        IceCandidate_t * pLocalCandidate,
+                                                        IceStunDeserializedPacketInfo_t * pDeserializePacketInfo )
+{
+    IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    IceResult_t result;
+    uint8_t needUpdateLongTermCredential = 0U;
+
+    /**
+     * Resend Allocation Request with Realm and Nonce
+     * after receiving 401 (Unauthorized) error.
+     */
+    if( pDeserializePacketInfo->nonceLength > ICE_SERVER_CONFIG_MAX_NONCE_LENGTH )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED;
+    }
+    else if( pDeserializePacketInfo->realmLength > ICE_SERVER_CONFIG_MAX_REALM_LENGTH )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED;
+    }
+    else
+    {
+        if( pDeserializePacketInfo->nonceLength > 0 )
+        {
+            memcpy( pLocalCandidate->iceServerInfo.nonce, pDeserializePacketInfo->pNonce, pDeserializePacketInfo->nonceLength );
+            pLocalCandidate->iceServerInfo.nonceLength = pDeserializePacketInfo->nonceLength;
+        }
+
+        if( pDeserializePacketInfo->realmLength > 0 )
+        {
+            memcpy( pLocalCandidate->iceServerInfo.realm, pDeserializePacketInfo->pRealm, pDeserializePacketInfo->realmLength );
+            pLocalCandidate->iceServerInfo.realmLength = pDeserializePacketInfo->realmLength;
+            needUpdateLongTermCredential = 1U;
+        }
+
+        if( needUpdateLongTermCredential != 0U )
+        {
+            result = CalculateLongTermCredential( pContext, &pLocalCandidate->iceServerInfo );
+            if( result != ICE_RESULT_OK )
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR;
+            }
+        }
+    }
+
+    return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
 static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
                                                       const IceCandidate_t * pLocalCandidate,
                                                       const IceEndpoint_t * pRemoteCandidateEndpoint,
@@ -145,12 +197,13 @@ static void ReleaseOtherCandidates( IceContext_t * pContext,
     {
         if( &pContext->pLocalCandidates[i] != pNominatedPair->pLocalCandidate )
         {
-            if( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY )
+            if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+                ( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_VALID ) )
             {
                 pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
 
                 if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                            pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+                                              pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
                 {
                     ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
                                                         pContext->pLocalCandidates[i].transactionId );
@@ -1032,7 +1085,6 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceResult_t result = ICE_RESULT_OK;
-    size_t i;
 
     if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
@@ -1062,55 +1114,14 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
             }
             break;
 
+            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
             case STUN_ATTRIBUTE_ERROR_CODE_UNAUTHORIZED:
             {
-                /**
-                 * Resend Allocation Request with Realm and Nonce
-                 * after receiving 401 (Unauthorized) error.
-                 */
-                if( deserializePacketInfo.nonceLength > ICE_SERVER_CONFIG_MAX_NONCE_LENGTH )
+                /* While receiving 401 (Unauthorized) or 438 (Stale Nonce), we update the nonce/realm from the response.
+                 * Then calculate new long term password based on new realm. */
+                handleStunPacketResult = UpdateIceServerInfo( pContext, pLocalCandidate, &( deserializePacketInfo ) );
+                if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
                 {
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED;
-                }
-                else if( deserializePacketInfo.realmLength > ICE_SERVER_CONFIG_MAX_REALM_LENGTH )
-                {
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED;
-                }
-                else
-                {
-                    memcpy( pLocalCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
-                    pLocalCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
-                    memcpy( pLocalCandidate->iceServerInfo.realm, deserializePacketInfo.pRealm, deserializePacketInfo.realmLength );
-                    pLocalCandidate->iceServerInfo.realmLength = deserializePacketInfo.realmLength;
-
-                    result = CalculateLongTermCredential( pContext, &pLocalCandidate->iceServerInfo );
-                    if( result != ICE_RESULT_OK )
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR;
-                    }
-                    else
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST;
-                    }
-                }
-            }
-            break;
-
-            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
-            {
-                /**
-                 * Resend Allocation Request with new Nonce
-                 * after receiving 438 (Stale Nonce) error.
-                 */
-                if( deserializePacketInfo.nonceLength > ICE_SERVER_CONFIG_MAX_NONCE_LENGTH )
-                {
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED;
-                }
-                else
-                {
-                    memcpy( pLocalCandidate->iceServerInfo.nonce, deserializePacketInfo.pNonce, deserializePacketInfo.nonceLength );
-                    pLocalCandidate->iceServerInfo.nonceLength = deserializePacketInfo.nonceLength;
-
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST;
                 }
             }
@@ -1415,15 +1426,30 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
                                                                   IceCandidate_t * pLocalCandidate )
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    IceStunDeserializedPacketInfo_t deserializePacketInfo;
+    IceResult_t iceResult = ICE_RESULT_OK;
 
-    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_RELEASING )
-    {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_REFRESHING;
-    }
-    else
+    if( pLocalCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
     {
         /* Set state to released whatever the response we received. */
         pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASED;
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED;
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        /* Update the new expiry time for this TURN session. */
+        pLocalCandidate->turnExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE;
     }
 
     return handleStunPacketResult;
@@ -1437,15 +1463,48 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
                                                                 IceCandidate_t * pLocalCandidate )
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    IceStunDeserializedPacketInfo_t deserializePacketInfo;
 
-    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_RELEASING )
+    if( pLocalCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
     {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_REFRESHING;
-    }
-    else
-    {
-        /* Set state to released whatever the response we received. */
         pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASED;
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED;
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            pLocalCandidate->iceServerInfo.longTermPassword,
+                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        switch( deserializePacketInfo.errorCode )
+        {
+            case STUN_ATTRIBUTE_ERROR_CODE_SUCCESS:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE;
+            }
+            break;
+
+            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
+            case STUN_ATTRIBUTE_ERROR_CODE_UNAUTHORIZED:
+            {
+                /* While receiving 401 (Unauthorized) or 438 (Stale Nonce), we update the nonce/realm from the response.
+                 * Then calculate new long term password based on new realm. */
+                handleStunPacketResult = UpdateIceServerInfo( pContext, pLocalCandidate, &( deserializePacketInfo ) );
+            }
+            break;
+
+            default:
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_REFRESH_UNKNOWN_ERROR;
+            }
+            break;
+        }
     }
 
     return handleStunPacketResult;
