@@ -532,8 +532,10 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
         if( pIceCandidatePair != NULL )
         {
-            /* Did we receive a request for nomination? */
-            if( deserializePacketInfo.useCandidateFlag == 1 )
+            /* Did we receive a request for nomination and the candidate pair is
+             * not already nominated? */
+            if( ( deserializePacketInfo.useCandidateFlag == 1 ) &&
+                ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) )
             {
                 pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
 
