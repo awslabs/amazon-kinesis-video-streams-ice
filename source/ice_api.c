@@ -335,7 +335,6 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
-    TransactionIdStoreResult_t transactionIdStoreResult;
 
     /* Other input parameters are checked before calling. */
     if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
@@ -454,7 +453,6 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
-    TransactionIdStoreResult_t transactionIdStoreResult;
 
     /* Other input parameters are checked before calling. */
     if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
@@ -692,11 +690,7 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
                                              uint8_t * pStunMessageBuffer,
                                              size_t * pStunMessageBufferLength )
 {
-    StunContext_t stunCtx;
-    StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
-    StunResult_t stunResult = STUN_RESULT_OK;
-    TransactionIdStoreResult_t transactionIdStoreResult;
     IceCandidate_t * pServerReflexiveCandidate = NULL;
 
     if( ( pContext == NULL ) ||
@@ -1661,7 +1655,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
     IceResult_t result = ICE_RESULT_OK;
-    int i;
+    size_t i;
 
     if( ( pContext == NULL ) ||
         ( pIceLocalCandidate == NULL ) ||
@@ -1683,7 +1677,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     {
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
     }
-    else if( pBuffer[0] & 0xF0 != 0x40 )
+    else if( ( pBuffer[0] & 0xF0 ) != 0x40 )
     {
         /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
@@ -1795,7 +1789,7 @@ IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
     }
     else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
              ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
+             ( currentTime + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
     {
         result = ICE_RESULT_NO_NEXT_ACTION;
     }

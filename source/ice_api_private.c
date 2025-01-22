@@ -62,7 +62,10 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
         else
         {
             outputBufferLength = ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH;
-            result = pContext->cryptoFunctions.md5Fxn( stringBuffer, snprintfRetVal, pIceServerInfo->longTermPassword, &outputBufferLength );
+            result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) stringBuffer,
+                                                        snprintfRetVal,
+                                                        pIceServerInfo->longTermPassword,
+                                                        &outputBufferLength );
         }
     }
 
@@ -227,7 +230,7 @@ uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddr
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                          STUN_IPV6_ADDRESS_SIZE;
+                                                                            STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( pTransportAddress1->port == pTransportAddress2->port ) &&
@@ -253,7 +256,7 @@ uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                          STUN_IPV6_ADDRESS_SIZE;
+                                                                            STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( memcmp( &( pTransportAddress1->address[ 0 ] ),
@@ -716,8 +719,9 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
-    size_t i;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
+    uint8_t performConnectivityCheck = 1;
+    size_t i;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                         pStunCtx,
@@ -756,7 +760,8 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
             remoteCandidateInfo.pEndpoint = pRemoteCandidateEndpoint;
 
-            iceResult = Ice_AddRemoteCandidate( pContext, &( remoteCandidateInfo ) );
+            iceResult = Ice_AddRemoteCandidate( pContext,
+                                                &( remoteCandidateInfo ) );
         }
     }
 
@@ -767,16 +772,24 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /* Did we receive a request for nomination? */
-        if( ( pContext->isControlling == 0 ) &&
-            ( deserializePacketInfo.useCandidateFlag == 1 ) &&
-            ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
+        /* Did we receive a request for nomination and the candidate pair is
+         * not already nominated? */
+        if( ( deserializePacketInfo.useCandidateFlag == 1 ) &&
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) )
         {
-            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
-            ReleaseOtherCandidates( pContext, pIceCandidatePair );
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+
+            /* Is the 4-way handshake complete? */
+            if( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) )
+            {
+                performConnectivityCheck = 0;
+                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION;
+                ReleaseOtherCandidates( pContext, pIceCandidatePair );
+            }
         }
-        else
+
+        if( performConnectivityCheck == 1 )
         {
             /* Received a connectivity check request from the remote candidate. */
             pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
@@ -902,7 +915,6 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair )
 {
-    size_t i;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
@@ -1021,6 +1033,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
     IceCandidatePair_t * pIceCandidatePair = NULL;
     size_t i;
 
+    ( void ) pStunHeader;
+
     if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
@@ -1084,7 +1098,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceResult_t result = ICE_RESULT_OK;
+
+    ( void ) pStunHeader;
 
     if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
@@ -1150,7 +1165,6 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
     IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1231,10 +1245,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
                                                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
-    IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1293,7 +1305,6 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
     IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1371,10 +1382,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
                                                                     IceCandidatePair_t ** ppIceCandidatePair )
 {
     size_t i;
-    IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceRemoteCandidateInfo_t remoteCandidateInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1430,7 +1439,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
-    IceResult_t iceResult = ICE_RESULT_OK;
+
+    ( void ) pStunHeader;
 
     if( pLocalCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
     {
@@ -1467,6 +1477,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
 {
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
+
+    ( void ) pStunHeader;
 
     if( pLocalCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
     {
