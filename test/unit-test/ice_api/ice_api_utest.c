@@ -8907,12 +8907,18 @@ void test_Ice_CreateTurnRefreshPermissionRequest_PermissionNotExpired( void )
     uint8_t stunMessageBuffer[ 16 ];
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
 
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
 
     memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
     candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_VALID;
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
 
     result = Ice_CreateTurnRefreshPermissionRequest( &( context ),
