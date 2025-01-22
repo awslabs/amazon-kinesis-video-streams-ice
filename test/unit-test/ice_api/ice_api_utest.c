@@ -22,6 +22,7 @@
  */
 #define HOST_CANDIDATE_PRIORITY_MULTICAST      2130706431
 #define SERVER_REFLEXIVE_CANDIDATE_PRIORITY    1694498815
+#define RELAY_CANDIDATE_PRIORITY               16777215
 #define CRC32_POLYNOMIAL                       0xEDB88320
 
 /*
@@ -809,6 +810,161 @@ void test_iceAddServerReflexiveCandidate( void )
     TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
                                    &( stunMessageBuffer[ 0 ] ),
                                    expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Relay Candidate fail functionality for Bad Parameters.
+ */
+void test_iceAddRelayCandidate_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    IceResult_t result;
+
+    result = Ice_AddRelayCandidate( NULL,
+                                    &( endPoint ),
+                                   pUsername,
+                                   usernameLength,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    NULL,
+                                   pUsername,
+                                   usernameLength,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   NULL,
+                                   usernameLength,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   pUsername,
+                                   usernameLength,
+                                   NULL,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   pUsername,
+                                   ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH + 1,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   pUsername,
+                                   usernameLength,
+                                   pPassword,
+                                   ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH + 1 );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Relay Candidate fail functionality for Max Candidate Threshold.
+ */
+void test_iceAddRelayCandidate_MaxCandidateThreshold( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Mark the local candidate array as full. */
+    context.numLocalCandidates = LOCAL_CANDIDATE_ARRAY_SIZE;
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   pUsername,
+                                   usernameLength,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Add Relay Candidate functionality.
+ */
+void test_iceAddRelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endPoint ),
+                                   pUsername,
+                                   usernameLength,
+                                   pPassword,
+                                   passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_RELAY,
+                       context.pLocalCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( RELAY_CANDIDATE_PRIORITY,
+                       context.pLocalCandidates[ 0 ].priority );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_NONE,
+                       context.pLocalCandidates[ 0 ].remoteProtocol );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_ALLOCATING,
+                       context.pLocalCandidates[ 0 ].state );
 }
 
 /*-----------------------------------------------------------*/
@@ -2157,6 +2313,133 @@ void test_iceCreateResponseForRequest_Controlled( void )
     TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
                                    &( stunMessageBuffer[ 0 ] ),
                                    expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate Pair functionality for Bad Parameters.
+ */
+void test_iceCloseCandidatePair_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidatePair_t iceCandidatePair;
+
+    result = Ice_CloseCandidatePair( NULL,
+                                     &( iceCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CloseCandidatePair( &( context ),
+                                     NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate Pair functionality for invalid candidate pair.
+ */
+void test_iceCloseCandidatePair_InvalidCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidatePair_t iceCandidatePair;
+    IceEndpoint_t endpoint = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CloseCandidatePair( &( context ),
+                                     &( iceCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate Pair functionality.
+ */
+void test_iceCloseCandidatePair_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CloseCandidatePair( &( context ),
+                                     &( context.pCandidatePairs[0] ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_FROZEN,
+                       context.pCandidatePairs[0].state );
 }
 
 /*-----------------------------------------------------------*/

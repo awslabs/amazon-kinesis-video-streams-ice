@@ -18,7 +18,7 @@
 #define ICE_PRIORITY_HOST_CANDIDATE_TYPE_PREFERENCE                126
 #define ICE_PRIORITY_SERVER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE    100
 #define ICE_PRIORITY_PEER_REFLEXIVE_CANDIDATE_TYPE_PREFERENCE      110
-#define ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE             0
+#define ICE_PRIORITY_RELAY_CANDIDATE_TYPE_PREFERENCE               0
 #define ICE_PRIORITY_LOCAL_PREFERENCE                              65535
 
 /*----------------------------------------------------------------------------*/
@@ -384,7 +384,7 @@ uint32_t Ice_ComputeCandidatePriority( IceCandidateType_t candidateType,
             break;
 
         case ICE_CANDIDATE_TYPE_RELAY:
-            typePreference = ICE_PRIORITY_RELAYED_CANDIDATE_TYPE_PREFERENCE;
+            typePreference = ICE_PRIORITY_RELAY_CANDIDATE_TYPE_PREFERENCE;
             break;
 
         default:
