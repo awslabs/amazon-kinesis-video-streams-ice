@@ -8106,3 +8106,156 @@ void test_Ice_CreateTurnRefreshPermissionRequest_PermissionTimeout_Success( void
 }
 
 /*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader functionality with
+ * bad parameters.
+ */
+void test_Ice_AppendTurnChannelHeader_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ];
+    size_t bufferLength = sizeof( buffer );
+
+    result = Ice_AppendTurnChannelHeader( NULL,
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          bufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          NULL,
+                                          buffer,
+                                          &bufferLength,
+                                          bufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          NULL,
+                                          &bufferLength,
+                                          bufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          NULL,
+                                          bufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OUT_OF_MEMORY
+ * when the buffer is not enough to append TURN channel header.
+ */
+void test_Ice_AppendTurnChannelHeader_BufferTooSmall( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ];
+    size_t bufferLength = sizeof( buffer );
+
+    /* Set buffer length equal to max length to simulate a full buffer. */
+    bufferLength = sizeof( buffer );
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          bufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OUT_OF_MEMORY,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_TURN_PREFIX_NOT_REQUIRED
+ * when the candidate pair doesn't need to append the header.
+ */
+void test_Ice_AppendTurnChannelHeader_StateNoNeedTurnChannelHeader( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ];
+    size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
+    
+    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          sizeof( buffer ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OK
+ * when the candidate pair append the channel header successfully.
+ */
+void test_Ice_AppendTurnChannelHeader_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ] = {
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
+    uint8_t expectedBuffer[ 16 ] = {
+        /* Channel header + length. */
+        0x40, 0x00, 0x00, 0x0C,
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t expectedBufferLength = sizeof( expectedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+    candidatePair.turnChannelNumber = 0x4000U;
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          sizeof( buffer ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedBufferLength,
+                       bufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
+                                   &( buffer[ 0 ] ),
+                                   bufferLength );
+}
+
+/*-----------------------------------------------------------*/
