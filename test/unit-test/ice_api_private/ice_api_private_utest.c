@@ -37,6 +37,13 @@ TransactionIdSlot_t transactionIdSlots[ TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE ];
 
 /* ===========================  EXTERN FUNCTIONS   =========================== */
 
+uint64_t testGetCurrentTime( void )
+{
+    return ( uint64_t ) time( NULL );
+}
+
+/*-----------------------------------------------------------*/
+
 IceResult_t testRandomFxn( uint8_t * pDest,
                            size_t length )
 {
@@ -122,6 +129,49 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
 
 /*-----------------------------------------------------------*/
 
+IceResult_t testMd5Fxn( const uint8_t * pBuffer,
+                                     size_t bufferLength,
+                                     uint8_t * pOutputBuffer,
+                                     uint16_t * pOutputBufferLength )
+{
+    IceResult_t ret = ICE_RESULT_OK;
+    const uint16_t md5Length = 16U;
+    uint16_t i;
+
+    if( ( pBuffer == NULL ) || ( pOutputBuffer == NULL ) || ( pOutputBufferLength == NULL ) )
+    {
+        ret = ICE_RESULT_MD5_ERROR;
+    }
+    else if( *pOutputBufferLength < md5Length )
+    {
+        ret = ICE_RESULT_MD5_ERROR;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( ret == ICE_RESULT_OK )
+    {
+        /* Fake MD5 implementation. */
+        memset( pOutputBuffer, 0, md5Length );
+        for( i = 0 ; i<bufferLength ; i++ )
+        {
+            pOutputBuffer[ i%md5Length ] = ( uint8_t )( pOutputBuffer[ i%md5Length ] + pBuffer[ i ] );
+        }
+    }
+
+    if( ret == ICE_RESULT_OK )
+    {
+        /* MD5 result is always 16 bytes. */
+        *pOutputBufferLength = md5Length;
+    }
+
+    return ret;
+}
+
+/*-----------------------------------------------------------*/
+
 /*
  * The following function is used to Initialize the initInfo For each Test case.
  */
@@ -142,6 +192,8 @@ static void Info_Init_For_Tests( void )
     initInfo.cryptoFunctions.randomFxn = testRandomFxn;
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
+    initInfo.cryptoFunctions.md5Fxn = testMd5Fxn;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime;
     initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
     initInfo.creds.localUsernameLength = strlen( "localUsername" );
     initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
@@ -172,7 +224,7 @@ void setUp( void )
 
     memset( &( candidatePairArray[ 0 ] ),
             0,
-            CANDIDATE_PAIR_ARRAY_SIZE * sizeof( IceCandidate_t ) );
+            CANDIDATE_PAIR_ARRAY_SIZE * sizeof( IceCandidatePair_t ) );
 
     memset( &( transactionIdSlots[ 0 ] ),
             0,
@@ -209,20 +261,23 @@ void test_iceAddCandidatePair_BadParams( void )
 
     result = Ice_AddCandidatePair( NULL,
                                    &( localCandidate ),
-                                   &( remoteCandidate ) );
+                                   &( remoteCandidate ),
+                                   NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddCandidatePair( &( context ),
                                    NULL,
-                                   &( remoteCandidate ) );
+                                   &( remoteCandidate ),
+                                   NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
+                                   NULL,
                                    NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
@@ -252,7 +307,8 @@ void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
-                                   &( remoteCandidate ) );
+                                   &( remoteCandidate ),
+                                   NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
                        result );
@@ -409,6 +465,64 @@ void test_iceIsSameTransportAddress_DifferentIpAddress( void )
 
     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
                                          &( transportAddress2 ) );
+
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Same IP Address check fail functionality.
+ */
+void test_iceIsSameIPAddress_BadParams( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t result;
+
+    transportAddress1.family = 0x01;
+    transportAddress2.family = 0x02;
+
+    result = Ice_IsSameIpAddress( NULL,
+                                  &( transportAddress2 ) );
+
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+
+    result = Ice_IsSameIpAddress( &( transportAddress1 ),
+                                  NULL );
+
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Same IP Address check fail functionality.
+ */
+void test_iceIsSameIPAddress_DifferentIpAddress( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
+    uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E };       /* "192.168.1.110". */
+    uint8_t result;
+
+    transportAddress1.family = 0x01;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    transportAddress2.family = 0x01;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) ipAddress2,
+            sizeof( ipAddress2 ) );
+
+
+    result = Ice_IsSameIpAddress( &( transportAddress1 ),
+                                  &( transportAddress2 ) );
 
     TEST_ASSERT_EQUAL( 0,
                        result );
