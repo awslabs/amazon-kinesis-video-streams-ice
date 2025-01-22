@@ -7390,3 +7390,197 @@ void test_iceGetCandidatePairCount( void )
 }
 
 /*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality for bad parameters.
+ */
+void test_Ice_CheckTurnConnection_BadParam( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_CheckTurnConnection( NULL,
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality returns ICE_RESULT_NO_NEXT_ACTION
+ * when local candidate type is not relay.
+ */
+void test_Ice_CheckTurnConnection_LocalCandidateNotRelay( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.pLocalCandidate = &localCandidate;
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality returns ICE_RESULT_NO_NEXT_ACTION
+ * when local candidate is not ready.
+ */
+void test_Ice_CheckTurnConnection_LocalCandidateNotReady( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.pLocalCandidate = &localCandidate;
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality returns ICE_RESULT_NEED_REFRESH_CANDIDATE
+ * when the TURN allocation timeout.
+ */
+void test_Ice_CheckTurnConnection_AllocationTimeout( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.pLocalCandidate = &localCandidate;
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NEED_REFRESH_CANDIDATE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality returns ICE_RESULT_NEED_REFRESH_PERMISSION
+ * when the TURN permission timeout.
+ */
+void test_Ice_CheckTurnConnection_PermissionTimeout( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() - 1;
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NEED_REFRESH_PERMISSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CheckTurnConnection functionality returns ICE_RESULT_NO_NEXT_ACTION
+ * when everything is fine.
+ */
+void test_Ice_CheckTurnConnection_NoNextAction( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    result = Ice_CheckTurnConnection( &( context ),
+                                      &( candidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
