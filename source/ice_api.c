@@ -411,29 +411,18 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
 
         if( stunResult != STUN_RESULT_OK )
         {
-            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+            result = ICE_RESULT_STUN_ERROR_ADD_NONCE;
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength > 0 )
-        {
-            /* We already have long-term key retrieved from username, realm and password. */
-            result = Ice_FinalizeStunPacket( pContext,
-                                             &stunCtx,
-                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
-                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                             pStunMessageBufferLength );
-        }
-        else
-        {
-            result = Ice_FinalizeStunPacket( pContext,
-                                             &stunCtx,
-                                             NULL,
-                                             0,
-                                             pStunMessageBufferLength );
-        }
+        /* We already have long-term key retrieved from username, realm and password. */
+        result = Ice_FinalizeStunPacket( pContext,
+                                         &stunCtx,
+                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
+                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                         pStunMessageBufferLength );
     }
 
     return result;
@@ -539,29 +528,18 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
         if( stunResult != STUN_RESULT_OK )
         {
-            result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+            result = ICE_RESULT_STUN_ERROR_ADD_NONCE;
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength > 0 )
-        {
-            /* We already have long-term key retrieved from username, realm and password. */
-            result = Ice_FinalizeStunPacket( pContext,
-                                             &stunCtx,
-                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
-                                             pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                             pStunMessageBufferLength );
-        }
-        else
-        {
-            result = Ice_FinalizeStunPacket( pContext,
-                                             &stunCtx,
-                                             NULL,
-                                             0,
-                                             pStunMessageBufferLength );
-        }
+        /* We already have long-term key retrieved from username, realm and password. */
+        result = Ice_FinalizeStunPacket( pContext,
+                                         &stunCtx,
+                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
+                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                         pStunMessageBufferLength );
     }
 
     return result;
