@@ -171,7 +171,7 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
             if( stunResult != STUN_RESULT_OK )
             {
-                result = ICE_RESULT_STUN_ERROR_ADD_REALM;
+                result = ICE_RESULT_STUN_ERROR_ADD_NONCE;
             }
         }
     }

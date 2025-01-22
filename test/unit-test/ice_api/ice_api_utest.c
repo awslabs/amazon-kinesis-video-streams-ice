@@ -2785,6 +2785,324 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_MissInfo_Succes
 
 /**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_TRANSACTION_ID_STORE_ERROR when it fail to insert
+ * new transaction ID to store.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_NullTransactionIdStore( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 44 ];
+    size_t stunMessageBufferLength = 44;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Set transaction ID to null. */
+    context.pStunBindingRequestTransactionIdStore = NULL;
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_TRANSACTION_ID_STORE_ERROR while using random
+ * to generate transaction ID.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_ReuseTransactionID_RandomFail( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 44 ];
+    size_t stunMessageBufferLength = 44;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Ice uses random to generate tie breaker. So we overwrite it after init. */
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_RANDOM_GENERATION_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for STUN header.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToInit( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 2 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for adding life time.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToAddLifeTime( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 20 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for adding requested transport.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToAddRequestedTransport( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 28 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REQUESTED_TRANSPORT,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for adding username.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToAddUserName( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 36 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_USERNAME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for adding realm.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToAddRealm( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 48 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REALM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
+ * because the buffer is too small for adding nonce.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSmallToAddNonce( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 60 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_NONCE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
  * ALLOCATE_REQUEST when it's a relay candidate asking for
  * allocation. Note the transaction ID is set in the store,
  * so it reuses same ID this time.
