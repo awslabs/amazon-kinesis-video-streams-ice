@@ -644,7 +644,7 @@ void test_iceAddHostCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_AddHostCandidate return vail when it
+ * @brief Validate Ice_AddHostCandidate return fail when it
  * fail to generate candidate pair.
  */
 void test_iceAddHostCandidate_CandidatePairFull( void )
@@ -666,7 +666,7 @@ void test_iceAddHostCandidate_CandidatePairFull( void )
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    /* Set 1 remote candidate to trigger adding candidate pair flow. */
+    /* Set 2 remote candidate to trigger adding candidate pair flow. */
     context.numRemoteCandidates = 2;
 
     /* Set full candidate pair to make adding candidate pair fail. */
@@ -1172,6 +1172,127 @@ void test_iceAddRemoteCandidate( void )
                                    sizeof( ipAddress ) );
     TEST_ASSERT_EQUAL( 1,
                        context.pRemoteCandidates[ 1 ].endpoint.transportAddress.family );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AddRemoteCandidate return fail when it
+ * fail to generate candidate pair.
+ */
+void test_iceAddRemoteCandidate_CandidatePairFull( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* Set 2 local candidate to trigger adding candidate pair flow. */
+    context.numLocalCandidates = 2;
+    context.pLocalCandidates[0].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[0].candidateType = ICE_CANDIDATE_TYPE_HOST;
+    context.pLocalCandidates[1].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[1].candidateType = ICE_CANDIDATE_TYPE_HOST;
+
+    /* Set full candidate pair to make adding candidate pair fail. */
+    context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AddRemoteCandidate return fail when it
+ * fail to generate candidate pair.
+ */
+void test_iceAddRemoteCandidate_AddCandidatePairForLocalRelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* Set 2 local candidate to trigger adding candidate pair flow. */
+    context.numLocalCandidates = 1;
+    context.pLocalCandidates[0].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[0].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[0].nextAvailableTurnChannelNumber = 0x4010;
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numRemoteCandidates );
+    /* Verify first remote candidate. */
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_HOST,
+                       context.pRemoteCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( ICE_SOCKET_PROTOCOL_UDP,
+                       context.pRemoteCandidates[ 0 ].remoteProtocol );
+    TEST_ASSERT_EQUAL( 1000,
+                       context.pRemoteCandidates[ 0 ].priority );
+    TEST_ASSERT_EQUAL( 1,
+                       context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint );
+    TEST_ASSERT_EQUAL( 8080,
+                       context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( ipAddress,
+                                   context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address,
+                                   sizeof( ipAddress ) );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family );
+    /* Verify candidate pair. */
+    TEST_ASSERT_EQUAL( 1,
+                       context.numCandidatePairs );
+    TEST_ASSERT_EQUAL_PTR( context.pCandidatePairs[0].pLocalCandidate,
+                           &context.pLocalCandidates[0] );
+    TEST_ASSERT_EQUAL( 0x4010,
+                       context.pCandidatePairs[0].turnChannelNumber );
+    TEST_ASSERT_EQUAL( 0x4011,
+                       context.pCandidatePairs[0].pLocalCandidate->nextAvailableTurnChannelNumber );
 }
 
 /*-----------------------------------------------------------*/
