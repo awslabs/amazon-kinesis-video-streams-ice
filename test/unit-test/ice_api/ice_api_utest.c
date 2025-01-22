@@ -9145,9 +9145,163 @@ void test_Ice_AppendTurnChannelHeader_StateNoNeedTurnChannelHeader( void )
 
 /**
  * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OK
- * when the candidate pair append the channel header successfully.
+ * when the candidate pair append the channel header successfully at
+ * the state waiting.
  */
-void test_Ice_AppendTurnChannelHeader_Success( void )
+void test_Ice_AppendTurnChannelHeader_StateWaiting_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ] = {
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
+    uint8_t expectedBuffer[ 16 ] = {
+        /* Channel header + length. */
+        0x40, 0x00, 0x00, 0x0C,
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t expectedBufferLength = sizeof( expectedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    candidatePair.turnChannelNumber = 0x4000U;
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          sizeof( buffer ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedBufferLength,
+                       bufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
+                                   &( buffer[ 0 ] ),
+                                   bufferLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OK
+ * when the candidate pair append the channel header successfully at
+ * the state valid.
+ */
+void test_Ice_AppendTurnChannelHeader_StateValid_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ] = {
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
+    uint8_t expectedBuffer[ 16 ] = {
+        /* Channel header + length. */
+        0x40, 0x00, 0x00, 0x0C,
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t expectedBufferLength = sizeof( expectedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_VALID;
+    candidatePair.turnChannelNumber = 0x4000U;
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          sizeof( buffer ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedBufferLength,
+                       bufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
+                                   &( buffer[ 0 ] ),
+                                   bufferLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OK
+ * when the candidate pair append the channel header successfully at
+ * the state nominated.
+ */
+void test_Ice_AppendTurnChannelHeader_StateNominated_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    IceResult_t result;
+    uint8_t buffer[ 16 ] = {
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
+    uint8_t expectedBuffer[ 16 ] = {
+        /* Channel header + length. */
+        0x40, 0x00, 0x00, 0x0C,
+        0x12, 0x34, 0x56, 0x78,
+        0x9A, 0xBC, 0xDE, 0xF0,
+        0x12, 0x34, 0x56, 0x78
+    };
+    size_t expectedBufferLength = sizeof( expectedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+    candidatePair.turnChannelNumber = 0x4000U;
+    result = Ice_AppendTurnChannelHeader( &( context ),
+                                          &( candidatePair ),
+                                          buffer,
+                                          &bufferLength,
+                                          sizeof( buffer ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedBufferLength,
+                       bufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
+                                   &( buffer[ 0 ] ),
+                                   bufferLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_AppendTurnChannelHeader returns ICE_RESULT_OK
+ * when the candidate pair append the channel header successfully at
+ * the state succeeded.
+ */
+void test_Ice_AppendTurnChannelHeader_StateSucceeded_Success( void )
 {
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
