@@ -1759,7 +1759,6 @@ IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
                                           size_t * pStunMessageBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
-    uint64_t currentTime = pContext->getCurrentTimeSecondsFxn();
 
     if( ( pContext == NULL ) || ( pIceCandidate == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
     {
@@ -1767,7 +1766,7 @@ IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
     }
     else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
              ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( currentTime + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
     {
         result = ICE_RESULT_NO_NEXT_ACTION;
     }
