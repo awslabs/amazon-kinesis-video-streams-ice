@@ -391,6 +391,24 @@ void test_iceInit_BadParams( void )
                        result );
 
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
+    initInfo.cryptoFunctions.md5Fxn = NULL;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    initInfo.cryptoFunctions.md5Fxn = testMd5Fxn;
+    initInfo.getCurrentTimeSecondsFxn = NULL;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime;
     initInfo.creds.pLocalUsername = NULL;
 
     result = Ice_Init( &( context ),
