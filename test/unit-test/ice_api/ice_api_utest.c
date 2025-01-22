@@ -644,6 +644,44 @@ void test_iceAddHostCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Validate Ice_AddHostCandidate return vail when it
+ * fail to generate candidate pair.
+ */
+void test_iceAddHostCandidate_CandidatePairFull( void )
+{
+    IceContext_t context = { 0 };
+    IceEndpoint_t endPoint = { 0 };
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endPoint.isPointToPoint = 1;
+    endPoint.transportAddress.family = 0;
+    endPoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endPoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* Set 1 remote candidate to trigger adding candidate pair flow. */
+    context.numRemoteCandidates = 2;
+
+    /* Set full candidate pair to make adding candidate pair fail. */
+    context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endPoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate ICE Add Server Reflexive Candidate fail functionality for Bad Parameters.
  */
 void test_iceAddServerReflexiveCandidate_BadParams( void )
