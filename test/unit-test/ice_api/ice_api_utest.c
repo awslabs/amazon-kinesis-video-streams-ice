@@ -8162,6 +8162,299 @@ void test_Ice_CreateTurnRefreshRequest_AllocationAvailable( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * failure when it get fail while generating transaction ID.
+ */
+void test_Ice_CreateTurnRefreshRequest_RandomFail( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 10 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Ice uses random to generate tie breaker. So we overwrite it after init. */
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_RANDOM_GENERATION_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_TRANSACTION_ID_STORE_ERROR when it fails to insert the
+ * transaction ID to the store.
+ */
+void test_Ice_CreateTurnRefreshRequest_NullTransactionIdStore( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 10 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Set transaction ID to null. */
+    context.pStunBindingRequestTransactionIdStore = NULL;
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_STUN_ERROR when it fails to init STUN serializer.
+ */
+void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToInit( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 10 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_STUN_ERROR when it fails to append life time attribute.
+ */
+void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddLifeTime( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 20 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_STUN_ERROR when it fails to append username attribute.
+ */
+void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddUserName( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 28 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_USERNAME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_STUN_ERROR when it fails to append realm attribute.
+ */
+void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddRealm( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 40 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REALM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateTurnRefreshRequest functionality returns
+ * ICE_RESULT_STUN_ERROR when it fails to append nonce attribute.
+ */
+void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddNonce( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessage[ 52 ];
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.turnAllocationExpirationSeconds = testGetCurrentTime() - 1U;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.longTermPassword, pPassword, passwordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    result = Ice_CreateTurnRefreshRequest( &( context ),
+                                           &( localCandidate ),
+                                           stunMessage,
+                                           &stunMessageLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_NONCE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate Ice_CreateTurnRefreshRequest functionality generates
  * REFRESH_REQUEST successfully.
  */
