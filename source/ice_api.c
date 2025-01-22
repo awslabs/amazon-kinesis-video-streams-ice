@@ -1634,6 +1634,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
 {
     IceResult_t result = ICE_RESULT_OK;
     size_t i;
+    IceCandidatePair_t * pCandidatePair = NULL;
 
     if( ( pContext == NULL ) ||
         ( pIceLocalCandidate == NULL ) ||
@@ -1672,18 +1673,18 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
         turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 0 ] );
         turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 2 ] );
 
-        for( i = 0; i < pContext->numCandidatePairs && ppIceCandidatePair != NULL; i++ )
+        for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
             if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
                                               &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
                 ( turnChannelMessageHdr.channelNumber == pContext->pCandidatePairs[i].turnChannelNumber ) )
             {
-                *ppIceCandidatePair = &pContext->pCandidatePairs[i];
+                pCandidatePair = &pContext->pCandidatePairs[i];
                 break;
             }
         }
 
-        if( i == pContext->numCandidatePairs )
+        if( pCandidatePair == NULL )
         {
             result = ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND;
         }
@@ -1694,6 +1695,11 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
         /* Move the buffer for 4 bytes to remove channel message header. */
         memmove( pBuffer, pBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, *pBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH );
         *pBufferLength -= ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+
+        if( ppIceCandidatePair != NULL )
+        {
+            *ppIceCandidatePair = pCandidatePair;
+        }
     }
 
     return result;
