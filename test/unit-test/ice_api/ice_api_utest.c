@@ -70,6 +70,16 @@ IceResult_t testRandomFxn( uint8_t * pDest,
 
 /*-----------------------------------------------------------*/
 
+IceResult_t testRandomFxn_Wrong( uint8_t * pDest,
+                           size_t length )
+{
+    ( void ) pDest;
+    ( void ) length; 
+    return ICE_RESULT_RANDOM_GENERATION_ERROR;
+}
+
+/*-----------------------------------------------------------*/
+
 IceResult_t testCrc32Fxn( uint32_t initialResult,
                           const uint8_t * pBuffer,
                           size_t bufferLength,
@@ -2425,6 +2435,108 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate( void )
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_NEW;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( STUN_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest get failure while
+ * using random function to generate transaction ID.
+ */
+void test_iceCreateNextCandidateRequest_NewSrflxCandidate_RandomFail( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Ice uses random to generate tie breaker. So we overwrite it after init. */
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+    localCandidate.state = ICE_CANDIDATE_STATE_NEW;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_RANDOM_GENERATION_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * BINDING_REQUEST STUN message to query IP address for new
+ * srflx candidate and the transport ID already exists in
+ * transaction ID store.
+ */
+void test_iceCreateNextCandidateRequest_NewSrflxCandidate_ReuseTransactionID( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 8 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x08,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID set in transactionID. */
+        0xFF, 0x01, 0x02, 0x03,
+        0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x141CC362 as calculated by testCrc32Fxn. */
+        0x62, 0xC3, 0x1C, 0x14,
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+    localCandidate.state = ICE_CANDIDATE_STATE_NEW;
+    memcpy( &( localCandidate.transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              stunMessageBuffer,
