@@ -7819,6 +7819,406 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Receiving binding request on TURN connection. And local candidate
+ * is not matching.
+ */
+void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMatching( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] = {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = BINDING_REQUEST (0x0001), Length = 56 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x38,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
+        0x00, 0x20, 0x00, 0x08,
+        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    IceCandidate_t candidate;
+    uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &candidate, 0, sizeof( IceCandidate_t ) ) ;
+    candidate.endpoint.isPointToPoint = 0U;
+    candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    candidate.endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( candidate.endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress2,
+            sizeof( ipAddress2 ) );
+
+    context.numLocalCandidates = 1;
+    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
+    context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* To simplify, set remote candidate with same endpoint of local candidate. */
+    context.numRemoteCandidates = 1;
+    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
+    pCandidatePair = &context.pCandidatePairs[ 0 ];
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( candidate ),
+                                   &( context.pRemoteCandidates[ 0 ].endpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Receiving binding request on TURN connection. And remote endpoint
+ * is not matching.
+ */
+void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] = {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = BINDING_REQUEST (0x0001), Length = 56 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x38,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
+        0x00, 0x20, 0x00, 0x08,
+        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    IceCandidate_t candidate;
+    uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &candidate, 0, sizeof( IceCandidate_t ) ) ;
+    candidate.endpoint.isPointToPoint = 0U;
+    candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    candidate.endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( candidate.endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress2,
+            sizeof( ipAddress2 ) );
+
+    context.numLocalCandidates = 1;
+    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
+    context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* To simplify, set remote candidate with same endpoint of local candidate. */
+    context.numRemoteCandidates = 1;
+    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
+    pCandidatePair = &context.pCandidatePairs[ 0 ];
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( context.pLocalCandidates[ 0 ] ),
+                                   &( candidate.endpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Receiving binding request on TURN connection. And the pair
+ * has empty connectivity check flags.
+ */
+void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] = {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = BINDING_REQUEST (0x0001), Length = 56 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x38,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
+        0x00, 0x20, 0x00, 0x08,
+        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    context.numLocalCandidates = 1;
+    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* To simplify, set remote candidate with same endpoint of local candidate. */
+    context.numRemoteCandidates = 1;
+    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
+    pCandidatePair = &context.pCandidatePairs[ 0 ];
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( context.pLocalCandidates[ 0 ] ),
+                                   &( context.pRemoteCandidates[ 0 ].endpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_SENT_FLAG,
+                       pCandidatePair->connectivityCheckFlags );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Receiving binding request on TURN connection. And input candidate pair
+ * is NULL.
+ */
+void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate_NoInputCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = BINDING_REQUEST (0x0001), Length = 56 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x38,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
+        0x00, 0x20, 0x00, 0x08,
+        /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
+        0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    context.numLocalCandidates = 1;
+    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pLocalCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* To simplify, set remote candidate with same endpoint of local candidate. */
+    context.numRemoteCandidates = 1;
+    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pRemoteCandidates[ 0 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pRemoteCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( context.pLocalCandidates[ 0 ] ),
+                                   &( context.pRemoteCandidates[ 0 ].endpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate ICE Handle Stun Packet functionality for Invalid Packets.
  */
 void test_iceHandleStunPacket_InvalidPacket( void )

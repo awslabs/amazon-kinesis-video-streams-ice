@@ -140,49 +140,38 @@ static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     size_t i;
 
-    if( ppOutputIceCandidatePair == NULL )
+    *ppOutputIceCandidatePair = NULL;
+    if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
     {
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM;
-    }
-    else
-    {
-        *ppOutputIceCandidatePair = NULL;
-    }
-
-    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
-    {
-        if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+        /* For local relay candidate, the remote endpoint is always the TURN server.
+         * Thus we can retrieve the candidate pair pointer from input parameter, which
+         * is parsed from Ice_RemoveTurnChannelHeader. */
+        if( pInputIceCandidatePair == NULL )
         {
-            /* For local relay candidate, the remote endpoint is always the TURN server.
-             * Thus we can retrieve the candidate pair pointer from input parameter, which
-             * is parsed from Ice_RemoveTurnChannelHeader. */
-            if( pInputIceCandidatePair == NULL )
-            {
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
-            }
-            else
-            {
-                *ppOutputIceCandidatePair = pInputIceCandidatePair;
-            }
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
         }
         else
         {
-            for( i = 0; i < pContext->numCandidatePairs; i++ )
+            *ppOutputIceCandidatePair = pInputIceCandidatePair;
+        }
+    }
+    else
+    {
+        for( i = 0; i < pContext->numCandidatePairs; i++ )
+        {
+            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
+                                                &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
+                                                &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
             {
-                if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
-                                                  &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
-                    ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
-                                                  &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
-                {
-                    *ppOutputIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
-                    break;
-                }
+                *ppOutputIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
+                break;
             }
+        }
 
-            if( *ppOutputIceCandidatePair == NULL )
-            {
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
-            }
+        if( *ppOutputIceCandidatePair == NULL )
+        {
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND;
         }
     }
 
@@ -818,6 +807,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             }
 
             if( ( pContext->isControlling == 1 ) &&
+                ( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) ) &&
                 ( pContext->pNominatePairs == NULL ) )
             {
                 /* We are the controlling agent. We need to nominate the
