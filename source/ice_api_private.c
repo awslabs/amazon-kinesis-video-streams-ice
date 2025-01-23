@@ -1055,6 +1055,14 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
+        if( deserializePacketInfo.errorCode != 0 )
+        {
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE;
+        }
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
         memcpy( &( pLocalCandidate->endpoint.transportAddress ),
                 &( deserializePacketInfo.relayTransportAddress ),
                 sizeof( IceTransportAddress_t ) );

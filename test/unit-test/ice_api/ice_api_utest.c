@@ -54,6 +54,13 @@ uint64_t testGetCurrentTime( void )
 
 /*-----------------------------------------------------------*/
 
+uint64_t testGetCurrentTime_FixedZero( void )
+{
+    return ( uint64_t ) 0U;
+}
+
+/*-----------------------------------------------------------*/
+
 IceResult_t testRandomFxn( uint8_t * pDest,
                            size_t length )
 {
@@ -157,6 +164,45 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
         {
             pOutputBuffer[ i ] = pPassword[ i % passwordLength ] ^
                                  pBuffer[ i % bufferLength ];
+        }
+
+        /* Update the output buffer length. */
+        *pOutputBufferLength = hmacLength;
+    }
+
+    return result;
+}
+
+/*-----------------------------------------------------------*/
+
+IceResult_t testHmacFxn_FixedFF( const uint8_t * pPassword,
+                                 size_t passwordLength,
+                                 const uint8_t * pBuffer,
+                                 size_t bufferLength,
+                                 uint8_t * pOutputBuffer,
+                                 uint16_t * pOutputBufferLength )
+{
+    /* Assume a fixed HMAC output length of 20 bytes (160-bit). */
+    const uint16_t hmacLength = 20;
+    uint16_t i;
+    IceResult_t result = ICE_RESULT_OK;
+
+    ( void ) pPassword;
+    ( void ) passwordLength;
+    ( void ) pBuffer;
+    ( void ) bufferLength;
+
+    if( *pOutputBufferLength < hmacLength )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Calculate the HMAC using a simple algorithm. */
+        for( i = 0; i < hmacLength; i++ )
+        {
+            pOutputBuffer[ i ] = 0xFF;
         }
 
         /* Update the output buffer length. */
@@ -8792,10 +8838,10 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_PasswordTooLong(
     memset( &( localCandidate ),
             0,
             sizeof( IceCandidate_t ) );
-    /* The buffer of userName is not able to store data longer than ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH. */
-    // memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
     localCandidate.iceServerInfo.userNameLength = usernameLength;
-    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    /* The buffer of password is not able to store data longer than ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH. */
+    // memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -8886,8 +8932,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
     memset( &( localCandidate ),
             0,
             sizeof( IceCandidate_t ) );
-    /* The buffer of userName is not able to store data longer than ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH. */
-    // memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
     localCandidate.iceServerInfo.userNameLength = usernameLength;
     memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
     localCandidate.iceServerInfo.passwordLength = passwordLength;
@@ -8980,8 +9025,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
     memset( &( localCandidate ),
             0,
             sizeof( IceCandidate_t ) );
-    /* The buffer of userName is not able to store data longer than ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH. */
-    // memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
     localCandidate.iceServerInfo.userNameLength = usernameLength;
     memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
     localCandidate.iceServerInfo.passwordLength = passwordLength;
@@ -9004,6 +9048,736 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATE_UNKNOWN_ERROR,
                        result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * the transaction ID is not found in store.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_TransactionIDNotFound( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) invalid transaction ID. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x04, 0x01,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn. */
+        0x6D, 0x6E, 0x63, 0x51,
+        0x4D, 0x42, 0xC5, 0x31,
+        0x73, 0x76, 0x6D, 0x71,
+        0x60, 0x69, 0x69, 0x64,
+        0x69, 0x65, 0x5A, 0x6A,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * the local candidate is not allocating.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x04, 0x01,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn. */
+        0x6D, 0x6E, 0x63, 0x51,
+        0x4D, 0x42, 0xC5, 0x31,
+        0x73, 0x76, 0x6D, 0x71,
+        0x60, 0x69, 0x69, 0x64,
+        0x69, 0x65, 0x5A, 0x6A,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE in pass.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x00, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    uint16_t expectEndpointFamily = STUN_ADDRESS_IPv4;
+    uint16_t expectEndpointPort = 0x1234;
+    uint8_t * pExpectIpAddress = ipAddress;
+    size_t expectIpAddressLength = sizeof( ipAddress );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
+                       localCandidate.state );
+    TEST_ASSERT_EQUAL( ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN,
+                       localCandidate.nextAvailableTurnChannelNumber );
+    TEST_ASSERT_EQUAL( expectEndpointFamily,
+                       localCandidate.endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( expectEndpointPort,
+                       localCandidate.endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pExpectIpAddress,
+                                   localCandidate.endpoint.transportAddress.address,
+                                   expectIpAddressLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * the error code is not zero.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 401 Unautorized). */
+        0x00, 0x00, 0x04, 0x01,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE and add
+ * two candidate pairs by pre-adding two remote candidates.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x00, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    uint16_t expectEndpointFamily = STUN_ADDRESS_IPv4;
+    uint16_t expectEndpointPort = 0x1234;
+    uint8_t * pExpectIpAddress = ipAddress;
+    size_t expectIpAddressLength = sizeof( ipAddress );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+
+    /* Enable two remote candidates. */
+    context.numRemoteCandidates = 2;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_VALID,
+                       localCandidate.state );
+    TEST_ASSERT_EQUAL( ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN + 2,
+                       localCandidate.nextAvailableTurnChannelNumber );
+    TEST_ASSERT_EQUAL( expectEndpointFamily,
+                       localCandidate.endpoint.transportAddress.family );
+    TEST_ASSERT_EQUAL( expectEndpointPort,
+                       localCandidate.endpoint.transportAddress.port );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pExpectIpAddress,
+                                   localCandidate.endpoint.transportAddress.address,
+                                   expectIpAddressLength );
+    TEST_ASSERT_EQUAL( 2,
+                       context.numCandidatePairs );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * hitting max channel ID by adding 4097 remote candidates.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x00, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    size_t localRemoteCandidateArrayLength = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX - ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN + 2;
+    size_t localCandidatePairArrayLength = localRemoteCandidateArrayLength;
+    IceCandidate_t localRemoteCandidateArray[ localRemoteCandidateArrayLength ];
+    IceCandidatePair_t localCandidatePairArray[ localCandidatePairArrayLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    memset( localRemoteCandidateArray, 0, sizeof( localRemoteCandidateArray ) );
+    memset( localCandidatePairArray, 0, sizeof( localCandidatePairArray ) );
+    initInfo.pRemoteCandidatesArray = localRemoteCandidateArray;
+    initInfo.remoteCandidatesArrayLength = localRemoteCandidateArrayLength;
+    initInfo.pCandidatePairsArray = localCandidatePairArray;
+    initInfo.candidatePairsArrayLength = localCandidatePairArrayLength;
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+
+    /* Enable two remote candidates. */
+    context.numRemoteCandidates = localRemoteCandidateArrayLength;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX + 1,
+                       localCandidate.nextAvailableTurnChannelNumber );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * fail to add candidate pair because the number of candidate pair is full.
+ */
+void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_SUCCESS_RESPONSE (0x0103), Length = 72 bytes (excluding 20 bytes header). */
+        0x01, 0x03, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Error Code = 0 Success). */
+        0x00, 0x00, 0x00, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = Relay Transport Address (0x0016), Length = 8 bytes. */
+        0x00, 0x16, 0x00, 0x08,
+        /* Attribute Value = Family: 0x01, Port: 0x1234 IP: 192.168.1.100. XOR with 0x2112A442. */
+        0x00, 0x01, 0x33, 0x26,
+        0xE1, 0xBA, 0xA5, 0x26,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+
+    /* Enable two remote candidates. */
+    context.numRemoteCandidates = 2;
+    context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
+    
+    /* Store the transaction ID into store. */
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS,
+                       result );
+    TEST_ASSERT_EQUAL( CANDIDATE_PAIR_ARRAY_SIZE,
+                       context.numCandidatePairs );
 }
 
 /*-----------------------------------------------------------*/
