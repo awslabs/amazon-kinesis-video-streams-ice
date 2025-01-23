@@ -35,7 +35,6 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     uint16_t outputBufferLength;
 
     if( ( pIceServerInfo->userNameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
-        ( pIceServerInfo->realmLength > ICE_SERVER_CONFIG_MAX_REALM_LENGTH ) ||
         ( pIceServerInfo->passwordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
     {
         result = ICE_RESULT_BAD_PARAM;
@@ -54,11 +53,12 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
         {
             result = ICE_RESULT_SNPRINTF_ERROR;
         }
-        /* LCOV_EXCL_STOP  */
         else if( snprintfRetVal >= bufferLength )
         {
+            /* This case would never happen because we've check all the length before calling snprintf. */
             result = ICE_RESULT_OUT_OF_MEMORY;
         }
+        /* LCOV_EXCL_STOP  */
         else
         {
             outputBufferLength = ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH;
@@ -1125,7 +1125,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
         {
             case STUN_ATTRIBUTE_ERROR_CODE_SUCCESS:
             {
-                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_COMPLETE;
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_UNEXPECTED_COMPLETE;
             }
             break;
 

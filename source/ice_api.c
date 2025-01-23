@@ -1212,6 +1212,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     else
                     {
                         /* Drop the packet if we haven't sent the allocation request. */
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
                 break;
@@ -1234,6 +1235,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     else
                     {
                         /* Drop the packet if we haven't sent the allocation request. */
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
                 break;
@@ -1296,6 +1298,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     else
                     {
                         /* Drop the packet if we haven't sent the allocation request. */
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
                 break;
@@ -1318,6 +1321,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                     else
                     {
                         /* Drop the packet if we haven't sent the allocation request. */
+                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
                 break;
