@@ -11626,6 +11626,859 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_DeserializeStunFail( vo
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the candidate is found in the ICE context with error code Authorized.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 401 Unauthorized). */
+        0x00, 0x00, 0x04, 0x01,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( nonceLength,
+                       localCandidate.iceServerInfo.nonceLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pNonce,
+                                   localCandidate.iceServerInfo.nonce,
+                                   nonceLength );
+    TEST_ASSERT_EQUAL( realmLength,
+                       localCandidate.iceServerInfo.realmLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pRealm,
+                                   localCandidate.iceServerInfo.realm,
+                                   realmLength );
+    TEST_ASSERT_EQUAL( expectedLongTermPasswordLength,
+                       localCandidate.iceServerInfo.longTermPasswordLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pExpectedLongTermPassword,
+                                   localCandidate.iceServerInfo.longTermPassword,
+                                   expectedLongTermPasswordLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the candidate is found in the ICE context with error code Stale Nonce.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 438 Stale Nonce). */
+        0x00, 0x00, 0x04, 0x26,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( nonceLength,
+                       localCandidate.iceServerInfo.nonceLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pNonce,
+                                   localCandidate.iceServerInfo.nonce,
+                                   nonceLength );
+    TEST_ASSERT_EQUAL( realmLength,
+                       localCandidate.iceServerInfo.realmLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pRealm,
+                                   localCandidate.iceServerInfo.realm,
+                                   realmLength );
+    TEST_ASSERT_EQUAL( expectedLongTermPasswordLength,
+                       localCandidate.iceServerInfo.longTermPasswordLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( pExpectedLongTermPassword,
+                                   localCandidate.iceServerInfo.longTermPassword,
+                                   expectedLongTermPasswordLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the candidate is found in the ICE context with unknown error code.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 00 (Error Code = 400 Unknown). */
+        0x00, 0x00, 0x04, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_REFRESH_UNKNOWN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the error code in STUN message is zero.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 01 (Error Code = 0 Success). */
+        0x00, 0x00, 0x00, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE but
+ * the fingerprint in STUN packet is wrong.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 438 Stale Nonce). */
+        0x00, 0x00, 0x04, 0x26,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x01010101 to make it wrong (correct one: 0x00000000). */
+        0x01, 0x01, 0x01, 0x01
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the candidate is found in the ICE context with error code Stale Nonce.
+ * And the candidate state is releasing.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateReleasing( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 438 Stale Nonce). */
+        0x00, 0x00, 0x04, 0x26,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+    char * pPreLongTermPassword = "username:realm:password"; /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4. */
+    size_t preLongTermPasswordLength = strlen( pPreLongTermPassword );
+    uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
+    uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+    memcpy( &localCandidate.iceServerInfo.userName, pUsername, usernameLength );
+    localCandidate.iceServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.iceServerInfo.password, pPassword, passwordLength );
+    localCandidate.iceServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.iceServerInfo.realm, pRealm, realmLength );
+    localCandidate.iceServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.iceServerInfo.nonce, pNonce, nonceLength );
+    localCandidate.iceServerInfo.nonceLength = nonceLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+    
+    /* Prepare expected long term password by calling testMd5 API. */
+    ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
+                         preLongTermPasswordLength,
+                         pExpectedLongTermPassword,
+                         &expectedLongTermPasswordLength );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_RELEASED,
+                       localCandidate.state );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * the transaction ID is not found in store.
+ */
+void test_iceHandleStunPacket_RefreshErrorResponse_TransactionIdNotFound( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_ERROR_RESPONSE (0x0114), Length = 60 bytes (excluding 20 bytes header). */
+        0x01, 0x14, 0x00, 0x3C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 438 Stale Nonce). */
+        0x00, 0x00, 0x04, 0x26,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 0. */
+        0x00, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate ICE Get Local Candidate Count fail functionality for Bad Parameters.
  */
 void test_iceGetLocalCandidateCount_BadParams( void )
