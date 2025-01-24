@@ -130,9 +130,9 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
 /*-----------------------------------------------------------*/
 
 IceResult_t testMd5Fxn( const uint8_t * pBuffer,
-                                     size_t bufferLength,
-                                     uint8_t * pOutputBuffer,
-                                     uint16_t * pOutputBufferLength )
+                        size_t bufferLength,
+                        uint8_t * pOutputBuffer,
+                        uint16_t * pOutputBufferLength )
 {
     IceResult_t ret = ICE_RESULT_OK;
     const uint16_t md5Length = 16U;
@@ -155,9 +155,9 @@ IceResult_t testMd5Fxn( const uint8_t * pBuffer,
     {
         /* Fake MD5 implementation. */
         memset( pOutputBuffer, 0, md5Length );
-        for( i = 0 ; i<bufferLength ; i++ )
+        for( i = 0; i < bufferLength; i++ )
         {
-            pOutputBuffer[ i%md5Length ] = ( uint8_t )( pOutputBuffer[ i%md5Length ] + pBuffer[ i ] );
+            pOutputBuffer[ i % md5Length ] = ( uint8_t )( pOutputBuffer[ i % md5Length ] + pBuffer[ i ] );
         }
     }
 

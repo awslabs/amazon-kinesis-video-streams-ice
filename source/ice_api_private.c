@@ -63,9 +63,9 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
         {
             outputBufferLength = ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH;
             result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) stringBuffer,
-                                                        snprintfRetVal,
-                                                        pIceServerInfo->longTermPassword,
-                                                        &outputBufferLength );
+                                                       snprintfRetVal,
+                                                       pIceServerInfo->longTermPassword,
+                                                       &outputBufferLength );
         }
     }
 
@@ -160,9 +160,9 @@ static IceHandleStunPacketResult_t FindCandidatePair( IceContext_t * pContext,
         for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
             if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
-                                                &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                                              &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
                 ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pRemoteCandidate->endpoint.transportAddress ),
-                                                &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
+                                              &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 ) )
             {
                 *ppOutputIceCandidatePair = &( pContext->pCandidatePairs[ i ] );
                 break;
@@ -191,8 +191,8 @@ static void ReleaseOtherCandidates( IceContext_t * pContext,
         {
             if( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY )
             {
-                if( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_VALID || 
-                    pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_ALLOCATING )
+                if( ( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_VALID ) ||
+                    ( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_ALLOCATING ) )
                 {
                     pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
 
@@ -226,7 +226,7 @@ uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddr
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                                                                            STUN_IPV6_ADDRESS_SIZE;
+                          STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( pTransportAddress1->port == pTransportAddress2->port ) &&
@@ -252,7 +252,7 @@ uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
     if( ( pTransportAddress1 != NULL ) && ( pTransportAddress2 != NULL ) )
     {
         ipAddressLength = pTransportAddress1->family == STUN_ADDRESS_IPv4 ? STUN_IPV4_ADDRESS_SIZE :
-                                                                            STUN_IPV6_ADDRESS_SIZE;
+                          STUN_IPV6_ADDRESS_SIZE;
 
         if( ( pTransportAddress1->family == pTransportAddress2->family ) &&
             ( memcmp( &( pTransportAddress1->address[ 0 ] ),

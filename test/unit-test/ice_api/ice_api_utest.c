@@ -78,10 +78,10 @@ IceResult_t testRandomFxn( uint8_t * pDest,
 /*-----------------------------------------------------------*/
 
 IceResult_t testRandomFxn_Wrong( uint8_t * pDest,
-                           size_t length )
+                                 size_t length )
 {
     ( void ) pDest;
-    ( void ) length; 
+    ( void ) length;
     return ICE_RESULT_RANDOM_GENERATION_ERROR;
 }
 
@@ -122,9 +122,9 @@ IceResult_t testCrc32Fxn( uint32_t initialResult,
 /*-----------------------------------------------------------*/
 
 IceResult_t testCrc32Fxn_ReturnError( uint32_t initialResult,
-                          const uint8_t * pBuffer,
-                          size_t bufferLength,
-                          uint32_t * pCalculatedCrc32 )
+                                      const uint8_t * pBuffer,
+                                      size_t bufferLength,
+                                      uint32_t * pCalculatedCrc32 )
 {
     ( void ) initialResult;
     ( void ) pBuffer;
@@ -137,9 +137,9 @@ IceResult_t testCrc32Fxn_ReturnError( uint32_t initialResult,
 /*-----------------------------------------------------------*/
 
 IceResult_t testCrc32Fxn_Fixed( uint32_t initialResult,
-                          const uint8_t * pBuffer,
-                          size_t bufferLength,
-                          uint32_t * pCalculatedCrc32 )
+                                const uint8_t * pBuffer,
+                                size_t bufferLength,
+                                uint32_t * pCalculatedCrc32 )
 {
     uint32_t crc32 = 0x5354554E;
 
@@ -230,9 +230,9 @@ IceResult_t testHmacFxn_FixedFF( const uint8_t * pPassword,
 /*-----------------------------------------------------------*/
 
 IceResult_t testMd5Fxn( const uint8_t * pBuffer,
-                                     size_t bufferLength,
-                                     uint8_t * pOutputBuffer,
-                                     uint16_t * pOutputBufferLength )
+                        size_t bufferLength,
+                        uint8_t * pOutputBuffer,
+                        uint16_t * pOutputBufferLength )
 {
     IceResult_t ret = ICE_RESULT_OK;
     const uint16_t md5Length = 16U;
@@ -255,9 +255,9 @@ IceResult_t testMd5Fxn( const uint8_t * pBuffer,
     {
         /* Fake MD5 implementation. */
         memset( pOutputBuffer, 0, md5Length );
-        for( i = 0 ; i<bufferLength ; i++ )
+        for( i = 0; i < bufferLength; i++ )
         {
-            pOutputBuffer[ i%md5Length ] = ( uint8_t )( pOutputBuffer[ i%md5Length ] + pBuffer[ i ] );
+            pOutputBuffer[ i % md5Length ] = ( uint8_t )( pOutputBuffer[ i % md5Length ] + pBuffer[ i ] );
         }
     }
 
@@ -308,11 +308,11 @@ IceResult_t testHmacFxn_Wrong( const uint8_t * pPassword,
 /*-----------------------------------------------------------*/
 
 IceResult_t testHmacFxn_ReturnError( const uint8_t * pPassword,
-                               size_t passwordLength,
-                               const uint8_t * pBuffer,
-                               size_t bufferLength,
-                               uint8_t * pOutputBuffer,
-                               uint16_t * pOutputBufferLength )
+                                     size_t passwordLength,
+                                     const uint8_t * pBuffer,
+                                     size_t bufferLength,
+                                     uint8_t * pOutputBuffer,
+                                     uint16_t * pOutputBufferLength )
 {
     ( void ) pPassword;
     ( void ) passwordLength;
@@ -320,7 +320,7 @@ IceResult_t testHmacFxn_ReturnError( const uint8_t * pPassword,
     ( void ) bufferLength;
     ( void ) pOutputBuffer;
     ( void ) pOutputBufferLength;
-    
+
     return ICE_RESULT_HMAC_ERROR;
 }
 
@@ -994,60 +994,60 @@ void test_iceAddRelayCandidate_BadParams( void )
 
     result = Ice_AddRelayCandidate( NULL,
                                     &( endPoint ),
-                                   pUsername,
-                                   usernameLength,
-                                   pPassword,
-                                   passwordLength );
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddRelayCandidate( &( context ),
                                     NULL,
-                                   pUsername,
-                                   usernameLength,
-                                   pPassword,
-                                   passwordLength );
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   NULL,
-                                   usernameLength,
-                                   pPassword,
-                                   passwordLength );
+                                    NULL,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   pUsername,
-                                   usernameLength,
-                                   NULL,
-                                   passwordLength );
+                                    pUsername,
+                                    usernameLength,
+                                    NULL,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   pUsername,
-                                   ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH + 1,
-                                   pPassword,
-                                   passwordLength );
+                                    pUsername,
+                                    ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH + 1,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   pUsername,
-                                   usernameLength,
-                                   pPassword,
-                                   ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH + 1 );
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH + 1 );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -1079,10 +1079,10 @@ void test_iceAddRelayCandidate_MaxCandidateThreshold( void )
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   pUsername,
-                                   usernameLength,
-                                   pPassword,
-                                   passwordLength );
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
                        result );
@@ -1111,10 +1111,10 @@ void test_iceAddRelayCandidate( void )
 
     result = Ice_AddRelayCandidate( &( context ),
                                     &( endPoint ),
-                                   pUsername,
-                                   usernameLength,
-                                   pPassword,
-                                   passwordLength );
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -2343,7 +2343,7 @@ void test_iceCreateRequestForNominatingCandidatePair( void )
         /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
-        0x07, 0x06, 0x05, 0x04 ,0x03, 0x02, 0x01, 0x00,
+        0x07, 0x06, 0x05, 0x04,0x03, 0x02, 0x01, 0x00,
         /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
@@ -4036,7 +4036,7 @@ void test_iceCreateNextPairRequest_Nominated_ControllingSendNominatingRequest( v
  * @brief Validate Ice_CreateNextPairRequest functionality return
  * connectivity check request even when the pair is nominated and the ICE
  * context is controlled agent.
- * 
+ *
  * Note that the controlled agent might receive USE-CANDIDATE even at
  * connectivity check stage. The state of the pair would be changed to
  * nominated. Thus we have to keep sending connectivity check for that
@@ -6709,7 +6709,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) ) ;
+    memset( &candidate, 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -6843,7 +6843,7 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
         /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
         0x00, 0x06, 0x00, 0x10,
         /* Attribute Value = "combinedUsername". */
-        0x63, 0x6F, 0x6D, 0x62 ,0x69, 0x6E, 0x65, 0x64,
+        0x63, 0x6F, 0x6D, 0x62,0x69, 0x6E, 0x65, 0x64,
         0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
         /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
         0x00, 0x24, 0x00, 0x04,
@@ -8254,7 +8254,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) ) ;
+    memset( &candidate, 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -8361,7 +8361,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) ) ;
+    memset( &candidate, 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -8872,13 +8872,13 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UpdateServerInfo
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -8979,7 +8979,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_StaleNonce_UpdateServerInfo(
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9097,7 +9097,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NonceTooLong( vo
             sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9210,7 +9210,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_RealmTooLong( vo
             sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9305,13 +9305,13 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -9414,7 +9414,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9525,7 +9525,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UsernameTooLong(
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9624,7 +9624,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_PasswordTooLong(
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9717,7 +9717,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9810,7 +9810,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
     localCandidate.iceServerInfo.passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -9980,7 +9980,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
             sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -10084,7 +10084,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -10196,7 +10196,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -10304,7 +10304,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePai
 
     /* Enable two remote candidates. */
     context.numRemoteCandidates = 2;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -10431,7 +10431,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void 
 
     /* Enable two remote candidates. */
     context.numRemoteCandidates = localRemoteCandidateArrayLength;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -10538,7 +10538,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void
     /* Enable two remote candidates. */
     context.numRemoteCandidates = 2;
     context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
-    
+
     /* Store the transaction ID into store. */
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
@@ -12506,7 +12506,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -12644,7 +12644,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -12782,7 +12782,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -12905,7 +12905,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -13028,7 +13028,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -13152,7 +13152,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
     memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
-    
+
     /* Prepare expected long term password by calling testMd5 API. */
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
@@ -13743,7 +13743,7 @@ void test_Ice_CheckTurnConnection_LocalCandidateNotRelay( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -13776,7 +13776,7 @@ void test_Ice_CheckTurnConnection_LocalCandidateNotReady( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -13809,7 +13809,7 @@ void test_Ice_CheckTurnConnection_AllocationTimeout( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -13843,7 +13843,7 @@ void test_Ice_CheckTurnConnection_PermissionTimeout( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -13878,7 +13878,7 @@ void test_Ice_CheckTurnConnection_NoNextAction( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -13961,7 +13961,7 @@ void test_Ice_CreateTurnRefreshRequest_LocalCandidateNotRelay( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
 
@@ -13993,7 +13993,7 @@ void test_Ice_CreateTurnRefreshRequest_LocalCandidateNotValid( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -14026,7 +14026,7 @@ void test_Ice_CreateTurnRefreshRequest_AllocationAvailable( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14063,7 +14063,7 @@ void test_Ice_CreateTurnRefreshRequest_RandomFail( void )
 
     /* Ice uses random to generate tie breaker. So we overwrite it after init. */
     context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14101,7 +14101,7 @@ void test_Ice_CreateTurnRefreshRequest_NullTransactionIdStore( void )
 
     /* Set transaction ID to null. */
     context.pStunBindingRequestTransactionIdStore = NULL;
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14135,7 +14135,7 @@ void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToInit( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14169,7 +14169,7 @@ void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddLifeTime( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14211,7 +14211,7 @@ void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddUserName( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14261,7 +14261,7 @@ void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddRealm( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14311,7 +14311,7 @@ void test_Ice_CreateTurnRefreshRequest_StunBufferTooSmallToAddNonce( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14404,7 +14404,7 @@ void test_Ice_CreateTurnRefreshRequest_AllocationTimeout_Success( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -14806,7 +14806,7 @@ void test_Ice_AppendTurnChannelHeader_StateNoNeedTurnChannelHeader( void )
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t bufferLength = sizeof( buffer ) - 4U; // Reserve 4 bytes for channel header.
-    
+
     memset( &candidatePair, 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
     result = Ice_AppendTurnChannelHeader( &( context ),
@@ -14851,7 +14851,7 @@ void test_Ice_AppendTurnChannelHeader_StateWaiting_Success( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &candidatePair, 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     candidatePair.turnChannelNumber = 0x4000U;
@@ -14902,7 +14902,7 @@ void test_Ice_AppendTurnChannelHeader_StateValid_Success( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &candidatePair, 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_VALID;
     candidatePair.turnChannelNumber = 0x4000U;
@@ -14953,7 +14953,7 @@ void test_Ice_AppendTurnChannelHeader_StateNominated_Success( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &candidatePair, 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     candidatePair.turnChannelNumber = 0x4000U;
@@ -15004,7 +15004,7 @@ void test_Ice_AppendTurnChannelHeader_StateSucceeded_Success( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     memset( &candidatePair, 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.turnChannelNumber = 0x4000U;
@@ -15231,7 +15231,7 @@ void test_RemoveTurnChannelHeader_Success( void )
     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
-    
+
     /* Set local candidate into context. */
     context.numLocalCandidates = 1U;
     context.pLocalCandidates[ 0 ] = localCandidate;
@@ -15299,7 +15299,7 @@ void test_RemoveTurnChannelHeader_CandidatePairNullPointer_Success( void )
     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
-    
+
     /* Set local candidate into context. */
     context.numLocalCandidates = 1U;
     context.pLocalCandidates[ 0 ] = localCandidate;
@@ -15371,7 +15371,7 @@ void test_RemoveTurnChannelHeader_CandidatePairNotFound( void )
     memcpy( ( void * ) &( localCandidate2.endpoint.transportAddress.address[ 0 ] ),
             ( const void * ) ipAddress2,
             sizeof( ipAddress2 ) );
-    
+
     /* Set local candidate into context. */
     context.numLocalCandidates = 2U;
     context.pLocalCandidates[ 0 ] = localCandidate;
