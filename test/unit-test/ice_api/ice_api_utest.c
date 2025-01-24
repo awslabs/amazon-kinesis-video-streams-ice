@@ -2344,7 +2344,7 @@ void test_iceCreateRequestForNominatingCandidatePair( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04 ,0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -3985,7 +3985,7 @@ void test_iceCreateNextPairRequest_Nominated_ControllingSendNominatingRequest( v
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -4034,19 +4034,67 @@ void test_iceCreateNextPairRequest_Nominated_ControllingSendNominatingRequest( v
 
 /**
  * @brief Validate Ice_CreateNextPairRequest functionality return
- * ICE_RESULT_NO_NEXT_ACTION when the pair is nominated and the ICE
+ * connectivity check request even when the pair is nominated and the ICE
  * context is controlled agent.
+ * 
+ * Note that the controlled agent might receive USE-CANDIDATE even at
+ * connectivity check stage. The state of the pair would be changed to
+ * nominated. Thus we have to keep sending connectivity check for that
+ * case.
  */
-void test_iceCreateNextPairRequest_Nominated_ControlledNoNextAction( void )
+void test_iceCreateNextPairRequest_Nominated_ControlledConnectivityCheckRequest( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
     IceCandidatePair_t candidatePair;
-    uint8_t stunMessageBuffer[ 96 ];
+    uint8_t stunMessageBuffer[ 128 ];
     size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
     IceResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 72 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 1000. */
+        0x00, 0x00, 0x03, 0xE8,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value = 0xB5F5C42F as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
 
     initInfo.isControlling = 0U;
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set HMAC function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     result = Ice_Init( &( context ),
                        &( initInfo ) );
 
@@ -4059,14 +4107,20 @@ void test_iceCreateNextPairRequest_Nominated_ControlledNoNextAction( void )
     memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     candidatePair.pLocalCandidate = &( localCandidate );
+    memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
                                         stunMessageBuffer,
                                         &( stunMessageBufferLength ) );
 
-    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
 }
 
 /*-----------------------------------------------------------*/
@@ -5970,7 +6024,7 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6071,7 +6125,7 @@ void test_iceHandleStunPacket_BindingRequest_NoCandidatePair( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6165,7 +6219,7 @@ void test_iceHandleStunPacket_BindingRequest_TriggeredCheck( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6304,7 +6358,7 @@ void test_iceHandleStunPacket_BindingRequest_NewRemoteCandidate( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6407,7 +6461,7 @@ void test_iceHandleStunPacket_BindingRequest_ForRemoteRequest( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6513,7 +6567,7 @@ void test_iceHandleStunPacket_BindingRequest_ForNomination( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6530,6 +6584,7 @@ void test_iceHandleStunPacket_BindingRequest_ForNomination( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
+    initInfo.isControlling = 0;
     iceResult = Ice_Init( &( context ),
                           &( initInfo ) );
 
@@ -6563,6 +6618,7 @@ void test_iceHandleStunPacket_BindingRequest_ForNomination( void )
                        iceResult );
 
     /* All 4 steps of 4-Way Handshake are done */
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* The tests covers that all 4 steps are done and for the
@@ -6620,7 +6676,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6646,6 +6702,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.isControlling = 0U;
     iceResult = Ice_Init( &( context ),
                           &( initInfo ) );
 
@@ -6737,6 +6794,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     pCandidatePair = &context.pCandidatePairs[ 0 ];
 
     /* All 4 steps of 4-Way Handshake are done */
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* The tests covers that all 4 steps are done and for the
@@ -6795,7 +6853,7 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,
@@ -6869,7 +6927,7 @@ void test_iceHandleStunPacket_IntegrityMismatch( void )
         0x80, 0x2A, 0x00, 0x08,
         /* Attribute Value = 0x0706050403020100. */
         0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
-        /* Attribute Type = STUN_ATTRIBUTE_TYPE_USE_CANDIDATE (0x0025), Length = 0 bytes. */
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
         0x00, 0x25, 0x00, 0x00,
         /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
         0x00, 0x08, 0x00, 0x14,

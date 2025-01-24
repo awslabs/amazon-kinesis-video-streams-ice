@@ -189,16 +189,23 @@ static void ReleaseOtherCandidates( IceContext_t * pContext,
     {
         if( &pContext->pLocalCandidates[i] != pNominatedPair->pLocalCandidate )
         {
-            if( ( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-                ( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_VALID ) )
+            if( pContext->pLocalCandidates[i].candidateType == ICE_CANDIDATE_TYPE_RELAY )
             {
-                pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
-
-                if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                              pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+                if( pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_VALID || 
+                    pContext->pLocalCandidates[i].state == ICE_CANDIDATE_STATE_ALLOCATING )
                 {
-                    ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                        pContext->pLocalCandidates[i].transactionId );
+                    pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
+
+                    if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
+                                                  pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
+                    {
+                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
+                                                            pContext->pLocalCandidates[i].transactionId );
+                    }
+
+                    /* Regenerate transaction for refresh request to terminate TURN session. */
+                    ( void ) pContext->cryptoFunctions.randomFxn( pContext->pLocalCandidates[i].transactionId,
+                                                                  STUN_HEADER_TRANSACTION_ID_LENGTH );
                 }
             }
             else
@@ -763,8 +770,8 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     {
         /* Did we receive a request for nomination and the candidate pair is
          * not already nominated? */
-        if( ( deserializePacketInfo.useCandidateFlag == 1 ) &&
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) )
+        if( ( pContext->isControlling == 0 ) &&
+            ( deserializePacketInfo.useCandidateFlag == 1 ) )
         {
             pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
 
@@ -947,7 +954,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 }
                 else
                 {
-                    pIceCandidatePair->state = ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR;
+                    pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_VALID;
                     if( pContext->isControlling == 1 )
                     {
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;

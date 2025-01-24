@@ -1540,8 +1540,14 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                 }
                 else
                 {
-                    /* Do nothing. */
-                    result = ICE_RESULT_NO_NEXT_ACTION;
+                    /* Controlled side might receive USE-CANDIDATE in connectivity check stage.
+                     * So we keep sending connectivity check even though we're in nominated state.
+                     * Note that controlled side will mark state into succeed when receive USE-CANDIDATE
+                     * Binding Request. */
+                    result = Ice_CreateRequestForConnectivityCheck( pContext,
+                                                                    pIceCandidatePair,
+                                                                    pStunMessageBuffer,
+                                                                    pStunMessageBufferLength );
                 }
             }
             break;
