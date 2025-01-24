@@ -13571,6 +13571,113 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_Pass( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * the candidate is releasing.
+ */
+void test_iceHandleStunPacket_RefreshSuccessResponse_CandidateReleasing( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = REFRESH_SUCCESS_RESPONSE (0x0104), Length = 84 bytes (excluding 20 bytes header). */
+        0x01, 0x04, 0x00, 0x54,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 401 Unauthorized). */
+        0x00, 0x00, 0x04, 0x01,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
+        0x00, 0x0D, 0x00, 0x04,
+        /* Attribute Value: 600 as ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS. */
+        0x00, 0x00, 0x02, 0x58,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+    char longTermPassword[] = "LongTermPassword";
+    size_t longTermPasswordLength = strlen( longTermPassword );
+
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+    /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime_FixedZero;
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
+    memcpy( localCandidate.iceServerInfo.longTermPassword,
+            longTermPassword,
+            longTermPasswordLength );
+    localCandidate.iceServerInfo.longTermPasswordLength = longTermPasswordLength;
+
+    transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
+    memcpy( &( transactionIdStore.pTransactionIdSlots[ 0 ].transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_RELEASED,
+                       localCandidate.state );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE  but
  * the password is missing while deserializing STUN packet.
  */
