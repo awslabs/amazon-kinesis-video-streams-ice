@@ -6717,7 +6717,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
             ( const void * ) ipAddress2,
             sizeof( ipAddress2 ) );
 
-    context.numLocalCandidates = 5;
+    context.numLocalCandidates = 6;
     memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
@@ -6772,6 +6772,16 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     context.pLocalCandidates[ 4 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     context.pLocalCandidates[ 4 ].endpoint.transportAddress.port = 8080;
     memcpy( ( void * ) &( context.pLocalCandidates[ 4 ].endpoint.transportAddress.address[ 4 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    /* Add a relay candidate to be freed to release TURN server allocation. */
+    context.pLocalCandidates[ 1 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[ 1 ].state = ICE_CANDIDATE_STATE_ALLOCATING;
+    context.pLocalCandidates[ 1 ].endpoint.isPointToPoint = 0U;
+    context.pLocalCandidates[ 1 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
+    context.pLocalCandidates[ 1 ].endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( context.pLocalCandidates[ 1 ].endpoint.transportAddress.address[ 1 ] ),
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
