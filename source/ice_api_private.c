@@ -768,6 +768,9 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
+        /* Received a connectivity check request from the remote candidate. */
+        pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
+
         /* Did we receive a request for nomination and the candidate pair is
          * not already nominated? */
         if( ( pContext->isControlling == 0 ) &&
@@ -785,11 +788,30 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             }
         }
 
+        if( ( pContext->isControlling == 1 ) &&
+            ( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) ) &&
+            ( pContext->pNominatePairs == NULL ) )
+        {
+            /* We are the controlling agent. We need to nominate the
+             * remote candidate. We pick the first pair completing connectivity check as
+             * the nominated pair. */
+            performConnectivityCheck = 0;
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+            pContext->pNominatePairs = pIceCandidatePair;
+            iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
+                                                            STUN_HEADER_TRANSACTION_ID_LENGTH );
+            if( iceResult != ICE_RESULT_OK )
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
+            }
+            else
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
+            }
+        }
+
         if( performConnectivityCheck == 1 )
         {
-            /* Received a connectivity check request from the remote candidate. */
-            pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_REQUEST_RECEIVED_FLAG;
-
             if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_REQUEST_SENT_FLAG ) == 0 )
             {
                 /* We have not sent the connectivity check request to this
@@ -811,23 +833,6 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                 pIceCandidatePair->connectivityCheckFlags |= ICE_STUN_RESPONSE_SENT_FLAG;
 
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST;
-            }
-
-            if( ( pContext->isControlling == 1 ) &&
-                ( ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( pIceCandidatePair->connectivityCheckFlags ) ) &&
-                ( pContext->pNominatePairs == NULL ) )
-            {
-                /* We are the controlling agent. We need to nominate the
-                 * remote candidate. We pick the first pair completing connectivity check as
-                 * the nominated pair. */
-                pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-                pContext->pNominatePairs = pIceCandidatePair;
-                iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
-                                                                 STUN_HEADER_TRANSACTION_ID_LENGTH );
-                if( iceResult != ICE_RESULT_OK )
-                {
-                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
-                }
             }
         }
     }
