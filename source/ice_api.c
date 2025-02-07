@@ -1591,20 +1591,22 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidatePair_t * pIceCandidatePair,
-                                         uint8_t * pBuffer,
-                                         size_t * pBufferLength,
-                                         size_t maxBufferLength )
+                                         uint8_t * pInputBuffer,
+                                         size_t inputBufferLength,
+                                         uint8_t * pOutputBuffer,
+                                         size_t * pOutputBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
-        ( pBuffer == NULL ) ||
-        ( pBufferLength == NULL ) )
+        ( pInputBuffer == NULL ) ||
+        ( pOutputBuffer == NULL ) ||
+        ( pOutputBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( *pBufferLength + 4U > maxBufferLength )
+    else if( inputBufferLength + 4U > *pOutputBufferLength )
     {
         /* We always append 4 bytes prefix into TURN channel message. */
         result = ICE_RESULT_OUT_OF_MEMORY;
@@ -1623,12 +1625,12 @@ IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        IceTurnChannelMessageHeader_t * pTurnChannelMessageHdr = ( IceTurnChannelMessageHeader_t * ) pBuffer;
-        memmove( pBuffer + 4U, pBuffer, *pBufferLength );
+        IceTurnChannelMessageHeader_t * pTurnChannelMessageHdr = ( IceTurnChannelMessageHeader_t * ) pOutputBuffer;
+        memcpy( pOutputBuffer + 4U, pInputBuffer, inputBufferLength );
 
         pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->channelNumber, pIceCandidatePair->turnChannelNumber );
-        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, *pBufferLength );
-        *pBufferLength += 4U;
+        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, inputBufferLength );
+        *pOutputBufferLength = 4U + inputBufferLength;
     }
 
     return result;
@@ -1638,8 +1640,10 @@ IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
 
 IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidate_t * pIceLocalCandidate,
-                                         uint8_t * pBuffer,
-                                         size_t * pBufferLength,
+                                         uint8_t * pInputBuffer,
+                                         size_t inputBufferLength,
+                                         uint8_t * pOutputBuffer,
+                                         size_t * pOutputBufferLength,
                                          IceCandidatePair_t ** ppIceCandidatePair )
 {
     IceResult_t result = ICE_RESULT_OK;
@@ -1648,14 +1652,20 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
 
     if( ( pContext == NULL ) ||
         ( pIceLocalCandidate == NULL ) ||
-        ( pBuffer == NULL ) ||
-        ( pBufferLength == NULL ) )
+        ( pInputBuffer == NULL ) ||
+        ( pOutputBuffer == NULL ) ||
+        ( pOutputBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( *pBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
+    else if( inputBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
     {
         /* The data is less than channel message header. */
+        result = ICE_RESULT_DATA_TOO_SMALL;
+    }
+    else if( inputBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH > *pOutputBufferLength )
+    {
+        /* The output buffer size is too small to store result. */
         result = ICE_RESULT_OUT_OF_MEMORY;
     }
     else if( pIceLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
@@ -1666,7 +1676,7 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     {
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
     }
-    else if( ( pBuffer[0] & 0xF0 ) != 0x40 )
+    else if( ( pInputBuffer[0] & 0xF0 ) != 0x40 )
     {
         /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
@@ -1680,8 +1690,8 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     {
         IceTurnChannelMessageHeader_t turnChannelMessageHdr;
 
-        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 0 ] );
-        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pBuffer[ 2 ] );
+        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pOutputBuffer[ 0 ] );
+        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pOutputBuffer[ 2 ] );
 
         for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
@@ -1703,8 +1713,8 @@ IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
     if( result == ICE_RESULT_OK )
     {
         /* Move the buffer for 4 bytes to remove channel message header. */
-        memmove( pBuffer, pBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, *pBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH );
-        *pBufferLength -= ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+        memcpy( pOutputBuffer, pInputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, inputBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH );
+        *pOutputBufferLength = inputBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
 
         if( ppIceCandidatePair != NULL )
         {
