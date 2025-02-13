@@ -1591,7 +1591,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidatePair_t * pIceCandidatePair,
-                                         uint8_t * pInputBuffer,
+                                         const uint8_t * pInputBuffer,
                                          size_t inputBufferLength,
                                          uint8_t * pOutputBuffer,
                                          size_t * pOutputBufferLength )
@@ -1645,7 +1645,7 @@ IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
 
 IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
                                          IceCandidate_t * pIceLocalCandidate,
-                                         uint8_t * pInputBuffer,
+                                         const uint8_t * pInputBuffer,
                                          size_t inputBufferLength,
                                          uint8_t * pOutputBuffer,
                                          size_t * pOutputBufferLength,
