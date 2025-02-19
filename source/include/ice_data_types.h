@@ -68,6 +68,8 @@
  */
 #define ICE_TURN_CHANNEL_DATA_HEADER_LENGTH ( 4 )
 
+#define ICE_CANDIDATE_ID_START ( 0x7000 )
+
 /*----------------------------------------------------------------------------*/
 
 typedef enum IceCandidateType
@@ -251,6 +253,7 @@ typedef struct IceCandidate
     uint32_t priority;
     IceSocketProtocol_t remoteProtocol;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
+    uint16_t candidateId;
 
     /* Below fields are for relay candidate. */
     IceServerInfo_t iceServerInfo;
@@ -313,6 +316,7 @@ typedef struct IceContext
     IceCryptoFunctions_t cryptoFunctions;
     IceGetCurrentTimeSeconds_t getCurrentTimeSecondsFxn;
     StunReadWriteFunctions_t readWriteFunctions;
+    uint16_t nextCandidateId;
 } IceContext_t;
 
 typedef struct IceInitInfo

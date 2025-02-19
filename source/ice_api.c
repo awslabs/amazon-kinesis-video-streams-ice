@@ -598,6 +598,8 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         pContext->cryptoFunctions = pInitInfo->cryptoFunctions;
         pContext->getCurrentTimeSecondsFxn = pInitInfo->getCurrentTimeSecondsFxn;
 
+        pContext->nextCandidateId = ICE_CANDIDATE_ID_START;
+
         Stun_InitReadWriteFunctions( &( pContext->readWriteFunctions ) );
     }
 
@@ -647,6 +649,8 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
                                                                  pEndpoint->isPointToPoint );
         pHostCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pHostCandidate->state = ICE_CANDIDATE_STATE_VALID;
+
+        pHostCandidate->candidateId = pContext->nextCandidateId++;
 
         /* Create candidate pairs with all the existing remote candidates. */
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
@@ -701,6 +705,8 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
                                                                             pEndpoint->isPointToPoint );
         pServerReflexiveCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pServerReflexiveCandidate->state = ICE_CANDIDATE_STATE_NEW;
+
+        pServerReflexiveCandidate->candidateId = pContext->nextCandidateId++;
     }
 
     if( result == ICE_RESULT_OK )
@@ -771,6 +777,8 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
                                                                   pEndpoint->isPointToPoint );
         pRelayCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pRelayCandidate->state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+        pRelayCandidate->candidateId = pContext->nextCandidateId++;
     }
 
     return result;
@@ -828,6 +836,7 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
             memcpy( &( pRemoteCandidate->endpoint ),
                     pRemoteCandidateInfo->pEndpoint,
                     sizeof( IceEndpoint_t ) );
+            pRemoteCandidate->candidateId = pContext->nextCandidateId++;
 
             /* Create candidate pairs with all the existing local candidates. */
             for( i = 0; ( i < pContext->numLocalCandidates ) && ( result == ICE_RESULT_OK ); i++ )
