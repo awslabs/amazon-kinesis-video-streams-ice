@@ -735,29 +735,34 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /* Do we already have a remote candidate with the same transport address
-         * as pRemoteCandidateEndpoint->transportAddress? */
-        for( i = 0; i < pContext->numRemoteCandidates; i++ )
+        /* If *ppIceCandidatePair is not NULL, that means user actually provide the corresponding candidate pair.
+         * thus we don't need to search again. */
+        if( *ppIceCandidatePair == NULL )
         {
-            if( Ice_IsSameTransportAddress( &( pContext->pRemoteCandidates[ i ].endpoint.transportAddress ),
-                                            &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 )
+            /* Do we already have a remote candidate with the same transport address
+             * as pRemoteCandidateEndpoint->transportAddress? */
+            for( i = 0; i < pContext->numRemoteCandidates; i++ )
             {
-                break;
+                if( Ice_IsSameTransportAddress( &( pContext->pRemoteCandidates[ i ].endpoint.transportAddress ),
+                                                &( pRemoteCandidateEndpoint->transportAddress ) ) == 1 )
+                {
+                    break;
+                }
             }
-        }
-
-        /* If we do not have a remote candidate with the same transport address
-         * as pRemoteCandidateEndpoint->transportAddress, add a new remote
-         * candidate with this address. */
-        if( i == pContext->numRemoteCandidates )
-        {
-            remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
-            remoteCandidateInfo.priority = deserializePacketInfo.priority;
-            remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
-            remoteCandidateInfo.pEndpoint = pRemoteCandidateEndpoint;
-
-            iceResult = Ice_AddRemoteCandidate( pContext,
-                                                &( remoteCandidateInfo ) );
+    
+            /* If we do not have a remote candidate with the same transport address
+             * as pRemoteCandidateEndpoint->transportAddress, add a new remote
+             * candidate with this address. */
+            if( i == pContext->numRemoteCandidates )
+            {
+                remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
+                remoteCandidateInfo.priority = deserializePacketInfo.priority;
+                remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
+                remoteCandidateInfo.pEndpoint = pRemoteCandidateEndpoint;
+    
+                iceResult = Ice_AddRemoteCandidate( pContext,
+                                                    &( remoteCandidateInfo ) );
+            }
         }
     }
 
