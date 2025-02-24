@@ -4650,6 +4650,7 @@ void test_iceCreateNextPairRequest_CreatePermission_UnknownAddressFamily( void )
     localCandidate.iceServerInfo.nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
+    /* Set family to neither STUN_ADDRESS_IPv4 nor STUN_ADDRESS_IPv6. */
     localCandidate.endpoint.transportAddress.family = 0xFF;
     localCandidate.endpoint.transportAddress.port = 0x1234;
     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
@@ -4668,8 +4669,10 @@ void test_iceCreateNextPairRequest_CreatePermission_UnknownAddressFamily( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_USERNAME when error happens while adding username.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append username.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_USERNAME
+ * when there is insufficient space in the STUN buffer to append the username attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_CreatePermission_InvalidUsername( void )
 {
@@ -4733,8 +4736,10 @@ void test_iceCreateNextPairRequest_CreatePermission_InvalidUsername( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_REALM when error happens while adding ream.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append realm.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_REALM
+ * when there is insufficient space in the STUN buffer to append the realm attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_CreatePermission_InvalidRealm( void )
 {
@@ -4798,8 +4803,10 @@ void test_iceCreateNextPairRequest_CreatePermission_InvalidRealm( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_NONCE when error happens while adding nonce.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append nonce.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_NONCE
+ * when there is insufficient space in the STUN buffer to append the nonce attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_CreatePermission_InvalidNonce( void )
 {
@@ -5353,6 +5360,7 @@ void test_iceCreateNextPairRequest_ChannelBind_UnknownAddressFamily( void )
     localCandidate.iceServerInfo.nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
+    /* Set family to neither STUN_ADDRESS_IPv4 nor STUN_ADDRESS_IPv6. */
     localCandidate.endpoint.transportAddress.family = 0xFF;
     localCandidate.endpoint.transportAddress.port = 0x1234;
     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
@@ -5438,8 +5446,10 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidChannelNumber( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_USERNAME when error happens while adding username.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append username.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_USERNAME
+ * when there is insufficient space in the STUN buffer to append the username attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_ChannelBind_InvalidUsername( void )
 {
@@ -5504,8 +5514,10 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidUsername( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_REALM when error happens while adding ream.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append realm.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_REALM
+ * when there is insufficient space in the STUN buffer to append the realm attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_ChannelBind_InvalidRealm( void )
 {
@@ -5570,8 +5582,10 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidRealm( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate Ice_CreateNextPairRequest functionality returns
- * ICE_RESULT_STUN_ERROR_ADD_NONCE when error happens while adding nonce.
+ * @brief Tests error handling when Ice_CreateNextPairRequest fails to append nonce.
+ * This test validates that Ice_CreateNextPairRequest returns ICE_RESULT_STUN_ERROR_ADD_NONCE
+ * when there is insufficient space in the STUN buffer to append the nonce attribute.
+ * The test artificially constrains the STUN buffer size to trigger this error condition.
  */
 void test_iceCreateNextPairRequest_ChannelBind_InvalidNonce( void )
 {
@@ -5890,7 +5904,7 @@ void test_iceHandleStunPacket_BadParams( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t endpoint = { 0 };
     uint8_t * transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
-    IceCandidatePair_t * candidatePair = { 0 };
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceHandleStunPacketResult_t result;
 
     result = Ice_HandleStunPacket( NULL,
@@ -5899,7 +5913,7 @@ void test_iceHandleStunPacket_BadParams( void )
                                    &( localCandidate ),
                                    &( endpoint ),
                                    &( transactionId[ 0 ] ),
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -5910,7 +5924,7 @@ void test_iceHandleStunPacket_BadParams( void )
                                    &( localCandidate ),
                                    &( endpoint ),
                                    &( transactionId[ 0 ] ),
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -5921,7 +5935,7 @@ void test_iceHandleStunPacket_BadParams( void )
                                    NULL,
                                    &( endpoint ),
                                    &( transactionId[ 0 ] ),
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -5932,7 +5946,7 @@ void test_iceHandleStunPacket_BadParams( void )
                                    &( localCandidate ),
                                    NULL,
                                    &( transactionId[ 0 ] ),
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -5943,7 +5957,7 @@ void test_iceHandleStunPacket_BadParams( void )
                                    &( localCandidate ),
                                    &( endpoint ),
                                    NULL,
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_BAD_PARAM,
                        result );
@@ -5972,7 +5986,7 @@ void test_iceHandleStunPacket_DeserializeError( void )
     size_t stunMessageLength = sizeof( stunMessage );
     IceEndpoint_t endpoint = { 0 };
     uint8_t * transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
-    IceCandidatePair_t * candidatePair = { 0 };
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceHandleStunPacketResult_t result;
     IceCandidate_t localCandidate = { 0 };
 
@@ -5982,7 +5996,7 @@ void test_iceHandleStunPacket_DeserializeError( void )
                                    &( localCandidate ),
                                    &( endpoint ),
                                    &( transactionId[ 0 ] ),
-                                   &( candidatePair ) );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR,
                        result );
@@ -6000,7 +6014,7 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6101,7 +6115,7 @@ void test_iceHandleStunPacket_BindingRequest_NoCandidatePair( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6195,7 +6209,7 @@ void test_iceHandleStunPacket_BindingRequest_TriggeredCheck( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6334,7 +6348,7 @@ void test_iceHandleStunPacket_BindingRequest_NewRemoteCandidate( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessageBuffer[] =
@@ -6437,7 +6451,7 @@ void test_iceHandleStunPacket_BindingRequest_ForRemoteRequest( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessageBuffer[] =
@@ -6543,7 +6557,7 @@ void test_iceHandleStunPacket_BindingRequest_ForNomination( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6652,7 +6666,7 @@ void test_iceHandleStunPacket_BindingRequest_StartNomination( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6761,7 +6775,7 @@ void test_iceHandleStunPacket_BindingRequest_AlreadyHaveNominatedPair( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -6874,7 +6888,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
 {
     IceContext_t context = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] = {
@@ -7064,7 +7078,7 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7138,7 +7152,7 @@ void test_iceHandleStunPacket_IntegrityMismatch( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7208,7 +7222,7 @@ void test_iceHandleStunPacket_FingerPrintMismatch( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7281,7 +7295,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7373,7 +7387,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_StartNomination( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7477,7 +7491,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_ValidCandidatePair( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -7583,7 +7597,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_NoCandidatePair( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessageReceived[] =
@@ -7667,7 +7681,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_FoundPeerReflexiveCandidate
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessageReceived[] =
@@ -7772,7 +7786,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HaveUnexpectedIntegrity( vo
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] = {
@@ -7881,7 +7895,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_NoAddressFound( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessageReceived[] =
@@ -7964,7 +7978,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_SuccessLocalResponse( void 
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
 
@@ -8071,7 +8085,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_CandidatePairReady( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -8181,7 +8195,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionID_NoMatch( void
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -8272,7 +8286,7 @@ void test_iceHandleStunPacket_ErrorCode( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -8360,7 +8374,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_InvalidCandidateType( void 
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -8444,7 +8458,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore( void )
     IceEndpoint_t remoteEndpoint = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -8952,7 +8966,7 @@ void test_iceHandleStunPacket_InvalidPacket( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -9015,7 +9029,7 @@ void test_iceHandleStunPacket_BindingIndication( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -9081,7 +9095,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_TransactionIDNotFound( void 
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -9151,7 +9165,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UpdateServerInfo
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9269,7 +9283,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_StaleNonce_UpdateServerInfo(
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9361,7 +9375,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_CandidateNotAllocating( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9446,7 +9460,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NonceTooLong( vo
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9474,7 +9488,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NonceTooLong( vo
         /* Attribute Value: "realm". */
         0x72, 0x65, 0x61, 0x6C,
         0x6D, 0x00, 0x00, 0x00,
-        /* Attribute type = NONCE (0x0015), Length = 129 bytes. */
+        /* Attribute type = NONCE (0x0015), Length = 129 bytes, which is larger than ICE_SERVER_CONFIG_MAX_NONCE_LENGTH(128). */
         0x00, 0x15, 0x00, 0x81,
         /* Attribute Value: 0x00~0x80. */
         0x00, 0x01, 0x02, 0x03,
@@ -9559,7 +9573,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_RealmTooLong( vo
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9582,7 +9596,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_RealmTooLong( vo
         0x45, 0x72, 0x72, 0x6F,
         0x72, 0x20, 0x50, 0x68,
         0x72, 0x61, 0x73, 0x65,
-        /* Attribute type = REALM (0x0014), Length = 129 bytes. */
+        /* Attribute type = REALM (0x0014), Length = 129 bytes, which is larger than ICE_SERVER_CONFIG_MAX_REALM_LENGTH(128). */
         0x00, 0x14, 0x00, 0x81,
         /* Attribute Value: 0x00~0x80. */
         0x00, 0x01, 0x02, 0x03,
@@ -9672,7 +9686,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9785,7 +9799,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9883,7 +9897,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UsernameTooLong(
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -9987,7 +10001,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_PasswordTooLong(
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10086,7 +10100,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10179,7 +10193,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10272,7 +10286,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_TransactionIDNotFound( voi
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -10349,7 +10363,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10441,7 +10455,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10557,7 +10571,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10658,7 +10672,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePai
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10779,7 +10793,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void 
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -10895,7 +10909,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11002,7 +11016,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_Pass( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11095,7 +11109,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_PairNotCreatePermiss
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11186,7 +11200,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_CandidatePairNotFoun
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -11273,7 +11287,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_DeserializeStunFail(
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11358,7 +11372,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateCreatePe
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11453,7 +11467,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateSucceede
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11548,7 +11562,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_RandomFail( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11642,7 +11656,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_StateNotWaitingCre
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -11733,7 +11747,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_CandidateNotFound(
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -11820,7 +11834,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NonZeroError( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -11902,7 +11916,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_DeserializeStunFai
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -11972,7 +11986,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_Pass( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12065,7 +12079,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_StateNotChannelBind( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12156,7 +12170,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_CandidatePairNotFound( vo
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -12243,7 +12257,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_DeserializeStunFail( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12328,7 +12342,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_Pass( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12421,7 +12435,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_RandomFail( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12515,7 +12529,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_StateNotBinding( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12606,7 +12620,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_CandidatePairNotFound( 
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -12693,7 +12707,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NonZeroError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -12775,7 +12789,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_DeserializeStunFail( vo
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -12845,7 +12859,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -12983,7 +12997,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13121,7 +13135,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13244,7 +13258,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13367,7 +13381,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13491,7 +13505,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13616,7 +13630,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_TransactionIdNotFound( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -13698,7 +13712,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_Pass( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13805,7 +13819,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_CandidateReleasing( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -13912,7 +13926,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_DeserializeStunFail( void )
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t transactionID[] =
@@ -14011,7 +14025,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_TransactionIdNotFound( void
     IceCandidate_t localCandidate = { 0 };
     IceEndpoint_t remoteEndpoint = { 0 };
     uint8_t * pTransactionId;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
     uint8_t stunMessage[] =
@@ -15601,7 +15615,7 @@ void test_Ice_RemoveTurnChannelHeader_BadParams( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = sizeof( buffer );
@@ -15673,7 +15687,7 @@ void test_Ice_RemoveTurnChannelHeader_OutputBufferSmallerThanChannelHeader( void
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = sizeof( buffer );
@@ -15701,7 +15715,7 @@ void test_Ice_RemoveTurnChannelHeader_DataThanChannelHeader( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = ICE_TURN_CHANNEL_DATA_HEADER_LENGTH - 1U;
@@ -15729,7 +15743,7 @@ void test_Ice_RemoveTurnChannelHeader_LocalCandidateNotRelay( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = sizeof( buffer );
@@ -15760,7 +15774,7 @@ void test_Ice_RemoveTurnChannelHeader_LocalCandidateNotValid( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = sizeof( buffer );
@@ -15792,7 +15806,7 @@ void test_Ice_RemoveTurnChannelHeader_NotChannelHeader( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[ 16 ];
     size_t inputBufferLength = sizeof( buffer );
@@ -15827,7 +15841,7 @@ void test_RemoveTurnChannelHeader_Success( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[] = {
         /* Channel header + length. */
@@ -15960,18 +15974,20 @@ void test_RemoveTurnChannelHeader_CandidatePairNullPointer_Success( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate RemoveTurnChannelHeader returns ICE_RESULT_OK
- * when the candidate pair remove the channel header successfully.
+ * @brief Tests TURN channel header length validation
+ *
+ * Verifies that RemoveTurnChannelHeader correctly detects and handles invalid
+ * channel headers where the declared length exceeds the actual packet size.
  */
 void test_RemoveTurnChannelHeader_TurnHeaderLengthLargerThanPacketSize( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate;
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[] = {
         /* Channel header + length. */
-        0x40, 0x00, 0x00, 0x80, /* Set TURN header length to 128 (0x80). */
+        0x40, 0x00, 0x00, 0x80, /* Set TURN header length to 128 (0x80), but the content inside it is smaller. */
         0x12, 0x34, 0x56, 0x78,
         0x9A, 0xBC, 0xDE, 0xF0,
         0x12, 0x34, 0x56, 0x78
@@ -16027,7 +16043,7 @@ void test_RemoveTurnChannelHeader_CandidatePairNotFound( void )
     IceCandidate_t localCandidate;
     IceCandidate_t localCandidate2;
     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
-    IceCandidatePair_t * pCandidatePair;
+    IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
     uint8_t buffer[] = {
         /* Channel header + length. */
