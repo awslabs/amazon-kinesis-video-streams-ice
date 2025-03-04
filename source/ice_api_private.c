@@ -1139,14 +1139,14 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
     {
         switch( deserializePacketInfo.errorCode )
         {
-            case STUN_ATTRIBUTE_ERROR_CODE_SUCCESS:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_SUCCESS:
             {
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_UNEXPECTED_COMPLETE;
             }
             break;
 
-            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
-            case STUN_ATTRIBUTE_ERROR_CODE_UNAUTHORIZED:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_STALE_NONCE:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_UNAUTHORIZED:
             {
                 /* While receiving 401 (Unauthorized) or 438 (Stale Nonce), we update the nonce/realm from the response.
                  * Then calculate new long term password based on new realm. */
@@ -1503,14 +1503,14 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
     {
         switch( deserializePacketInfo.errorCode )
         {
-            case STUN_ATTRIBUTE_ERROR_CODE_SUCCESS:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_SUCCESS:
             {
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE;
             }
             break;
 
-            case STUN_ATTRIBUTE_ERROR_CODE_STALE_NONCE:
-            case STUN_ATTRIBUTE_ERROR_CODE_UNAUTHORIZED:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_STALE_NONCE:
+            case STUN_ATTRIBUTE_ERROR_CODE_VALUE_UNAUTHORIZED:
             {
                 /* While receiving 401 (Unauthorized) or 438 (Stale Nonce), we update the nonce/realm from the response.
                  * Then calculate new long term password based on new realm. */
