@@ -230,7 +230,7 @@ typedef struct IceEndpoint
     uint8_t isPointToPoint;
 } IceEndpoint_t;
 
-typedef struct IceServerConfig
+typedef struct IceServerInfo
 {
     uint8_t userName[ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH];                                        //!< Username for the server
     size_t userNameLength;                                                                                          //!< Length of username
