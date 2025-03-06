@@ -902,6 +902,55 @@ IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
+                                IceCandidate_t * pLocalCandidate )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    size_t i;
+
+    if( ( pContext == NULL ) ||
+        ( pLocalCandidate == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        for( i = 0; i < pContext->numLocalCandidates; i++ )
+        {
+            if( &pContext->pLocalCandidates[i] == pLocalCandidate )
+            {
+                break;
+            }
+        }
+
+        if( i == pContext->numLocalCandidates )
+        {
+            result = ICE_RESULT_INVALID_CANDIDATE;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( ( pLocalCandidate->state == ICE_CANDIDATE_STATE_ALLOCATING ) ||
+            ( pLocalCandidate->state == ICE_CANDIDATE_STATE_VALID ) )
+        {
+            if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+            {
+                pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASING;
+            }
+            else
+            {
+                pLocalCandidate->state = ICE_CANDIDATE_STATE_INVALID;
+            }
+        }
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 /* Ice_CreateRequestForConnectivityCheck - This API creates Stun Packet for
  * connectivity check to the remote candidate.
  */

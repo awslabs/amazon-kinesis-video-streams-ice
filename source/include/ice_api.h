@@ -24,6 +24,9 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
 IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                                     const IceRemoteCandidateInfo_t * pRemoteCandidateInfo );
 
+IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
+                                IceCandidate_t * pLocalCandidate );
+
 IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
                                     IceCandidatePair_t * pIceCandidatePair );
 
