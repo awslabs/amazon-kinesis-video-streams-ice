@@ -25,10 +25,6 @@
                                       ICE_STUN_REQUEST_RECEIVED_FLAG |      \
                                       ICE_STUN_RESPONSE_SENT_FLAG ) )
 
-#define ICE_SERVER_CONFIG_MAX_CONFIG_COUNT ( 5 )
-#define ICE_SERVER_CONFIG_MAX_URIS_COUNT ( 3 )
-#define ICE_SERVER_CONFIG_MAX_URI_LENGTH ( 256 )
-
 // Max stun username attribute len: https://tools.ietf.org/html/rfc5389#section-15.3
 #define ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ( 512 )
 

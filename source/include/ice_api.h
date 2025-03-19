@@ -30,16 +30,6 @@ IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
 IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
                                     IceCandidatePair_t * pIceCandidatePair );
 
-IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
-                                                   IceCandidatePair_t * pIceCandidatePair,
-                                                   uint8_t * pStunMessageBuffer,
-                                                   size_t * pStunMessageBufferLength );
-
-IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext,
-                                                         IceCandidatePair_t * pIceCandidatePair,
-                                                         uint8_t * pStunMessageBuffer,
-                                                         size_t * pStunMessageBufferLength );
-
 IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                           const IceCandidatePair_t * pIceCandidatePair,
                                           uint8_t * pTransactionId,
