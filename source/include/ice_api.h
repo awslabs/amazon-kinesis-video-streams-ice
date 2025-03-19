@@ -81,11 +81,11 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        uint8_t * pStunMessageBuffer,
                                        size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
-                                         IceCandidatePair_t * pIceCandidatePair,
-                                         const uint8_t * pInputBuffer,
-                                         size_t inputBufferLength,
-                                         uint8_t * pOutputBuffer,
-                                         size_t * pOutputBufferLength );
+IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
+                                              const IceCandidatePair_t * pIceCandidatePair,
+                                              const uint8_t * pInputBuffer,
+                                              size_t inputBufferLength,
+                                              uint8_t * pOutputBuffer,
+                                              size_t * pOutputBufferLength );
 
 #endif /* ICE_API_H */

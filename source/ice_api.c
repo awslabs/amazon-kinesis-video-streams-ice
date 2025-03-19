@@ -1065,6 +1065,9 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
+    uint8_t * pApplicationData = pStunMessageBuffer;
+    size_t applicationDataLength = 0U;
+    uint8_t needChannelDataHeader = 0U;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1076,12 +1079,26 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
+        applicationDataLength = *pStunMessageBufferLength;
+
+        /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        {
+            needChannelDataHeader = 1U;
+            applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+            pApplicationData = pStunMessageBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+        }
+    }
+
+    /* Serialize application data. */
+    if( result == ICE_RESULT_OK )
+    {
         stunHeader.messageType = STUN_MESSAGE_TYPE_BINDING_REQUEST;
         stunHeader.pTransactionId = &( pIceCandidatePair->transactionId[ 0 ] );
 
         stunResult = StunSerializer_Init( &( stunCtx ),
-                                          pStunMessageBuffer,
-                                          *pStunMessageBufferLength,
+                                          pApplicationData,
+                                          applicationDataLength,
                                           &( stunHeader ) );
 
         if( stunResult == STUN_RESULT_OK )
@@ -1117,12 +1134,33 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
                                              &( stunCtx ),
                                              pContext->creds.pRemotePassword,
                                              pContext->creds.remotePasswordLength,
-                                             pStunMessageBufferLength );
+                                             &applicationDataLength );
         }
         else
         {
             result = ICE_RESULT_STUN_ERROR;
         }
+    }
+
+    if( ( result == ICE_RESULT_OK ) &&
+        ( needChannelDataHeader != 0U ) )
+    {
+        /* For TURN candidate pair, create TURN channel header for connectivity check. */
+        result = Ice_CreateTurnChannelDataMessage( pContext,
+                                                   pIceCandidatePair,
+                                                   pApplicationData,
+                                                   applicationDataLength,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+    }
+    else if( result == ICE_RESULT_OK )
+    {
+        /* For non TURN candidate pair, update the buffer length. */
+        *pStunMessageBufferLength = applicationDataLength;
+    }
+    else
+    {
+        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
@@ -1147,6 +1185,9 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
+    uint8_t * pApplicationData = pStunMessageBuffer;
+    size_t applicationDataLength = 0U;
+    uint8_t needChannelDataHeader = 0U;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1158,12 +1199,25 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
 
     if( result == ICE_RESULT_OK )
     {
+        applicationDataLength = *pStunMessageBufferLength;
+
+        /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        {
+            needChannelDataHeader = 1U;
+            applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+            pApplicationData = pStunMessageBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
         stunHeader.messageType = STUN_MESSAGE_TYPE_BINDING_REQUEST;
         stunHeader.pTransactionId = &( pIceCandidatePair->transactionId[ 0 ] );
 
         stunResult = StunSerializer_Init( &( stunCtx ),
-                                          pStunMessageBuffer,
-                                          *pStunMessageBufferLength,
+                                          pApplicationData,
+                                          applicationDataLength,
                                           &( stunHeader ) );
 
         if( stunResult == STUN_RESULT_OK )
@@ -1196,12 +1250,33 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
                                              &( stunCtx ),
                                              pContext->creds.pRemotePassword,
                                              pContext->creds.remotePasswordLength,
-                                             pStunMessageBufferLength );
+                                             &applicationDataLength );
         }
         else
         {
             result = ICE_RESULT_STUN_ERROR;
         }
+    }
+
+    if( ( result == ICE_RESULT_OK ) &&
+        ( needChannelDataHeader != 0U ) )
+    {
+        /* For TURN candidate pair, create TURN channel header for nomination request. */
+        result = Ice_CreateTurnChannelDataMessage( pContext,
+                                                   pIceCandidatePair,
+                                                   pApplicationData,
+                                                   applicationDataLength,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+    }
+    else if( result == ICE_RESULT_OK )
+    {
+        /* For non TURN candidate pair, update the buffer length. */
+        *pStunMessageBufferLength = applicationDataLength;
+    }
+    else
+    {
+        /* Empty else marker. */
     }
 
     return result;
@@ -1222,6 +1297,9 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
+    uint8_t * pApplicationData = pStunMessageBuffer;
+    size_t applicationDataLength = 0U;
+    uint8_t needChannelDataHeader = 0U;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1234,12 +1312,25 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
+        applicationDataLength = *pStunMessageBufferLength;
+
+        /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        {
+            needChannelDataHeader = 1U;
+            applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+            pApplicationData = pStunMessageBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
         stunHeader.messageType = STUN_MESSAGE_TYPE_BINDING_SUCCESS_RESPONSE;
         stunHeader.pTransactionId = pTransactionId;
 
         stunResult = StunSerializer_Init( &( stunCtx ),
-                                          pStunMessageBuffer,
-                                          *pStunMessageBufferLength,
+                                          pApplicationData,
+                                          applicationDataLength,
                                           &( stunHeader ) );
 
         if( stunResult == STUN_RESULT_OK )
@@ -1268,12 +1359,33 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                              &( stunCtx ),
                                              pContext->creds.pLocalPassword,
                                              pContext->creds.localPasswordLength,
-                                             pStunMessageBufferLength );
+                                             &applicationDataLength );
         }
         else
         {
             result = ICE_RESULT_STUN_ERROR;
         }
+    }
+
+    if( ( result == ICE_RESULT_OK ) &&
+        ( needChannelDataHeader != 0U ) )
+    {
+        /* For TURN candidate pair, create TURN channel header for nomination request. */
+        result = Ice_CreateTurnChannelDataMessage( pContext,
+                                                   pIceCandidatePair,
+                                                   pApplicationData,
+                                                   applicationDataLength,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+    }
+    else if( result == ICE_RESULT_OK )
+    {
+        /* For non TURN candidate pair, update the buffer length. */
+        *pStunMessageBufferLength = applicationDataLength;
+    }
+    else
+    {
+        /* Empty else marker. */
     }
 
     return result;
@@ -1826,12 +1938,12 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
-                                         IceCandidatePair_t * pIceCandidatePair,
-                                         const uint8_t * pInputBuffer,
-                                         size_t inputBufferLength,
-                                         uint8_t * pOutputBuffer,
-                                         size_t * pOutputBufferLength )
+IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
+                                              const IceCandidatePair_t * pIceCandidatePair,
+                                              const uint8_t * pInputBuffer,
+                                              size_t inputBufferLength,
+                                              uint8_t * pOutputBuffer,
+                                              size_t * pOutputBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
     /* Calculate the padding by rounding up to 4. */
