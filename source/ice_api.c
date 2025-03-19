@@ -1179,6 +1179,94 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
+                                  IceCandidate_t * pIceLocalCandidate,
+                                  const uint8_t * pReceivedBuffer,
+                                  size_t receivedBufferLength,
+                                  const uint8_t ** ppTurnPayloadBuffer,
+                                  uint16_t * pTurnPayloadBufferLength,
+                                  IceCandidatePair_t ** ppIceCandidatePair )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    size_t i;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceTurnChannelMessageHeader_t turnChannelMessageHdr;
+
+    if( ( pContext == NULL ) ||
+        ( pIceLocalCandidate == NULL ) ||
+        ( pReceivedBuffer == NULL ) ||
+        ( ppTurnPayloadBuffer == NULL ) ||
+        ( pTurnPayloadBufferLength == NULL ) ||
+        ( ppIceCandidatePair == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( receivedBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
+    {
+        /* The data is less than channel message header. */
+        result = ICE_RESULT_DATA_TOO_SMALL;
+    }
+    else if( pIceLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else if( pIceLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
+    {
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else if( ( pReceivedBuffer[0] & 0xF0 ) != 0x40 )
+    {
+        /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
+        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( &pReceivedBuffer[ 0 ] );
+        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( &pReceivedBuffer[ 2 ] );
+
+        if( turnChannelMessageHdr.messageLength > receivedBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
+        {
+            result = ICE_RESULT_TURN_LENGTH_INVALID;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        for( i = 0; i < pContext->numCandidatePairs; i++ )
+        {
+            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
+                                              &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                ( turnChannelMessageHdr.channelNumber == pContext->pCandidatePairs[i].turnChannelNumber ) )
+            {
+                pCandidatePair = &pContext->pCandidatePairs[i];
+                break;
+            }
+        }
+
+        if( pCandidatePair == NULL )
+        {
+            result = ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Update output parameters. */
+        *ppTurnPayloadBuffer = pReceivedBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+        *pTurnPayloadBufferLength = turnChannelMessageHdr.messageLength;
+        *ppIceCandidatePair = pCandidatePair;
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 /* Ice_HandleStunPacket - This API handles the processing of Stun Packet.
  */
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
@@ -1401,7 +1489,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
         }
         else
         {
-            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NOT_STUN_PACKET;
         }
     }
 
@@ -1694,102 +1782,6 @@ IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
         pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, inputBufferLength );
         memset( pOutputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH + inputBufferLength, 0, padding );
         *pOutputBufferLength = 4U + inputBufferLength + padding;
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------------------*/
-
-IceResult_t Ice_RemoveTurnChannelHeader( IceContext_t * pContext,
-                                         IceCandidate_t * pIceLocalCandidate,
-                                         const uint8_t * pInputBuffer,
-                                         size_t inputBufferLength,
-                                         uint8_t * pOutputBuffer,
-                                         size_t * pOutputBufferLength,
-                                         IceCandidatePair_t ** ppIceCandidatePair )
-{
-    IceResult_t result = ICE_RESULT_OK;
-    size_t i;
-    IceCandidatePair_t * pCandidatePair = NULL;
-    IceTurnChannelMessageHeader_t turnChannelMessageHdr;
-
-    if( ( pContext == NULL ) ||
-        ( pIceLocalCandidate == NULL ) ||
-        ( pInputBuffer == NULL ) ||
-        ( pOutputBuffer == NULL ) ||
-        ( pOutputBufferLength == NULL ) )
-    {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-    else if( inputBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
-    {
-        /* The data is less than channel message header. */
-        result = ICE_RESULT_DATA_TOO_SMALL;
-    }
-    else if( inputBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH > *pOutputBufferLength )
-    {
-        /* The output buffer size is too small to store result. */
-        result = ICE_RESULT_OUT_OF_MEMORY;
-    }
-    else if( pIceLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
-    {
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else if( pIceLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
-    {
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else if( ( pInputBuffer[0] & 0xF0 ) != 0x40 )
-    {
-        /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else
-    {
-        /* Empty else marker. */
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pOutputBuffer[ 0 ] );
-        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( ( uint8_t * ) &pOutputBuffer[ 2 ] );
-
-        if( turnChannelMessageHdr.messageLength > inputBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
-        {
-            result = ICE_RESULT_TURN_LENGTH_INVALID;
-        }
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        for( i = 0; i < pContext->numCandidatePairs; i++ )
-        {
-            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
-                                              &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
-                ( turnChannelMessageHdr.channelNumber == pContext->pCandidatePairs[i].turnChannelNumber ) )
-            {
-                pCandidatePair = &pContext->pCandidatePairs[i];
-                break;
-            }
-        }
-
-        if( pCandidatePair == NULL )
-        {
-            result = ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND;
-        }
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        /* Move the buffer for 4 bytes to remove channel message header. */
-        memcpy( pOutputBuffer, pInputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, turnChannelMessageHdr.messageLength );
-        *pOutputBufferLength = turnChannelMessageHdr.messageLength;
-
-        if( ppIceCandidatePair != NULL )
-        {
-            *ppIceCandidatePair = pCandidatePair;
-        }
     }
 
     return result;
