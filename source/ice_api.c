@@ -547,6 +547,94 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+static IceResult_t CreateTurnRefreshRequest( IceContext_t * pContext,
+                                             IceCandidate_t * pIceCandidate,
+                                             uint8_t * pStunMessageBuffer,
+                                             size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    printf("current+grace period time: %lu, expiration time: %lu\n", pContext->getCurrentTimeSecondsFxn()+ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS, pIceCandidate->turnAllocationExpirationSeconds);
+
+    if( ( pContext == NULL ) || ( pIceCandidate == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
+    {
+        result = ICE_RESULT_NO_NEXT_ACTION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        printf("CreateRefreshRequest\n");
+        result = CreateRefreshRequest( pContext,
+                                       pIceCandidate,
+                                       ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
+                                       pStunMessageBuffer,
+                                       pStunMessageBufferLength );
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
+static IceResult_t CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
+                                                       IceCandidatePair_t * pIceCandidatePair,
+                                                       uint8_t * pStunMessageBuffer,
+                                                       size_t * pStunMessageBufferLength )
+{
+    IceResult_t result = ICE_RESULT_OK;
+    uint64_t currentTime;
+    IceCandidate_t * pLocalCandidate = NULL;
+
+    if( ( pContext == NULL ) || ( pIceCandidatePair == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        pLocalCandidate = pIceCandidatePair->pLocalCandidate;
+
+        if( ( pLocalCandidate == NULL ) ||
+            ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+    }
+
+    /* Check permission expiration. */
+    if( result == ICE_RESULT_OK )
+    {
+        currentTime = pContext->getCurrentTimeSecondsFxn();
+        if( currentTime + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidatePair->turnPermissionExpirationSeconds )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        printf("CreateRequestForCreatePermission\n");
+        result = CreateRequestForCreatePermission( pContext,
+                                                   pIceCandidatePair,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+    }
+
+    return result;
+}
+
+/*----------------------------------------------------------------------------*/
+
 IceResult_t Ice_Init( IceContext_t * pContext,
                       const IceInitInfo_t * pInitInfo )
 {
@@ -755,13 +843,27 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
         {
             result = ICE_RESULT_MAX_CANDIDATE_THRESHOLD;
         }
+        else
+        {
+            pRelayCandidate = &( pContext->pLocalCandidates[ pContext->numLocalCandidates ] );
+            pContext->numLocalCandidates += 1;
+        }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        pRelayCandidate = &( pContext->pLocalCandidates[ pContext->numLocalCandidates ] );
-        pContext->numLocalCandidates += 1;
+        result = pContext->cryptoFunctions.randomFxn( pRelayCandidate->transactionId,
+                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
 
+        if( result != ICE_RESULT_OK )
+        {
+            result = ICE_RESULT_RANDOM_GENERATION_ERROR;
+            pContext->numLocalCandidates -= 1;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
         memcpy( pRelayCandidate->iceServerInfo.userName, pUsername, ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH );
         pRelayCandidate->iceServerInfo.userNameLength = usernameLength;
 
@@ -1267,8 +1369,7 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-/* Ice_HandleStunPacket - This API handles the processing of Stun Packet.
- */
+/* Ice_HandleStunPacket - This API handles the processing of Stun Packet. */
 IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   uint8_t * pReceivedStunMessage,
                                                   size_t receivedStunMessageLength,
@@ -1342,22 +1443,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_ALLOCATE_SUCCESS_RESPONSE:
                 {
-                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                         stunHeader.pTransactionId );
-
-                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
                     {
                         handleStunPacketResult = Ice_HandleTurnAllocateSuccessResponse( pContext,
                                                                                         &( stunCtx ),
                                                                                         &( stunHeader ),
                                                                                         pLocalCandidate );
-
-                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                            stunHeader.pTransactionId );
                     }
                     else
                     {
-                        /* Drop the packet if we haven't sent the allocation request. */
+                        /* Drop the packet if transaction ID doesn't match. */
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
@@ -1365,22 +1460,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_ALLOCATE_ERROR_RESPONSE:
                 {
-                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                         stunHeader.pTransactionId );
-
-                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
                     {
                         handleStunPacketResult = Ice_HandleTurnAllocateErrorResponse( pContext,
                                                                                       &( stunCtx ),
                                                                                       &( stunHeader ),
                                                                                       pLocalCandidate );
-
-                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                            stunHeader.pTransactionId );
                     }
                     else
                     {
-                        /* Drop the packet if we haven't sent the allocation request. */
+                        /* Drop the packet if transaction ID doesn't match. */
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
@@ -1428,22 +1517,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_REFRESH_SUCCESS_RESPONSE:
                 {
-                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                         stunHeader.pTransactionId );
-
-                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
                     {
                         handleStunPacketResult = Ice_HandleTurnRefreshSuccessResponse( pContext,
                                                                                        &( stunCtx ),
                                                                                        &( stunHeader ),
                                                                                        pLocalCandidate );
-
-                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                            stunHeader.pTransactionId );
                     }
                     else
                     {
-                        /* Drop the packet if we haven't sent the allocation request. */
+                        /* Drop the packet if transaction ID doesn't match. */
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
@@ -1451,22 +1534,16 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_REFRESH_ERROR_RESPONSE:
                 {
-                    transactionIdStoreResult = TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                                         stunHeader.pTransactionId );
-
-                    if( transactionIdStoreResult == TRANSACTION_ID_STORE_RESULT_OK )
+                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
                     {
                         handleStunPacketResult = Ice_HandleTurnRefreshErrorResponse( pContext,
                                                                                      &( stunCtx ),
                                                                                      &( stunHeader ),
                                                                                      pLocalCandidate );
-
-                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                            stunHeader.pTransactionId );
                     }
                     else
                     {
-                        /* Drop the packet if we haven't sent the allocation request. */
+                        /* Drop the packet if transaction ID doesn't match. */
                         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
                     }
                 }
@@ -1718,8 +1795,22 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
             }
             break;
 
-            case ICE_CANDIDATE_PAIR_STATE_VALID:
             case ICE_CANDIDATE_PAIR_STATE_SUCCEEDED:
+                result = CreateTurnRefreshRequest( pContext,
+                                                   pIceCandidatePair->pLocalCandidate,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+
+                if( result == ICE_RESULT_NO_NEXT_ACTION )
+                {
+                    result = CreateTurnRefreshPermissionRequest( pContext,
+                                                                 pIceCandidatePair,
+                                                                 pStunMessageBuffer,
+                                                                 pStunMessageBufferLength );
+                }
+                break;
+
+            case ICE_CANDIDATE_PAIR_STATE_VALID:
             case ICE_CANDIDATE_PAIR_STATE_FROZEN:
             default:
             {
@@ -1782,143 +1873,6 @@ IceResult_t Ice_AppendTurnChannelHeader( IceContext_t * pContext,
         pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, inputBufferLength );
         memset( pOutputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH + inputBufferLength, 0, padding );
         *pOutputBufferLength = 4U + inputBufferLength + padding;
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------------------*/
-
-IceResult_t Ice_CheckTurnConnection( IceContext_t * pContext,
-                                     IceCandidatePair_t * pIceCandidatePair )
-{
-    IceResult_t result = ICE_RESULT_OK;
-    IceCandidate_t * pLocalCandidate = NULL;
-    uint64_t currentTime;
-
-    if( ( pContext == NULL ) || ( pIceCandidatePair == NULL ) )
-    {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        pLocalCandidate = pIceCandidatePair->pLocalCandidate;
-
-        if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pLocalCandidate->state != ICE_CANDIDATE_STATE_VALID ) )
-        {
-            result = ICE_RESULT_NO_NEXT_ACTION;
-        }
-    }
-
-    /* Check allocation expiration. */
-    if( result == ICE_RESULT_OK )
-    {
-        currentTime = pContext->getCurrentTimeSecondsFxn();
-        if( currentTime + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS >= pLocalCandidate->turnAllocationExpirationSeconds )
-        {
-            result = ICE_RESULT_NEED_REFRESH_CANDIDATE;
-        }
-    }
-
-    /* Check permission expiration. */
-    if( result == ICE_RESULT_OK )
-    {
-        if( currentTime + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->turnPermissionExpirationSeconds )
-        {
-            result = ICE_RESULT_NEED_REFRESH_PERMISSION;
-        }
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        result = ICE_RESULT_NO_NEXT_ACTION;
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------------------*/
-
-IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
-                                          IceCandidate_t * pIceCandidate,
-                                          uint8_t * pStunMessageBuffer,
-                                          size_t * pStunMessageBufferLength )
-{
-    IceResult_t result = ICE_RESULT_OK;
-
-    if( ( pContext == NULL ) || ( pIceCandidate == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
-    {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
-    {
-        result = ICE_RESULT_NO_NEXT_ACTION;
-    }
-    else
-    {
-        /* Empty else marker. */
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        result = CreateRefreshRequest( pContext,
-                                       pIceCandidate,
-                                       ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
-                                       pStunMessageBuffer,
-                                       pStunMessageBufferLength );
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------------------*/
-
-IceResult_t Ice_CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
-                                                    IceCandidatePair_t * pIceCandidatePair,
-                                                    uint8_t * pStunMessageBuffer,
-                                                    size_t * pStunMessageBufferLength )
-{
-    IceResult_t result = ICE_RESULT_OK;
-    uint64_t currentTime;
-    IceCandidate_t * pLocalCandidate = NULL;
-
-    if( ( pContext == NULL ) || ( pIceCandidatePair == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
-    {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        pLocalCandidate = pIceCandidatePair->pLocalCandidate;
-
-        if( ( pLocalCandidate == NULL ) ||
-            ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
-        {
-            result = ICE_RESULT_NO_NEXT_ACTION;
-        }
-    }
-
-    /* Check permission expiration. */
-    if( result == ICE_RESULT_OK )
-    {
-        currentTime = pContext->getCurrentTimeSecondsFxn();
-        if( currentTime + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidatePair->turnPermissionExpirationSeconds )
-        {
-            result = ICE_RESULT_NO_NEXT_ACTION;
-        }
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        result = CreateRequestForCreatePermission( pContext,
-                                                   pIceCandidatePair,
-                                                   pStunMessageBuffer,
-                                                   pStunMessageBufferLength );
     }
 
     return result;
