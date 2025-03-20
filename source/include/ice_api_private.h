@@ -34,6 +34,16 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
                                     size_t passwordLength,
                                     size_t * pStunMessageBufferLength );
 
+IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
+                                                   IceCandidatePair_t * pIceCandidatePair,
+                                                   uint8_t * pStunMessageBuffer,
+                                                   size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext,
+                                                         IceCandidatePair_t * pIceCandidatePair,
+                                                         uint8_t * pStunMessageBuffer,
+                                                         size_t * pStunMessageBufferLength );
+
 IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                        StunContext_t * pStunCtx,
                                                        const uint8_t * pPassword,

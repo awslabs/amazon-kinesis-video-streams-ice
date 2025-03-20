@@ -29,6 +29,9 @@ uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
 #define RELAY_EXTENSION_ARRAY_SIZE               10
 #define TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE    32
 
+/* Specific TURN channel number used for testing. */
+#define TEST_TURN_CHANNEL_NUMBER_START           ( 0x4010 )
+
 IceInitInfo_t initInfo;
 TransactionIdStore_t transactionIdStore;
 IceCandidate_t localCandidateArray[ LOCAL_CANDIDATE_ARRAY_SIZE ];
@@ -96,6 +99,40 @@ IceResult_t testCrc32Fxn( uint32_t initialResult,
 
 /*-----------------------------------------------------------*/
 
+IceResult_t testCrc32Fxn_Fixed( uint32_t initialResult,
+                                const uint8_t * pBuffer,
+                                size_t bufferLength,
+                                uint32_t * pCalculatedCrc32 )
+{
+    uint32_t crc32 = 0x5354554E;
+
+    ( void ) initialResult;
+    ( void ) pBuffer;
+    ( void ) bufferLength;
+
+    /* Store the calculated CRC32 value. */
+    *pCalculatedCrc32 = crc32;
+
+    return ICE_RESULT_OK;
+}
+
+/*-----------------------------------------------------------*/
+
+IceResult_t testCrc32Fxn_ReturnError( uint32_t initialResult,
+    const uint8_t * pBuffer,
+    size_t bufferLength,
+    uint32_t * pCalculatedCrc32 )
+{
+( void ) initialResult;
+( void ) pBuffer;
+( void ) bufferLength;
+( void ) pCalculatedCrc32;
+
+return ICE_RESULT_CRC32_ERROR;
+}
+
+/*-----------------------------------------------------------*/
+
 IceResult_t testHmacFxn( const uint8_t * pPassword,
                          size_t passwordLength,
                          const uint8_t * pBuffer,
@@ -127,6 +164,99 @@ IceResult_t testHmacFxn( const uint8_t * pPassword,
     }
 
     return result;
+}
+
+/*-----------------------------------------------------------*/
+
+IceResult_t testHmacFxn_FixedFF( const uint8_t * pPassword,
+                                 size_t passwordLength,
+                                 const uint8_t * pBuffer,
+                                 size_t bufferLength,
+                                 uint8_t * pOutputBuffer,
+                                 uint16_t * pOutputBufferLength )
+{
+    /* Assume a fixed HMAC output length of 20 bytes (160-bit). */
+    const uint16_t hmacLength = 20;
+    uint16_t i;
+    IceResult_t result = ICE_RESULT_OK;
+
+    ( void ) pPassword;
+    ( void ) passwordLength;
+    ( void ) pBuffer;
+    ( void ) bufferLength;
+
+    if( *pOutputBufferLength < hmacLength )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Calculate the HMAC using a simple algorithm. */
+        for( i = 0; i < hmacLength; i++ )
+        {
+            pOutputBuffer[ i ] = 0xFF;
+        }
+
+        /* Update the output buffer length. */
+        *pOutputBufferLength = hmacLength;
+    }
+
+    return result;
+}
+
+/*-----------------------------------------------------------*/
+
+IceResult_t testHmacFxn_Wrong( const uint8_t * pPassword,
+                               size_t passwordLength,
+                               const uint8_t * pBuffer,
+                               size_t bufferLength,
+                               uint8_t * pOutputBuffer,
+                               uint16_t * pOutputBufferLength )
+{
+    /* Assume a fixed HMAC output length of 16 bytes (128 bits). */
+    const uint16_t hmacLength = 16;                 /* This HMAC Lenght is not correct */
+    uint16_t i;
+    IceResult_t result = ICE_RESULT_OK;
+
+    if( *pOutputBufferLength < hmacLength )
+    {
+        result = ICE_RESULT_BAD_PARAM;
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Calculate the HMAC using a simple algorithm. */
+        for( i = 0; i < hmacLength; i++ )
+        {
+            pOutputBuffer[ i ] = pPassword[ i % passwordLength ] ^
+                                 pBuffer[ i % bufferLength ];
+        }
+
+        /* Update the output buffer length. */
+        *pOutputBufferLength = hmacLength;
+    }
+
+    return result;
+}
+
+/*-----------------------------------------------------------*/
+
+IceResult_t testHmacFxn_ReturnError( const uint8_t * pPassword,
+                                     size_t passwordLength,
+                                     const uint8_t * pBuffer,
+                                     size_t bufferLength,
+                                     uint8_t * pOutputBuffer,
+                                     uint16_t * pOutputBufferLength )
+{
+    ( void ) pPassword;
+    ( void ) passwordLength;
+    ( void ) pBuffer;
+    ( void ) bufferLength;
+    ( void ) pOutputBuffer;
+    ( void ) pOutputBufferLength;
+
+    return ICE_RESULT_HMAC_ERROR;
 }
 
 /*-----------------------------------------------------------*/
@@ -384,6 +514,594 @@ void test_iceAddCandidatePair_MaxTurnChannelNumber( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
                        result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check fail functionality for Bad Parameters.
+ */
+void test_iceCreateRequestForConnectivityCheck_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair = { 0 };
+    uint8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_CreateRequestForConnectivityCheck( NULL,
+                                                    &( candidatePair ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    NULL,
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( candidatePair ),
+                                                    NULL,
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( candidatePair ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check fail
+ * functionality for Stun errors.
+ */
+void test_iceCreateRequestForConnectivityCheck_StunError( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 10 ]; /* Too small to be able to contain a Stun message. */
+    size_t stunMessageBufferLength = 10;
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality
+ * when the ICE agent is not controlling.
+ */
+void test_iceCreateRequestForConnectivityCheck_Controlled( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 72 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 0x7E0000FF. */
+        0x7E, 0x00, 0x00, 0xFF,
+        /* Attribute type = ICE-CONTROLLED (0x8029), Length = 8 bytes. */
+        0x80, 0x29, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn. */
+        0x72, 0x64, 0x6D, 0x2F,
+        0x55, 0x77, 0xF4, 0x23,
+        0x73, 0x72, 0x75, 0x6C,
+        0x76, 0x61, 0x74, 0x62,
+        0x65, 0x66, 0x7E, 0x6E,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value = 0xB5F5C42F as calculated by testCrc32Fxn. */
+        0xB5, 0xF5, 0xC4, 0x2F
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+    IceResult_t result;
+
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality for invalid HMAC LENGTH i.e. 20 Bytes.
+ */
+void test_iceCreateRequestForConnectivityCheck_HmacError( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    IceResult_t result;
+
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_Wrong;  /* We are initializing the context to a wrong HMAC Function */
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_HMAC_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality for HMAC return error.
+ */
+void test_iceCreateRequestForConnectivityCheck_HmacReturnError( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    IceResult_t result;
+
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_ReturnError;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_HMAC_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality for CRC32 return error.
+ */
+void test_iceCreateRequestForConnectivityCheck_Crc32ReturnError( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    IceResult_t result;
+
+    initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_ReturnError;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_CRC32_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality.
+ */
+void test_iceCreateRequestForConnectivityCheck_Controlling( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 0x48 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 0x7E0000FF. */
+        0x7E, 0x00, 0x00, 0xFF,
+        /* Attribute type = ICE-CONTROLLING ( 0x802A ), Length = 8 bytes. */
+        0x80, 0x2A, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn. */
+        0x72, 0x64, 0x6D, 0x2F,
+        0x55, 0x77, 0xF4, 0x23,
+        0x73, 0x72, 0x75, 0x6C,
+        0x76, 0x61, 0x74, 0x62,
+        0x65, 0x66, 0x7E, 0x6E,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x3E26FA36 as calculated by testCrc32Fxn. */
+        0x3E, 0x26, 0XFA, 0x36
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet with TURN header
+ * for connectivity check functionality.
+ */
+void test_iceCreateRequestForConnectivityCheck_TurnChannelHeader( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 0x48 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x48,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 0x000000FF. */
+        0x00, 0x00, 0x00, 0xFF,
+        /* Attribute type = ICE-CONTROLLING ( 0x802A ), Length = 8 bytes. */
+        0x80, 0x2A, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value = 0xB5F5C42F as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+    uint8_t expectedTurnChannelHeader[] =
+    {
+        /* Channel Number */
+        0x40, 0x10,
+        /* Content Length = 0x5C ( 0x48 + STUN header 20 bytes ) */
+        0x00, 0x5C
+    };
+    size_t expectedTurnChannelHeaderLength = sizeof( expectedTurnChannelHeader );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endpoint ),
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_RELAY,
+                       context.pLocalCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_ALLOCATING,
+                       context.pLocalCandidates[ 0 ].state );
+    TEST_ASSERT_NOT_EQUAL( NULL,
+                           context.pLocalCandidates[ 0 ].pRelayExtension );
+
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[ 0 ].pRelayExtension->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numRemoteCandidates );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numCandidatePairs );
+
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength + expectedTurnChannelHeaderLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedTurnChannelHeader[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedTurnChannelHeaderLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ expectedTurnChannelHeaderLength ] ),
+                                   expectedStunMessageLength );
 }
 
 /*-----------------------------------------------------------*/
