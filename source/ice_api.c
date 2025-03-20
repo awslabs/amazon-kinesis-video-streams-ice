@@ -81,24 +81,11 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
-    TransactionIdStoreResult_t transactionIdStoreResult;
 
-    /* Other input parameters are checked before calling. */
-    if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore, pIceCandidate->transactionId ) != TRANSACTION_ID_STORE_RESULT_OK )
+    if( pIceCandidate->pRelayExtension == NULL )
     {
-        result = pContext->cryptoFunctions.randomFxn( pIceCandidate->transactionId,
-                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
-
-        if( result == ICE_RESULT_OK )
-        {
-            transactionIdStoreResult = TransactionIdStore_Insert( pContext->pStunBindingRequestTransactionIdStore,
-                                                                  pIceCandidate->transactionId );
-
-            if( transactionIdStoreResult != TRANSACTION_ID_STORE_RESULT_OK )
-            {
-                result = ICE_RESULT_TRANSACTION_ID_STORE_ERROR;
-            }
-        }
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        result = ICE_RESULT_NULL_RELAY_EXTENSION;
     }
 
     if( result == ICE_RESULT_OK )
@@ -139,9 +126,9 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.userNameLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.userNameLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.pUserName, pIceCandidate->iceServerInfo.userNameLength );
+            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.userName, pIceCandidate->pRelayExtension->iceRelayServerInfo.userNameLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -152,9 +139,9 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.realmLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidate->iceServerInfo.realm, pIceCandidate->iceServerInfo.realmLength );
+            stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.realm, pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -165,9 +152,9 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.nonceLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.nonceLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidate->iceServerInfo.nonce, pIceCandidate->iceServerInfo.nonceLength );
+            stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.nonce, pIceCandidate->pRelayExtension->iceRelayServerInfo.nonceLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -178,13 +165,13 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.realmLength > 0 )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength > 0 )
         {
             /* We already have long-term key retrieved from username, realm and password. */
             result = Ice_FinalizeStunPacket( pContext,
                                              &( stunCtx ),
-                                             pIceCandidate->iceServerInfo.longTermPassword,
-                                             pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                             pIceCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                             pIceCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                              pStunMessageBufferLength );
         }
         else
@@ -212,24 +199,11 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
-    TransactionIdStoreResult_t transactionIdStoreResult;
 
-    /* Other input parameters are checked before calling. */
-    if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore, pIceCandidate->transactionId ) != TRANSACTION_ID_STORE_RESULT_OK )
+    if( pIceCandidate->pRelayExtension == NULL )
     {
-        result = pContext->cryptoFunctions.randomFxn( pIceCandidate->transactionId,
-                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
-
-        if( result == ICE_RESULT_OK )
-        {
-            transactionIdStoreResult = TransactionIdStore_Insert( pContext->pStunBindingRequestTransactionIdStore,
-                                                                  pIceCandidate->transactionId );
-
-            if( transactionIdStoreResult != TRANSACTION_ID_STORE_RESULT_OK )
-            {
-                result = ICE_RESULT_TRANSACTION_ID_STORE_ERROR;
-            }
-        }
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        result = ICE_RESULT_NULL_RELAY_EXTENSION;
     }
 
     if( result == ICE_RESULT_OK )
@@ -260,9 +234,9 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.userNameLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.userNameLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.pUserName, pIceCandidate->iceServerInfo.userNameLength );
+            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.userName, pIceCandidate->pRelayExtension->iceRelayServerInfo.userNameLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -273,9 +247,9 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.realmLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidate->iceServerInfo.realm, pIceCandidate->iceServerInfo.realmLength );
+            stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.realm, pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -286,9 +260,9 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.nonceLength > 0U )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.nonceLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidate->iceServerInfo.nonce, pIceCandidate->iceServerInfo.nonceLength );
+            stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidate->pRelayExtension->iceRelayServerInfo.nonce, pIceCandidate->pRelayExtension->iceRelayServerInfo.nonceLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -299,13 +273,13 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( pIceCandidate->iceServerInfo.realmLength > 0 )
+        if( pIceCandidate->pRelayExtension->iceRelayServerInfo.realmLength > 0 )
         {
             /* We already have long-term key retrieved from username, realm and password. */
             result = Ice_FinalizeStunPacket( pContext,
                                              &( stunCtx ),
-                                             pIceCandidate->iceServerInfo.longTermPassword,
-                                             pIceCandidate->iceServerInfo.longTermPasswordLength,
+                                             pIceCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                             pIceCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                              pStunMessageBufferLength );
         }
         else
@@ -346,9 +320,14 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
     {
         result = ICE_RESULT_INVALID_CANDIDATE_TYPE;
     }
-    else if( ( pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength <= 0 ) ||
-             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength <= 0 ) ||
-             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength <= 0 ) )
+    else if( pIceCandidatePair->pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        result = ICE_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else if( ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realmLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonceLength <= 0 ) )
     {
         result = ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL;
     }
@@ -387,7 +366,7 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.pUserName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.userName, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.userNameLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -397,7 +376,7 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.realm, pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength );
+        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realm, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realmLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -407,7 +386,7 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonce, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength );
+        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonce, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonceLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -420,8 +399,8 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
         /* We already have long-term key retrieved from username, realm and password. */
         result = Ice_FinalizeStunPacket( pContext,
                                          &stunCtx,
-                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
-                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                         pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                         pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                          pStunMessageBufferLength );
     }
 
@@ -453,9 +432,14 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
     {
         result = ICE_RESULT_INVALID_CANDIDATE_TYPE;
     }
-    else if( ( pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength <= 0 ) ||
-             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength <= 0 ) ||
-             ( pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength <= 0 ) )
+    else if( pIceCandidatePair->pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        result = ICE_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else if( ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realmLength <= 0 ) ||
+             ( pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonceLength <= 0 ) )
     {
         result = ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL;
     }
@@ -504,7 +488,7 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.pUserName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.userName, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.userNameLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -514,7 +498,7 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.realm, pIceCandidatePair->pLocalCandidate->iceServerInfo.realmLength );
+        stunResult = StunSerializer_AddAttributeRealm( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realm, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.realmLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -524,7 +508,7 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonce, pIceCandidatePair->pLocalCandidate->iceServerInfo.nonceLength );
+        stunResult = StunSerializer_AddAttributeNonce( &stunCtx, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonce, pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonceLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -537,8 +521,8 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
         /* We already have long-term key retrieved from username, realm and password. */
         result = Ice_FinalizeStunPacket( pContext,
                                          &stunCtx,
-                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPassword,
-                                         pIceCandidatePair->pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                         pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                         pIceCandidatePair->pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                          pStunMessageBufferLength );
     }
 
@@ -558,9 +542,17 @@ static IceResult_t CreateTurnRefreshRequest( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( ( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-             ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
-             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->turnAllocationExpirationSeconds ) )
+    else if( pIceCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        result = ICE_RESULT_NO_NEXT_ACTION;
+    }
+    else if( pIceCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        result = ICE_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else if( ( pIceCandidate->state != ICE_CANDIDATE_STATE_VALID ) ||
+             ( pContext->getCurrentTimeSecondsFxn() + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS < pIceCandidate->pRelayExtension->turnAllocationExpirationSeconds ) )
     {
         result = ICE_RESULT_NO_NEXT_ACTION;
     }
@@ -596,16 +588,36 @@ static IceResult_t CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
+    else if( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED )
+    {
+        /* Refresh the permission only for selected pair. */
+        result = ICE_RESULT_NO_NEXT_ACTION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
 
     if( result == ICE_RESULT_OK )
     {
         pLocalCandidate = pIceCandidatePair->pLocalCandidate;
 
-        if( ( pLocalCandidate == NULL ) ||
-            ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+        if( pLocalCandidate == NULL )
         {
             result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+        else if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
+        else if( pLocalCandidate->pRelayExtension == NULL )
+        {
+            /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+            result = ICE_RESULT_NULL_RELAY_EXTENSION;
+        }
+        else
+        {
+            /* Empty else marker. */
         }
     }
 
@@ -632,6 +644,22 @@ static IceResult_t CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
+IceRelayExtension_t * AllocateRelayExtension( IceContext_t * pContext )
+{
+    IceRelayExtension_t * pRelayExtension = NULL;
+
+    if( pContext->numRelayExtensions < pContext->maxRelayExtensions )
+    {
+        pRelayExtension = &pContext->pRelayExtensionsArray[ pContext->numRelayExtensions ];
+        pContext->numRelayExtensions++;
+        memset( pRelayExtension, 0, sizeof( IceRelayExtension_t ) );
+    }
+
+    return pRelayExtension;
+}
+
+/*----------------------------------------------------------------------------*/
+
 IceResult_t Ice_Init( IceContext_t * pContext,
                       const IceInitInfo_t * pInitInfo )
 {
@@ -642,6 +670,7 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         ( pInitInfo->pLocalCandidatesArray == NULL ) ||
         ( pInitInfo->pRemoteCandidatesArray == NULL ) ||
         ( pInitInfo->pCandidatePairsArray == NULL ) ||
+        ( pInitInfo->pRelayExtensionsArray == NULL ) ||
         ( pInitInfo->pStunBindingRequestTransactionIdStore == NULL ) ||
         ( pInitInfo->cryptoFunctions.randomFxn == NULL ) ||
         ( pInitInfo->cryptoFunctions.crc32Fxn == NULL ) ||
@@ -676,6 +705,10 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         pContext->pCandidatePairs = pInitInfo->pCandidatePairsArray;
         pContext->maxCandidatePairs = pInitInfo->candidatePairsArrayLength;
         pContext->numCandidatePairs = 0;
+
+        pContext->pRelayExtensionsArray = pInitInfo->pRelayExtensionsArray;
+        pContext->maxRelayExtensions = pInitInfo->relayExtensionsArrayLength;
+        pContext->numRelayExtensions = 0;
 
         pContext->isControlling = pInitInfo->isControlling;
         pContext->pStunBindingRequestTransactionIdStore = pInitInfo->pStunBindingRequestTransactionIdStore;
@@ -854,18 +887,33 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
 
         if( result != ICE_RESULT_OK )
         {
-            result = ICE_RESULT_RANDOM_GENERATION_ERROR;
             pContext->numLocalCandidates -= 1;
+            result = ICE_RESULT_RANDOM_GENERATION_ERROR;
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        pRelayCandidate->iceServerInfo.pUserName = pUsername;
-        pRelayCandidate->iceServerInfo.userNameLength = usernameLength;
+        pRelayCandidate->pRelayExtension = AllocateRelayExtension( pContext );
 
-        pRelayCandidate->iceServerInfo.pPassword = pPassword;
-        pRelayCandidate->iceServerInfo.passwordLength = passwordLength;
+        if( pRelayCandidate->pRelayExtension == NULL )
+        {
+            pContext->numLocalCandidates -= 1;
+            result = ICE_RESULT_MAX_RELAY_EXTENSION;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        memcpy( &pRelayCandidate->pRelayExtension->iceRelayServerInfo.userName[ 0 ],
+                pUsername,
+                usernameLength );
+        pRelayCandidate->pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
+
+        memcpy( &pRelayCandidate->pRelayExtension->iceRelayServerInfo.password[ 0 ],
+                pPassword,
+                passwordLength );
+        pRelayCandidate->pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
 
         pRelayCandidate->candidateType = ICE_CANDIDATE_TYPE_RELAY;
         pRelayCandidate->isRemote = 0;
@@ -948,10 +996,12 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                                                    &pIceCandidatePair );
 
                     /* Update turn channel number when the local candidate type is relay. */
-                    if( ( result == ICE_RESULT_OK ) && ( pContext->pLocalCandidates[ i ].candidateType == ICE_CANDIDATE_TYPE_RELAY ) )
+                    if( ( result == ICE_RESULT_OK ) &&
+                        ( pContext->pLocalCandidates[ i ].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+                        ( pContext->pLocalCandidates[ i ].pRelayExtension != NULL ) )
                     {
-                        pIceCandidatePair->turnChannelNumber = pContext->pLocalCandidates[ i ].nextAvailableTurnChannelNumber;
-                        pContext->pLocalCandidates[ i ].nextAvailableTurnChannelNumber++;
+                        pIceCandidatePair->turnChannelNumber = pContext->pLocalCandidates[ i ].pRelayExtension->nextAvailableTurnChannelNumber;
+                        pContext->pLocalCandidates[ i ].pRelayExtension->nextAvailableTurnChannelNumber++;
                     }
                 }
             }
@@ -1425,7 +1475,7 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
     {
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
     }
-    else if( ( pReceivedBuffer[0] & 0xF0 ) != 0x40 )
+    else if( ( pReceivedBuffer[ 0 ] & 0xF0 ) != 0x40 )
     {
         /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
         result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;

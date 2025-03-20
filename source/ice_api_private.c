@@ -26,7 +26,7 @@
 /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4 to get the
  * long-term credential string. */
 static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
-                                                IceServerInfo_t * pIceServerInfo )
+                                                IceRelayServerInfo_t * pIceRelayServerInfo )
 {
     IceResult_t result = ICE_RESULT_OK;
     const int bufferLength = ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH + ICE_SERVER_CONFIG_MAX_REALM_LENGTH + ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH + 2;
@@ -34,8 +34,8 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     int snprintfRetVal;
     uint16_t outputBufferLength;
 
-    if( ( pIceServerInfo->userNameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
-        ( pIceServerInfo->passwordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
+    if( ( pIceRelayServerInfo->userNameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
+        ( pIceRelayServerInfo->passwordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
@@ -44,9 +44,9 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     {
         snprintfRetVal = snprintf( stringBuffer, bufferLength,
                                    "%.*s:%.*s:%.*s",
-                                   ( int ) pIceServerInfo->userNameLength, pIceServerInfo->pUserName,
-                                   ( int ) pIceServerInfo->realmLength, pIceServerInfo->realm,
-                                   ( int ) pIceServerInfo->passwordLength, pIceServerInfo->pPassword );
+                                   ( int ) pIceRelayServerInfo->userNameLength, pIceRelayServerInfo->userName,
+                                   ( int ) pIceRelayServerInfo->realmLength, pIceRelayServerInfo->realm,
+                                   ( int ) pIceRelayServerInfo->passwordLength, pIceRelayServerInfo->password );
 
         /* LCOV_EXCL_START */
         if( snprintfRetVal < 0 )
@@ -64,14 +64,14 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
             outputBufferLength = ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH;
             result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) stringBuffer,
                                                        snprintfRetVal,
-                                                       pIceServerInfo->longTermPassword,
+                                                       pIceRelayServerInfo->longTermPassword,
                                                        &outputBufferLength );
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        pIceServerInfo->longTermPasswordLength = outputBufferLength;
+        pIceRelayServerInfo->longTermPasswordLength = outputBufferLength;
     }
 
     return result;
@@ -105,20 +105,20 @@ static IceHandleStunPacketResult_t UpdateIceServerInfo( IceContext_t * pContext,
     {
         if( pDeserializePacketInfo->nonceLength > 0 )
         {
-            memcpy( pLocalCandidate->iceServerInfo.nonce, pDeserializePacketInfo->pNonce, pDeserializePacketInfo->nonceLength );
-            pLocalCandidate->iceServerInfo.nonceLength = pDeserializePacketInfo->nonceLength;
+            memcpy( pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonce, pDeserializePacketInfo->pNonce, pDeserializePacketInfo->nonceLength );
+            pLocalCandidate->pRelayExtension->iceRelayServerInfo.nonceLength = pDeserializePacketInfo->nonceLength;
         }
 
         if( pDeserializePacketInfo->realmLength > 0 )
         {
-            memcpy( pLocalCandidate->iceServerInfo.realm, pDeserializePacketInfo->pRealm, pDeserializePacketInfo->realmLength );
-            pLocalCandidate->iceServerInfo.realmLength = pDeserializePacketInfo->realmLength;
+            memcpy( pLocalCandidate->pRelayExtension->iceRelayServerInfo.realm, pDeserializePacketInfo->pRealm, pDeserializePacketInfo->realmLength );
+            pLocalCandidate->pRelayExtension->iceRelayServerInfo.realmLength = pDeserializePacketInfo->realmLength;
             needUpdateLongTermCredential = 1U;
         }
 
         if( needUpdateLongTermCredential != 0U )
         {
-            result = CalculateLongTermCredential( pContext, &pLocalCandidate->iceServerInfo );
+            result = CalculateLongTermCredential( pContext, &pLocalCandidate->pRelayExtension->iceRelayServerInfo );
             if( result != ICE_RESULT_OK )
             {
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR;
@@ -1059,7 +1059,16 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 
     ( void ) pStunHeader;
 
-    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
     }
@@ -1072,8 +1081,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1102,14 +1111,14 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
                 &( deserializePacketInfo.relayTransportAddress ),
                 sizeof( IceTransportAddress_t ) );
         pLocalCandidate->endpoint.isPointToPoint = 0;
-        pLocalCandidate->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
-        pLocalCandidate->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
+        pLocalCandidate->pRelayExtension->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
 
         pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
         {
-            if( pLocalCandidate->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
+            if( pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
             {
                 iceResult = ICE_RESULT_MAX_CHANNEL_NUMBER_ID;
                 break;
@@ -1121,8 +1130,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
                                               &pIceCandidatePair );
             if( iceResult == ICE_RESULT_OK )
             {
-                pIceCandidatePair->turnChannelNumber = pLocalCandidate->nextAvailableTurnChannelNumber;
-                pLocalCandidate->nextAvailableTurnChannelNumber++;
+                pIceCandidatePair->turnChannelNumber = pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber;
+                pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber++;
             }
         }
 
@@ -1145,7 +1154,16 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
 
     ( void ) pStunHeader;
 
-    if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else if( pLocalCandidate->state != ICE_CANDIDATE_STATE_ALLOCATING )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING;
     }
@@ -1158,8 +1176,8 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1222,11 +1240,28 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
-                                                        pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            ( uint8_t * ) pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1302,11 +1337,28 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
-                                                        pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            ( uint8_t * ) pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1361,11 +1413,28 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
-                                                        pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            ( uint8_t * ) pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1438,11 +1507,28 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        ( uint8_t * ) pLocalCandidate->iceServerInfo.longTermPassword,
-                                                        pLocalCandidate->iceServerInfo.longTermPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
+    {
+        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
+                                                            pStunCtx,
+                                                            ( uint8_t * ) pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
+                                                            &( deserializePacketInfo ) );
+    }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1500,12 +1586,26 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
 
     ( void ) pStunHeader;
 
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 
@@ -1533,7 +1633,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         /* Update the new expiry time for this TURN session. */
-        pLocalCandidate->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
+        pLocalCandidate->pRelayExtension->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE;
     }
 
@@ -1553,12 +1653,26 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
 
     ( void ) pStunHeader;
 
+    if( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+    {
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
+    }
+    else if( pLocalCandidate->pRelayExtension == NULL )
+    {
+        /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
+
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
                                                             pStunCtx,
-                                                            pLocalCandidate->iceServerInfo.longTermPassword,
-                                                            pLocalCandidate->iceServerInfo.longTermPasswordLength,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPassword,
+                                                            pLocalCandidate->pRelayExtension->iceRelayServerInfo.longTermPasswordLength,
                                                             &( deserializePacketInfo ) );
     }
 

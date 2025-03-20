@@ -115,6 +115,7 @@ typedef enum IceResult
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
     ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
+    ICE_RESULT_MAX_RELAY_EXTENSION,
     ICE_RESULT_STUN_ERROR,
     ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
     ICE_RESULT_STUN_ERROR_ADD_REQUESTED_TRANSPORT,
@@ -137,6 +138,7 @@ typedef enum IceResult
     ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
     ICE_RESULT_TURN_LENGTH_INVALID,
     ICE_RESULT_DATA_TOO_SMALL,
+    ICE_RESULT_NULL_RELAY_EXTENSION,
 
     /* User info. */
     ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
@@ -182,6 +184,8 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_REFRESH_UNKNOWN_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_ADD_REMOTE_CANDIDATE_FAILED,
+    ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE,
+    ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION,
 
     /* Application needs to take action. */
     ICE_HANDLE_STUN_PACKET_RESULT_NOT_STUN_PACKET,
@@ -225,19 +229,26 @@ typedef struct IceEndpoint
     uint8_t isPointToPoint;
 } IceEndpoint_t;
 
-typedef struct IceServerInfo
+typedef struct IceRelayServerInfo
 {
-    const uint8_t * pUserName;                                                 //!< Username for the server
-    size_t userNameLength;                                                     //!< Length of username
-    const uint8_t * pPassword;                                                 //!< Password for the server
-    size_t passwordLength;                                                     //!< Length of password
-    uint8_t nonce[ICE_SERVER_CONFIG_MAX_NONCE_LENGTH];                         //!< Nonce for the server
-    size_t nonceLength;                                                        //!< Length of Nonce
-    uint8_t realm[ICE_SERVER_CONFIG_MAX_REALM_LENGTH];                         //!< Realm for the server
-    size_t realmLength;                                                        //!< Length of realm
-    uint8_t longTermPassword[ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH]; //!< Long term password for the server
-    size_t longTermPasswordLength;                                             //!< Length of long term password
-} IceServerInfo_t;
+    uint8_t userName[ ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ];                  //!< Username for the server
+    size_t userNameLength;                                                       //!< Length of username
+    uint8_t password[ ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ];                   //!< Password for the server
+    size_t passwordLength;                                                       //!< Length of password
+    uint8_t nonce[ ICE_SERVER_CONFIG_MAX_NONCE_LENGTH ];                         //!< Nonce for the server
+    size_t nonceLength;                                                          //!< Length of Nonce
+    uint8_t realm[ ICE_SERVER_CONFIG_MAX_REALM_LENGTH ];                         //!< Realm for the server
+    size_t realmLength;                                                          //!< Length of realm
+    uint8_t longTermPassword[ ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH ]; //!< Long term password for the server
+    size_t longTermPasswordLength;                                               //!< Length of long term password
+} IceRelayServerInfo_t;
+
+typedef struct IceRelayExtension
+{
+    IceRelayServerInfo_t iceRelayServerInfo;
+    uint16_t nextAvailableTurnChannelNumber;
+    uint64_t turnAllocationExpirationSeconds;
+} IceRelayExtension_t;
 
 typedef struct IceCandidate
 {
@@ -249,11 +260,7 @@ typedef struct IceCandidate
     IceSocketProtocol_t remoteProtocol;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
     uint16_t candidateId;
-
-    /* Below fields are for relay candidate. */
-    IceServerInfo_t iceServerInfo;
-    uint16_t nextAvailableTurnChannelNumber;
-    uint64_t turnAllocationExpirationSeconds;
+    IceRelayExtension_t * pRelayExtension;
 } IceCandidate_t;
 
 typedef struct IceCandidatePair
@@ -304,6 +311,9 @@ typedef struct IceContext
     IceCandidatePair_t * pCandidatePairs;
     size_t maxCandidatePairs;
     size_t numCandidatePairs;
+    IceRelayExtension_t * pRelayExtensionsArray;
+    size_t maxRelayExtensions;
+    size_t numRelayExtensions;
     IceCandidatePair_t * pNominatePairs;
     uint64_t tieBreaker;
     uint8_t isControlling;
@@ -323,6 +333,8 @@ typedef struct IceInitInfo
     size_t remoteCandidatesArrayLength;
     IceCandidatePair_t * pCandidatePairsArray;
     size_t candidatePairsArrayLength;
+    IceRelayExtension_t * pRelayExtensionsArray;
+    size_t relayExtensionsArrayLength;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     IceCryptoFunctions_t cryptoFunctions;
