@@ -5970,6 +5970,436 @@ void test_iceCloseCandidate_RelayReleasedSuccess( void )
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Validate ICE Handle TURN Packet fail functionality for Bad Parameters.
+ */
+void test_iceHandlTurnPacket_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    uint8_t receivedBuffer[ 10 ];
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+
+    result = Ice_HandleTurnPacket( NULL,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_HandleTurnPacket( &context,
+                                   NULL,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   NULL,
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   NULL,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   NULL,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Handle TURN Packet fail functionality for less data.
+ */
+void test_iceHandlTurnPacket_ReceivedLessData( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    uint8_t receivedBuffer[ 10 ];
+    size_t receivedBufferLength = ICE_TURN_CHANNEL_DATA_HEADER_LENGTH - 1;
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_DATA_TOO_SMALL,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Handle TURN Packet fail functionality for
+ * not relay candidate.
+ */
+void test_iceHandlTurnPacket_NotRelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    uint8_t receivedBuffer[ 10 ];
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates the failure handling of TURN packets for 
+ * a relay candidate that is not ready.
+ */
+void test_iceHandlTurnPacket_CandidateNotReady( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    uint8_t receivedBuffer[ 10 ];
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates the failure handling of non TURN packets.
+ */
+void test_iceHandlTurnPacket_NoTurnChannelHeader( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+    uint8_t receivedBuffer[] = {
+        /* Create a packet with the first two bytes outside the range 0x4000 to 0x4FFF. */
+        0x00, 0x01,
+        0x02, 0x03
+    };
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates the handling of TURN packet failures when the
+ * data channel length is larger than the actual packet size.
+ */
+void test_iceHandlTurnPacket_LargeTurnHeaderLength( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+    uint8_t receivedBuffer[] = {
+        0x40, 0x01,
+        /* Create a packet with length 16. */
+        0x00, 0x10,
+        0x02, 0x03,
+    };
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_LENGTH_INVALID,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates the handling of TURN packet failures when the
+ * transport address doesn't match any candidate pair.
+ */
+void test_iceHandlTurnPacket_NoMatchTransportAddress( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate1 = { 0 };
+    IceCandidate_t localCandidate2 = { 0 };
+    IceEndpoint_t endpoint1;
+    IceEndpoint_t endpoint2;
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+    uint8_t receivedBuffer[] = {
+        0x40, 0x01,
+        0x00, 0x01,
+        0x02, 0x03,
+    };
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    endpoint1.transportAddress.address[ 0 ] = 0x00;
+    endpoint1.transportAddress.address[ 1 ] = 0x01;
+    endpoint1.transportAddress.address[ 2 ] = 0x02;
+    endpoint1.transportAddress.address[ 3 ] = 0x03;
+    memset( &endpoint2, 0, sizeof( IceEndpoint_t ) );
+    endpoint2.transportAddress.address[ 0 ] = 0x03;
+    endpoint2.transportAddress.address[ 1 ] = 0x02;
+    endpoint2.transportAddress.address[ 2 ] = 0x01;
+    endpoint2.transportAddress.address[ 3 ] = 0x00;
+
+    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
+    memset( &localCandidate2, 0, sizeof( IceCandidate_t ) );
+    localCandidate2.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate2.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( &localCandidate2.endpoint, &endpoint2, sizeof( IceEndpoint_t ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate2,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates the handling of TURN packet failures when the
+ * TURN channel number doesn't match any candidate pair.
+ */
+void test_iceHandlTurnPacket_NoMatchTurnChannelNumber( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate1 = { 0 };
+    IceEndpoint_t endpoint1;
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+    uint8_t receivedBuffer[] = {
+        0x40, 0x01,
+        0x00, 0x01,
+        0x02, 0x03,
+    };
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    endpoint1.transportAddress.address[ 0 ] = 0x00;
+    endpoint1.transportAddress.address[ 1 ] = 0x01;
+    endpoint1.transportAddress.address[ 2 ] = 0x02;
+    endpoint1.transportAddress.address[ 3 ] = 0x03;
+
+    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
+    context.pCandidatePairs[ 0 ].turnChannelNumber = 0x40FF;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate1,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validates TURN packet handling when a matching candidate
+ * pair is found.
+ */
+void test_iceHandlTurnPacket_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate1 = { 0 };
+    IceEndpoint_t endpoint1;
+    const uint8_t * pTurnPayloadBuffer;
+    uint16_t turnPayloadBufferLength;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t result;
+    uint8_t receivedBuffer[] = {
+        0x40, 0x01,
+        0x00, 0x02,
+        0x02, 0x03,
+    };
+    size_t receivedBufferLength = sizeof( receivedBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    endpoint1.transportAddress.address[ 0 ] = 0x00;
+    endpoint1.transportAddress.address[ 1 ] = 0x01;
+    endpoint1.transportAddress.address[ 2 ] = 0x02;
+    endpoint1.transportAddress.address[ 3 ] = 0x03;
+
+    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
+    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
+
+    context.numCandidatePairs = 1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
+    context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4001;
+    result = Ice_HandleTurnPacket( &context,
+                                   &localCandidate1,
+                                   &( receivedBuffer[ 0 ] ),
+                                   receivedBufferLength,
+                                   &pTurnPayloadBuffer,
+                                   &turnPayloadBufferLength,
+                                   &pCandidatePair );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL_PTR( &( receivedBuffer[ ICE_TURN_CHANNEL_DATA_HEADER_LENGTH ] ),
+                           pTurnPayloadBuffer );
+    TEST_ASSERT_EQUAL( 2,
+                       turnPayloadBufferLength );
+    TEST_ASSERT_EQUAL_PTR( &( context.pCandidatePairs[ 0 ] ),
+                           pCandidatePair );
+}
+
+/*-----------------------------------------------------------*/
+
 // /**
 //  * @brief Validate ICE Handle Stun Packet fail functionality for Bad Parameters.
 //  */
