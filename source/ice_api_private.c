@@ -292,6 +292,25 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
             result = ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD;
         }
     }
+    if( result == ICE_RESULT_OK )
+    {
+        /* Validate relay candidate. Check for required relay extension and channel number limits */
+        if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+        {
+            if( pLocalCandidate->pRelayExtension == NULL )
+            {
+                result = ICE_RESULT_NULL_RELAY_EXTENSION;
+            }
+            else if( pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
+            {
+                result = ICE_RESULT_MAX_CHANNEL_NUMBER_ID;
+            }
+            else
+            {
+                /* Empty else marker. */
+            }
+        }
+    }
 
     if( result == ICE_RESULT_OK )
     {
@@ -330,6 +349,8 @@ IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
         if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
             pContext->pCandidatePairs[ candidatePairIndex ].state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
+            pContext->pCandidatePairs[ candidatePairIndex ].turnChannelNumber = pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber;
+            pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber++;
         }
         else
         {
@@ -1118,21 +1139,10 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
         {
-            if( pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber > ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX )
-            {
-                iceResult = ICE_RESULT_MAX_CHANNEL_NUMBER_ID;
-                break;
-            }
-
             iceResult = Ice_AddCandidatePair( pContext,
                                               pLocalCandidate,
                                               &( pContext->pRemoteCandidates[ i ] ),
                                               &pIceCandidatePair );
-            if( iceResult == ICE_RESULT_OK )
-            {
-                pIceCandidatePair->turnChannelNumber = pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber;
-                pLocalCandidate->pRelayExtension->nextAvailableTurnChannelNumber++;
-            }
         }
 
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_RELAY_CANDIDATE_ADDRESS;

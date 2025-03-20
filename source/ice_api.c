@@ -994,15 +994,6 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                                                    &( pContext->pLocalCandidates[ i ] ),
                                                    pRemoteCandidate,
                                                    &pIceCandidatePair );
-
-                    /* Update turn channel number when the local candidate type is relay. */
-                    if( ( result == ICE_RESULT_OK ) &&
-                        ( pContext->pLocalCandidates[ i ].candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
-                        ( pContext->pLocalCandidates[ i ].pRelayExtension != NULL ) )
-                    {
-                        pIceCandidatePair->turnChannelNumber = pContext->pLocalCandidates[ i ].pRelayExtension->nextAvailableTurnChannelNumber;
-                        pContext->pLocalCandidates[ i ].pRelayExtension->nextAvailableTurnChannelNumber++;
-                    }
                 }
             }
         }
