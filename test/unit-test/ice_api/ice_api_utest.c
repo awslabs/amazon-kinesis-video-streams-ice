@@ -5583,132 +5583,132 @@ void test_iceCreateNextPairRequest_SucceedNoRefreshPermissionNeeded( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Close Candidate Pair functionality for Bad Parameters.
-//  */
-// void test_iceCloseCandidatePair_BadParams( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceResult_t result;
-//     IceCandidatePair_t iceCandidatePair;
+/**
+ * @brief Validate ICE Close Candidate Pair functionality for Bad Parameters.
+ */
+void test_iceCloseCandidatePair_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidatePair_t iceCandidatePair;
 
-//     result = Ice_CloseCandidatePair( NULL,
-//                                      &( iceCandidatePair ) );
+    result = Ice_CloseCandidatePair( NULL,
+                                     &( iceCandidatePair ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 
-//     result = Ice_CloseCandidatePair( &( context ),
-//                                      NULL );
+    result = Ice_CloseCandidatePair( &( context ),
+                                     NULL );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Close Candidate Pair functionality for invalid candidate pair.
-//  */
-// void test_iceCloseCandidatePair_InvalidCandidatePair( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceResult_t result;
-//     IceCandidatePair_t iceCandidatePair;
-//     IceEndpoint_t endpoint = { 0 };
-//     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+/**
+ * @brief Validate ICE Close Candidate Pair functionality for invalid candidate pair.
+ */
+void test_iceCloseCandidatePair_InvalidCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidatePair_t iceCandidatePair;
+    IceEndpoint_t endpoint = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
 
-//     initInfo.isControlling = 0;
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     endpoint.isPointToPoint = 1;
-//     endpoint.transportAddress.family = 0x01;
-//     endpoint.transportAddress.port = 8080;
-//     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
-//     result = Ice_AddHostCandidate( &( context ),
-//                                    &( endpoint ) );
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
-//     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
-//     remoteCandidateInfo.priority = 1000;
-//     remoteCandidateInfo.pEndpoint = &( endpoint );
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
 
-//     result = Ice_AddRemoteCandidate( &( context ),
-//                                      &( remoteCandidateInfo ) );
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_CloseCandidatePair( &( context ),
-//                                      &( iceCandidatePair ) );
+    result = Ice_CloseCandidatePair( &( context ),
+                                     &( iceCandidatePair ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Close Candidate Pair functionality.
-//  */
-// void test_iceCloseCandidatePair_Success( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceResult_t result;
-//     IceEndpoint_t endpoint = { 0 };
-//     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+/**
+ * @brief Validate ICE Close Candidate Pair functionality.
+ */
+void test_iceCloseCandidatePair_Success( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
 
-//     initInfo.isControlling = 0;
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     endpoint.isPointToPoint = 1;
-//     endpoint.transportAddress.family = 0x01;
-//     endpoint.transportAddress.port = 8080;
-//     memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
-//     result = Ice_AddHostCandidate( &( context ),
-//                                    &( endpoint ) );
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
-//     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
-//     remoteCandidateInfo.priority = 1000;
-//     remoteCandidateInfo.pEndpoint = &( endpoint );
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
 
-//     result = Ice_AddRemoteCandidate( &( context ),
-//                                      &( remoteCandidateInfo ) );
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_CloseCandidatePair( &( context ),
-//                                      &( context.pCandidatePairs[0] ) );
+    result = Ice_CloseCandidatePair( &( context ),
+                                     &( context.pCandidatePairs[0] ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_FROZEN,
-//                        context.pCandidatePairs[0].state );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_FROZEN,
+                       context.pCandidatePairs[0].state );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Handle Stun Packet fail functionality for Bad Parameters.
