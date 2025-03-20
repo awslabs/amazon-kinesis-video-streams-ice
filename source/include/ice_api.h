@@ -10,9 +10,7 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
                                   const IceEndpoint_t * pEndpoint );
 
 IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
-                                             const IceEndpoint_t * pEndpoint,
-                                             uint8_t * pStunMessageBuffer,
-                                             size_t * pStunMessageBufferLength );
+                                             const IceEndpoint_t * pEndpoint );
 
 IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
                                    const IceEndpoint_t * pEndpoint,

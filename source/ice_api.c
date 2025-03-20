@@ -786,17 +786,13 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
-                                             const IceEndpoint_t * pEndpoint,
-                                             uint8_t * pStunMessageBuffer,
-                                             size_t * pStunMessageBufferLength )
+                                             const IceEndpoint_t * pEndpoint )
 {
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pServerReflexiveCandidate = NULL;
 
     if( ( pContext == NULL ) ||
-        ( pEndpoint == NULL ) ||
-        ( pStunMessageBuffer == NULL ) ||
-        ( pStunMessageBufferLength == NULL ) )
+        ( pEndpoint == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
@@ -825,14 +821,6 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
         pServerReflexiveCandidate->state = ICE_CANDIDATE_STATE_NEW;
 
         pServerReflexiveCandidate->candidateId = pContext->nextCandidateId++;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        result = CreateServerReflexiveBindingRequest( pContext,
-                                                      pServerReflexiveCandidate,
-                                                      pStunMessageBuffer,
-                                                      pStunMessageBufferLength );
     }
 
     return result;
