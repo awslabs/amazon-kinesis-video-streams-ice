@@ -107,11 +107,13 @@ typedef enum IceSocketProtocol
 
 typedef enum IceResult
 {
+    /* Info codes. */
     ICE_RESULT_OK,
+    ICE_RESULT_NO_NEXT_ACTION,
+    ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
 
     /* Error code. */
     ICE_RESULT_BAD_PARAM,
-    ICE_RESULT_NO_NEXT_ACTION,
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
     ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
@@ -139,9 +141,6 @@ typedef enum IceResult
     ICE_RESULT_TURN_LENGTH_INVALID,
     ICE_RESULT_DATA_TOO_SMALL,
     ICE_RESULT_NULL_RELAY_EXTENSION,
-
-    /* User info. */
-    ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
 } IceResult_t;
 
 typedef enum IceHandleStunPacketResult

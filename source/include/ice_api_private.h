@@ -44,6 +44,42 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
                                                          uint8_t * pStunMessageBuffer,
                                                          size_t * pStunMessageBufferLength );
 
+IceResult_t Ice_CreateServerReflexiveBindingRequest( IceContext_t * pContext,
+                                                     IceCandidate_t * pIceCandidate,
+                                                     uint8_t * pStunMessageBuffer,
+                                                     size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateAllocationRequest( IceContext_t * pContext,
+                                         IceCandidate_t * pIceCandidate,
+                                         uint8_t * pStunMessageBuffer,
+                                         size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateRefreshRequest( IceContext_t * pContext,
+                                      IceCandidate_t * pIceCandidate,
+                                      uint32_t lifetime,
+                                      uint8_t * pStunMessageBuffer,
+                                      size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateRequestForCreatePermission( IceContext_t * pContext,
+                                                  IceCandidatePair_t * pIceCandidatePair,
+                                                  uint8_t * pStunMessageBuffer,
+                                                  size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateRequestForChannelBind( IceContext_t * pContext,
+                                             IceCandidatePair_t * pIceCandidatePair,
+                                             uint8_t * pStunMessageBuffer,
+                                             size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateTurnRefreshRequest( IceContext_t * pContext,
+                                          IceCandidate_t * pIceCandidate,
+                                          uint8_t * pStunMessageBuffer,
+                                          size_t * pStunMessageBufferLength );
+
+IceResult_t Ice_CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
+                                                    IceCandidatePair_t * pIceCandidatePair,
+                                                    uint8_t * pStunMessageBuffer,
+                                                    size_t * pStunMessageBufferLength );
+
 IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                        StunContext_t * pStunCtx,
                                                        const uint8_t * pPassword,
