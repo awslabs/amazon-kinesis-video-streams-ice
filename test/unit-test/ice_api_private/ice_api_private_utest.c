@@ -1106,6 +1106,338 @@ void test_iceCreateRequestForConnectivityCheck_TurnChannelHeader( void )
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Validate ICE Create Stun Packet for nomination of valid candidate pair fail functionality for Bad Parameters.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair = { 0 };
+    uint8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+
+    result = Ice_CreateRequestForNominatingCandidatePair( NULL,
+                                                          &( candidatePair ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          NULL,
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( candidatePair ),
+                                                          NULL,
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( candidatePair ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for nomination of valid candidate pair fail functionality for Stun Error.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunError( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 10 ]; /* Too small to be able to contain a Stun message. */
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( context.pCandidatePairs[ 0 ] ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet for nomination of valid candidate pair functionality.
+ */
+void test_iceCreateRequestForNominatingCandidatePair( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 76 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x4C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 0x7E0000FF. */
+        0x7E, 0x00, 0x00, 0xFF,
+        /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
+        0x80, 0x2A, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04,0x03, 0x02, 0x01, 0x00,
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
+        0x00, 0x25, 0x00, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn. */
+        0x72, 0x64, 0x6D, 0x2B,
+        0x55, 0x77, 0xF4, 0x23,
+        0x73, 0x72, 0x75, 0x6C,
+        0x76, 0x61, 0x74, 0x62,
+        0x65, 0x66, 0x7E, 0x6E,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x1035F9DB as calculated by testCrc32Fxn. */
+        0x10, 0x35, 0xF9, 0xDB,
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( context.pCandidatePairs[ 0 ] ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create Stun Packet with TURN header
+ * for nominating request.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_TurnChannelHeader( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    uint8_t expectedStunMessage[] =
+    {
+        /* STUN header: Message Type = Binding Request (0x0001), Length = 76 bytes (excluding 20 bytes header). */
+        0x00, 0x01, 0x00, 0x4C,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID as generated by testRandomFxn. */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute type = USERNAME (0x0006), Length = 16 bytes. */
+        0x00, 0x06, 0x00, 0x10,
+        /* Attribute Value = "combinedUsername". */
+        0x63, 0x6F, 0x6D, 0x62, 0x69, 0x6E, 0x65, 0x64,
+        0x55, 0x73, 0x65, 0x72, 0x6E, 0x61, 0x6D, 0x65,
+        /* Attribute type = PRIORITY (0x0024), Length = 4 bytes. */
+        0x00, 0x24, 0x00, 0x04,
+        /* Attribute Value = 0x000000FF. */
+        0x00, 0x00, 0x00, 0xFF,
+        /* Attribute type = ICE-CONTROLLING (0x802A), Length = 8 bytes. */
+        0x80, 0x2A, 0x00, 0x08,
+        /* Attribute Value = 0x0706050403020100. */
+        0x07, 0x06, 0x05, 0x04,0x03, 0x02, 0x01, 0x00,
+        /* Attribute Type = USE-CANDIDATE (0x0025), Length = 0 bytes. */
+        0x00, 0x25, 0x00, 0x00,
+        /* Attribute type = MESSAGE-INTEGRITY (0x0008), Length = 20 bytes. */
+        0x00, 0x08, 0x00, 0x14,
+        /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value = 0xB5F5C42F as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t expectedStunMessageLength = sizeof( expectedStunMessage );
+    uint8_t expectedTurnChannelHeader[] =
+    {
+        /* Channel Number */
+        0x40, 0x10,
+        /* Content Length = 0x60 ( 0x4C + STUN header 20 bytes ) */
+        0x00, 0x60
+    };
+    size_t expectedTurnChannelHeaderLength = sizeof( expectedTurnChannelHeader );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    
+    context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
+    context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endpoint ),
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_TYPE_RELAY,
+                       context.pLocalCandidates[ 0 ].candidateType );
+    TEST_ASSERT_EQUAL( 0,
+                       context.pLocalCandidates[ 0 ].isRemote );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_ALLOCATING,
+                       context.pLocalCandidates[ 0 ].state );
+    TEST_ASSERT_NOT_EQUAL( NULL,
+                           context.pLocalCandidates[ 0 ].pRelayExtension );
+
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[ 0 ].pRelayExtension->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numRemoteCandidates );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numCandidatePairs );
+
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+
+    result = Ice_CreateRequestForNominatingCandidatePair( &( context ),
+                                                          &( context.pCandidatePairs[ 0 ] ),
+                                                          &( stunMessageBuffer[ 0 ] ),
+                                                          &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( expectedStunMessageLength + expectedTurnChannelHeaderLength,
+                       stunMessageBufferLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedTurnChannelHeader[ 0 ] ),
+                                   &( stunMessageBuffer[ 0 ] ),
+                                   expectedTurnChannelHeaderLength );
+    TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedStunMessage[ 0 ] ),
+                                   &( stunMessageBuffer[ expectedTurnChannelHeaderLength ] ),
+                                   expectedStunMessageLength );
+}
+
+/*-----------------------------------------------------------*/
+
 // /**
 //  * @brief Validate ICE Add Candidate Pair fail functionality for NULL stun context.
 //  */
