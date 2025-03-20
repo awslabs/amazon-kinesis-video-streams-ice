@@ -227,16 +227,16 @@ typedef struct IceEndpoint
 
 typedef struct IceServerInfo
 {
-    uint8_t userName[ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH];                                        //!< Username for the server
-    size_t userNameLength;                                                                                          //!< Length of username
-    uint8_t password[ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH];                                         //!< Password for the server
-    size_t passwordLength;                                                                                          //!< Length of password
-    uint8_t nonce[ICE_SERVER_CONFIG_MAX_NONCE_LENGTH];                                         //!< Nonce for the server
-    size_t nonceLength;                                                                                          //!< Length of Nonce
-    uint8_t realm[ICE_SERVER_CONFIG_MAX_REALM_LENGTH];                                         //!< Realm for the server
-    size_t realmLength;                                                                                          //!< Length of realm
-    uint8_t longTermPassword[ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH];                                         //!< Long term password for the server
-    size_t longTermPasswordLength;                                                                                          //!< Length of long term password
+    const uint8_t * pUserName;                                                 //!< Username for the server
+    size_t userNameLength;                                                     //!< Length of username
+    const uint8_t * pPassword;                                                 //!< Password for the server
+    size_t passwordLength;                                                     //!< Length of password
+    uint8_t nonce[ICE_SERVER_CONFIG_MAX_NONCE_LENGTH];                         //!< Nonce for the server
+    size_t nonceLength;                                                        //!< Length of Nonce
+    uint8_t realm[ICE_SERVER_CONFIG_MAX_REALM_LENGTH];                         //!< Realm for the server
+    size_t realmLength;                                                        //!< Length of realm
+    uint8_t longTermPassword[ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH]; //!< Long term password for the server
+    size_t longTermPasswordLength;                                             //!< Length of long term password
 } IceServerInfo_t;
 
 typedef struct IceCandidate

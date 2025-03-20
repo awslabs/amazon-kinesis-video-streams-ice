@@ -141,7 +141,7 @@ static IceResult_t CreateAllocationRequest( IceContext_t * pContext,
     {
         if( pIceCandidate->iceServerInfo.userNameLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.userName, pIceCandidate->iceServerInfo.userNameLength );
+            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.pUserName, pIceCandidate->iceServerInfo.userNameLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -262,7 +262,7 @@ static IceResult_t CreateRefreshRequest( IceContext_t * pContext,
     {
         if( pIceCandidate->iceServerInfo.userNameLength > 0U )
         {
-            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.userName, pIceCandidate->iceServerInfo.userNameLength );
+            stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidate->iceServerInfo.pUserName, pIceCandidate->iceServerInfo.userNameLength );
 
             if( stunResult != STUN_RESULT_OK )
             {
@@ -387,7 +387,7 @@ static IceResult_t CreateRequestForCreatePermission( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.userName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.pUserName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -504,7 +504,7 @@ static IceResult_t CreateRequestForChannelBind( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.userName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
+        stunResult = StunSerializer_AddAttributeUsername( &stunCtx, pIceCandidatePair->pLocalCandidate->iceServerInfo.pUserName, pIceCandidatePair->pLocalCandidate->iceServerInfo.userNameLength );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -553,7 +553,6 @@ static IceResult_t CreateTurnRefreshRequest( IceContext_t * pContext,
                                              size_t * pStunMessageBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
-    printf("current+grace period time: %lu, expiration time: %lu\n", pContext->getCurrentTimeSecondsFxn()+ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS, pIceCandidate->turnAllocationExpirationSeconds);
 
     if( ( pContext == NULL ) || ( pIceCandidate == NULL ) || ( pStunMessageBuffer == NULL ) || ( pStunMessageBufferLength == NULL ) )
     {
@@ -572,7 +571,6 @@ static IceResult_t CreateTurnRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        printf("CreateRefreshRequest\n");
         result = CreateRefreshRequest( pContext,
                                        pIceCandidate,
                                        ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
@@ -623,7 +621,6 @@ static IceResult_t CreateTurnRefreshPermissionRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        printf("CreateRequestForCreatePermission\n");
         result = CreateRequestForCreatePermission( pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageBuffer,
@@ -812,9 +809,9 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
 
 IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
                                    const IceEndpoint_t * pEndpoint,
-                                   char * pUsername,
+                                   const char * pUsername,
                                    size_t usernameLength,
-                                   char * pPassword,
+                                   const char * pPassword,
                                    size_t passwordLength )
 {
     IceResult_t result = ICE_RESULT_OK;
@@ -864,10 +861,10 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        memcpy( pRelayCandidate->iceServerInfo.userName, pUsername, ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH );
+        pRelayCandidate->iceServerInfo.pUserName = pUsername;
         pRelayCandidate->iceServerInfo.userNameLength = usernameLength;
 
-        memcpy( pRelayCandidate->iceServerInfo.password, pPassword, ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH );
+        pRelayCandidate->iceServerInfo.pPassword = pPassword;
         pRelayCandidate->iceServerInfo.passwordLength = passwordLength;
 
         pRelayCandidate->candidateType = ICE_CANDIDATE_TYPE_RELAY;
@@ -1082,7 +1079,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         applicationDataLength = *pStunMessageBufferLength;
 
         /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
-        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
             needChannelDataHeader = 1U;
             applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
@@ -1202,7 +1199,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
         applicationDataLength = *pStunMessageBufferLength;
 
         /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
-        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
             needChannelDataHeader = 1U;
             applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
@@ -1315,7 +1312,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
         applicationDataLength = *pStunMessageBufferLength;
 
         /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
-        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY)
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
             needChannelDataHeader = 1U;
             applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
@@ -1978,7 +1975,7 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
     {
         IceTurnChannelMessageHeader_t * pTurnChannelMessageHdr = ( IceTurnChannelMessageHeader_t * ) pOutputBuffer;
 
-        /* Append the channel number and payload length, followed by the payload itself.  
+        /* Append the channel number and payload length, followed by the payload itself.
          * Finally, add padding to ensure the packet is 4-byte aligned. */
         memcpy( pOutputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, pInputBuffer, inputBufferLength );
         pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->channelNumber, pIceCandidatePair->turnChannelNumber );

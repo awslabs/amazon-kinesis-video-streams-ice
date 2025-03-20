@@ -44,9 +44,9 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     {
         snprintfRetVal = snprintf( stringBuffer, bufferLength,
                                    "%.*s:%.*s:%.*s",
-                                   ( int ) pIceServerInfo->userNameLength, pIceServerInfo->userName,
+                                   ( int ) pIceServerInfo->userNameLength, pIceServerInfo->pUserName,
                                    ( int ) pIceServerInfo->realmLength, pIceServerInfo->realm,
-                                   ( int ) pIceServerInfo->passwordLength, pIceServerInfo->password );
+                                   ( int ) pIceServerInfo->passwordLength, pIceServerInfo->pPassword );
 
         /* LCOV_EXCL_START */
         if( snprintfRetVal < 0 )
@@ -749,7 +749,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                     break;
                 }
             }
-    
+
             /* If we do not have a remote candidate with the same transport address
              * as pRemoteCandidateEndpoint->transportAddress, add a new remote
              * candidate with this address. */
@@ -759,7 +759,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                 remoteCandidateInfo.priority = deserializePacketInfo.priority;
                 remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
                 remoteCandidateInfo.pEndpoint = pRemoteCandidateEndpoint;
-    
+
                 iceResult = Ice_AddRemoteCandidate( pContext,
                                                     &( remoteCandidateInfo ) );
             }
@@ -804,7 +804,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
             pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
             pContext->pNominatePairs = pIceCandidatePair;
             iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
-                                                            STUN_HEADER_TRANSACTION_ID_LENGTH );
+                                                             STUN_HEADER_TRANSACTION_ID_LENGTH );
             if( iceResult != ICE_RESULT_OK )
             {
                 handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
@@ -1104,7 +1104,6 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
         pLocalCandidate->endpoint.isPointToPoint = 0;
         pLocalCandidate->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MIN;
         pLocalCandidate->turnAllocationExpirationSeconds = pContext->getCurrentTimeSecondsFxn() + deserializePacketInfo.lifetimeSeconds;
-        printf("current time: %lu, expiration time: %lu, lifetime: %u\n", pContext->getCurrentTimeSecondsFxn(), pLocalCandidate->turnAllocationExpirationSeconds, deserializePacketInfo.lifetimeSeconds);
 
         pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 

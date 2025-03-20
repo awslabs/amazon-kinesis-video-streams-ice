@@ -16,9 +16,9 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
 
 IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
                                    const IceEndpoint_t * pEndpoint,
-                                   char * pUsername,
+                                   const char * pUsername,
                                    size_t usernameLength,
-                                   char * pPassword,
+                                   const char * pPassword,
                                    size_t passwordLength );
 
 IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
