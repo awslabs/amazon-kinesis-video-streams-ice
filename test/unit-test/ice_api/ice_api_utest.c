@@ -5710,6 +5710,266 @@ void test_iceCloseCandidatePair_Success( void )
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Validate ICE Close Candidate functionality for Bad Parameters.
+ */
+void test_iceCloseCandidate_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidate_t iceCandidate;
+
+    result = Ice_CloseCandidate( NULL,
+                                 &( iceCandidate ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    result = Ice_CloseCandidate( &( context ),
+                                 NULL );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate functionality for invalid candidate.
+ */
+void test_iceCloseCandidate_InvalidCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceCandidate_t iceCandidate;
+    IceEndpoint_t endpoint = { 0 };
+
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    result = Ice_CloseCandidate( &( context ),
+                                 &( iceCandidate ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate functionality with host candidate.
+ */
+void test_iceCloseCandidate_HostSuccess( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+
+    result = Ice_CloseCandidate( &( context ),
+                                 &( context.pLocalCandidates[ 0 ] ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_INVALID,
+                       context.pLocalCandidates[ 0 ].state );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate functionality with relay candidate
+ * in allocating state.
+ */
+void test_iceCloseCandidate_RelayAllocatingSuccess( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endpoint ),
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+    result = Ice_CloseCandidate( &( context ),
+                                 &( context.pLocalCandidates[ 0 ] ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_RELEASING,
+                       context.pLocalCandidates[ 0 ].state );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate functionality with relay candidate
+ * in valid state.
+ */
+void test_iceCloseCandidate_RelayValidSuccess( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endpoint ),
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
+
+    result = Ice_CloseCandidate( &( context ),
+                                 &( context.pLocalCandidates[ 0 ] ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_RELEASING,
+                       context.pLocalCandidates[ 0 ].state );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Close Candidate functionality with relay candidate
+ * in released state.
+ */
+void test_iceCloseCandidate_RelayReleasedSuccess( void )
+{
+    IceContext_t context = { 0 };
+    IceResult_t result;
+    IceEndpoint_t endpoint = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0x01;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddRelayCandidate( &( context ),
+                                    &( endpoint ),
+                                    pUsername,
+                                    usernameLength,
+                                    pPassword,
+                                    passwordLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( 1,
+                       context.numLocalCandidates );
+
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_RELEASED;
+
+    result = Ice_CloseCandidate( &( context ),
+                                 &( context.pLocalCandidates[ 0 ] ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_RELEASED,
+                       context.pLocalCandidates[ 0 ].state );
+}
+
+/*-----------------------------------------------------------*/
+
 // /**
 //  * @brief Validate ICE Handle Stun Packet fail functionality for Bad Parameters.
 //  */
