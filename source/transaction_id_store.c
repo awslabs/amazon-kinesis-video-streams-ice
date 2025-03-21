@@ -57,7 +57,7 @@ TransactionIdStoreResult_t TransactionIdStore_Insert( TransactionIdStore_t * pSt
                 break;
             }
         }
-        
+
         if( i == pStore->numTransactionIdSlots )
         {
             result = TRANSACTION_ID_STORE_RESULT_STORE_FULL;

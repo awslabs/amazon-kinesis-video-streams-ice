@@ -1005,6 +1005,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        size_t * pStunMessageBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
+    uint64_t currentTimeSeconds;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1073,17 +1074,43 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
             break;
 
             case ICE_CANDIDATE_PAIR_STATE_SUCCEEDED:
-                result = Ice_CreateTurnRefreshRequest( pContext,
+                currentTimeSeconds = pContext->getCurrentTimeSecondsFxn();
+
+                if( pIceCandidatePair->pLocalCandidate == NULL )
+                {
+                    result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
+                }
+                else if( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
+                {
+                    result = ICE_RESULT_NO_NEXT_ACTION;
+                }
+                else if( pIceCandidatePair->pLocalCandidate->pRelayExtension == NULL )
+                {
+                    /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
+                    result = ICE_RESULT_NULL_RELAY_EXTENSION;
+                }
+                else if( pIceCandidatePair->pLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
+                {
+                    result = ICE_RESULT_NO_NEXT_ACTION;
+                }
+                else if( currentTimeSeconds + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->pLocalCandidate->pRelayExtension->turnAllocationExpirationSeconds )
+                {
+                    result = Ice_CreateRefreshRequest( pContext,
                                                        pIceCandidatePair->pLocalCandidate,
+                                                       ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
                                                        pStunMessageBuffer,
                                                        pStunMessageBufferLength );
-
-                if( result == ICE_RESULT_NO_NEXT_ACTION )
+                }
+                else if( currentTimeSeconds + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->turnPermissionExpirationSeconds )
                 {
-                    result = Ice_CreateTurnRefreshPermissionRequest( pContext,
-                                                                     pIceCandidatePair,
-                                                                     pStunMessageBuffer,
-                                                                     pStunMessageBufferLength );
+                    result = Ice_CreateRequestForCreatePermission( pContext,
+                                                                   pIceCandidatePair,
+                                                                   pStunMessageBuffer,
+                                                                   pStunMessageBufferLength );
+                }
+                else
+                {
+                    result = ICE_RESULT_NO_NEXT_ACTION;
                 }
                 break;
 

@@ -3789,9 +3789,9 @@ void test_iceCreateNextPairRequest_Valid_NoNextAction( void )
 
 /**
  * @brief Validate Ice_CreateNextPairRequest functionality return
- * ICE_RESULT_NO_NEXT_ACTION when the pair is under succeed state.
+ * ICE_RESULT_NO_NEXT_ACTION when there is no refresh timeout expired.
  */
-void test_iceCreateNextPairRequest_Succeed_NoNextAction( void )
+void test_iceCreateNextPairRequest_Succeed_NoRefreshNeeded( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -3808,10 +3808,133 @@ void test_iceCreateNextPairRequest_Succeed_NoNextAction( void )
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    localCandidate.pRelayExtension->turnAllocationExpirationSeconds = testGetCurrentTime() + 0xFFFF;
 
     memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    result = Ice_CreateNextPairRequest( &( context ),
+                                        &( candidatePair ),
+                                        stunMessageBuffer,
+                                        &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateNextPairRequest functionality return
+ * ICE_RESULT_INVALID_CANDIDATE_PAIR when local candidate pointer is NULL.
+ */
+void test_iceCreateNextPairRequest_Succeed_NullLocalCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidatePair_t candidatePair;
+    uint8_t stunMessageBuffer[ 96 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+    candidatePair.pLocalCandidate = NULL;
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    result = Ice_CreateNextPairRequest( &( context ),
+                                        &( candidatePair ),
+                                        stunMessageBuffer,
+                                        &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateNextPairRequest functionality return
+ * ICE_RESULT_NO_NEXT_ACTION when pair state is succeeded but local
+ * candidate is not relay.
+ */
+void test_iceCreateNextPairRequest_Succeed_NotRelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceCandidatePair_t candidatePair;
+    uint8_t stunMessageBuffer[ 96 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.priority = 1000;
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
+
+    result = Ice_CreateNextPairRequest( &( context ),
+                                        &( candidatePair ),
+                                        stunMessageBuffer,
+                                        &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateNextPairRequest functionality return
+ * ICE_RESULT_NO_NEXT_ACTION when pair state is succeeded but local
+ * candidate doesn't have relay extension.
+ */
+void test_iceCreateNextPairRequest_Succeed_NullRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceCandidatePair_t candidatePair;
+    uint8_t stunMessageBuffer[ 96 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.priority = 1000;
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
+    localCandidate.pRelayExtension = NULL;
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.turnPermissionExpirationSeconds = testGetCurrentTime() + 0xFFFF;
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -5706,6 +5829,7 @@ void test_iceCreateNextPairRequest_SucceedPermissionNeeded( void )
     context.cryptoFunctions.randomFxn( candidatePair.transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     context.numRelayExtensions = 1;
     localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
     localCandidate.pRelayExtension->turnAllocationExpirationSeconds = testGetCurrentTime() + 0xFFFF;
