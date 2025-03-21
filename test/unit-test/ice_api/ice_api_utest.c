@@ -14660,55 +14660,55 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_TransactionIdNotFound( void
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Local Candidate Count fail functionality for Bad Parameters.
-//  */
-// void test_iceGetLocalCandidateCount_BadParams( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numLocalCandidates = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Local Candidate Count fail functionality for Bad Parameters.
+ */
+void test_iceGetLocalCandidateCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numLocalCandidates = 0;
+    IceResult_t result;
 
-//     result = Ice_GetLocalCandidateCount( NULL,
-//                                          &( numLocalCandidates ) );
+    result = Ice_GetLocalCandidateCount( NULL,
+                                         &( numLocalCandidates ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 
-//     result = Ice_GetLocalCandidateCount( &( context ),
-//                                          NULL );
+    result = Ice_GetLocalCandidateCount( &( context ),
+                                         NULL );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Local Candidate Count functionality.
-//  */
-// void test_iceGetLocalCandidateCount( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numLocalCandidates = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Local Candidate Count functionality.
+ */
+void test_iceGetLocalCandidateCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numLocalCandidates = 0;
+    IceResult_t result;
 
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_GetLocalCandidateCount( &( context ),
-//                                          &( numLocalCandidates ) );
+    result = Ice_GetLocalCandidateCount( &( context ),
+                                         &( numLocalCandidates ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( numLocalCandidates,
-//                        context.numLocalCandidates );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numLocalCandidates,
+                       context.numLocalCandidates );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Get Remote Candidate Count fail functionality for Bad Parameters.
