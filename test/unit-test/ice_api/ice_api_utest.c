@@ -3941,7 +3941,7 @@ void test_iceCreateNextPairRequest_Succeed_NullRelayExtension( void )
                                         stunMessageBuffer,
                                         &( stunMessageBufferLength ) );
 
-    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
                        result );
 }
 

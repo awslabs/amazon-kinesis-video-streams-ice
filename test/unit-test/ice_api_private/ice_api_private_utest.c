@@ -1449,6 +1449,236 @@ void test_iceCreateRequestForNominatingCandidatePair_TurnChannelHeader( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Validate ICE Create TURN refresh packet but the buffer
+ * is too small to store STUN header.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToInit( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+    IceCandidate_t localCandidate = { 0 };
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+
+    result = Ice_CreateRefreshRequest( &( context ),
+                                       &( localCandidate ),
+                                       0,
+                                       &( stunMessageBuffer[ 0 ] ),
+                                       &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create TURN refresh packet but the buffer
+ * is too small to store STUN attribute lifetime.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddLifetime( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t stunMessageBuffer[ 20 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+    IceCandidate_t localCandidate = { 0 };
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+
+    result = Ice_CreateRefreshRequest( &( context ),
+                                       &( localCandidate ),
+                                       0,
+                                       &( stunMessageBuffer[ 0 ] ),
+                                       &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create TURN refresh packet but the buffer
+ * is too small to store STUN attribute username.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddUsername( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t stunMessageBuffer[ 28 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+    IceCandidate_t localCandidate = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+            pUsername,
+            usernameLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+            pPassword,
+            passwordLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
+
+    result = Ice_CreateRefreshRequest( &( context ),
+                                       &( localCandidate ),
+                                       0,
+                                       &( stunMessageBuffer[ 0 ] ),
+                                       &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_USERNAME,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create TURN refresh packet but the buffer
+ * is too small to store STUN attribute realm.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddRealm( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t stunMessageBuffer[ 40 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+    IceCandidate_t localCandidate = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+            pUsername,
+            usernameLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+            pPassword,
+            passwordLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.realm[0],
+            pRealm,
+            realmLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.nonce[0],
+            pNonce,
+            nonceLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.nonceLength = nonceLength;
+
+    result = Ice_CreateRefreshRequest( &( context ),
+                                       &( localCandidate ),
+                                       0,
+                                       &( stunMessageBuffer[ 0 ] ),
+                                       &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REALM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate ICE Create TURN refresh packet but the buffer
+ * is too small to store STUN attribute nonce.
+ */
+void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddNonce( void )
+{
+    IceContext_t context = { 0 };
+    uint8_t stunMessageBuffer[ 52 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+    IceCandidate_t localCandidate = { 0 };
+    char * pUsername = "username";
+    size_t usernameLength = strlen( pUsername );
+    char * pPassword = "password";
+    size_t passwordLength = strlen( pPassword );
+    char * pRealm = "realm";
+    size_t realmLength = strlen( pRealm );
+    char * pNonce = "nonce";
+    size_t nonceLength = strlen( pNonce );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+            pUsername,
+            usernameLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+            pPassword,
+            passwordLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.realm[0],
+            pRealm,
+            realmLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.realmLength = realmLength;
+    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.nonce[0],
+            pNonce,
+            nonceLength );
+    localCandidate.pRelayExtension->iceRelayServerInfo.nonceLength = nonceLength;
+
+    result = Ice_CreateRefreshRequest( &( context ),
+                                       &( localCandidate ),
+                                       0,
+                                       &( stunMessageBuffer[ 0 ] ),
+                                       &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_NONCE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate ICE Add Candidate Pair fail functionality for NULL stun context.
  */
 void test_iceFinalizeStunPacket_StunError_NullStunContext( void )
