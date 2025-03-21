@@ -2782,6 +2782,40 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_MissInfo_Succes
 
 /**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * ICE_RESULT_NULL_RELAY_EXTENSION when it fail to generate allocate request
+ * because of missing relay extension buffer.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_NoRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 2 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+    localCandidate.pRelayExtension = NULL;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
  * ICE_RESULT_STUN_ERROR when it fail to generate allocate request
  * because the buffer is too small for STUN header.
  */
