@@ -3377,6 +3377,40 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_ReuseTransaction
 
 /**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
+ * failure when it's a relay candidate asking for releasing
+ * but relay extension is NULL.
+ */
+void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_NoRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 36 ];
+    size_t stunMessageBufferLength = 36;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
+    localCandidate.pRelayExtension = NULL;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest returns
  * ICE_RESULT_NO_NEXT_ACTION when it's a relay candidate but
  * it's released.
  */
