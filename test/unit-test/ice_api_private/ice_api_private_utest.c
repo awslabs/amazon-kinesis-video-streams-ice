@@ -129,16 +129,16 @@ IceResult_t testCrc32Fxn_Fixed( uint32_t initialResult,
 /*-----------------------------------------------------------*/
 
 IceResult_t testCrc32Fxn_ReturnError( uint32_t initialResult,
-    const uint8_t * pBuffer,
-    size_t bufferLength,
-    uint32_t * pCalculatedCrc32 )
+                                      const uint8_t * pBuffer,
+                                      size_t bufferLength,
+                                      uint32_t * pCalculatedCrc32 )
 {
-( void ) initialResult;
-( void ) pBuffer;
-( void ) bufferLength;
-( void ) pCalculatedCrc32;
+    ( void ) initialResult;
+    ( void ) pBuffer;
+    ( void ) bufferLength;
+    ( void ) pCalculatedCrc32;
 
-return ICE_RESULT_CRC32_ERROR;
+    return ICE_RESULT_CRC32_ERROR;
 }
 
 /*-----------------------------------------------------------*/
@@ -1046,7 +1046,7 @@ void test_iceCreateRequestForConnectivityCheck_TurnChannelHeader( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
@@ -1378,7 +1378,7 @@ void test_iceCreateRequestForNominatingCandidatePair_TurnChannelHeader( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
-    
+
     context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
@@ -2246,32 +2246,32 @@ void test_Ice_CreateTurnRefreshPermissionRequest_PermissionTimeout_Success( void
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Add Candidate Pair fail functionality for NULL stun context.
-//  */
-// void test_iceFinalizeStunPacket_StunError_NullStunContext( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t bufferLength = 128;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Add Candidate Pair fail functionality for NULL stun context.
+ */
+void test_iceFinalizeStunPacket_StunError_NullStunContext( void )
+{
+    IceContext_t context = { 0 };
+    size_t bufferLength = 128;
+    IceResult_t result;
 
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_FinalizeStunPacket( &( context ),
-//                                      NULL,
-//                                      context.creds.pLocalPassword,
-//                                      context.creds.localPasswordLength,
-//                                      &( bufferLength ) );
+    result = Ice_FinalizeStunPacket( &( context ),
+                                     NULL,
+                                     context.creds.pLocalPassword,
+                                     context.creds.localPasswordLength,
+                                     &( bufferLength ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Same Transport Address check fail functionality for Bad Parameters.

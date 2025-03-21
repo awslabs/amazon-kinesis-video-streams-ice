@@ -153,7 +153,7 @@ void test_iceTransactionIdStore_Remove_TransactionIDNotFound( void )
 
     result = TransactionIdStore_Init( &( transactionIdStore ),
                                       &( transactionIdSlots[ 0 ] ),
-                                      transactionIdMaxNum  );
+                                      transactionIdMaxNum );
 
     TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_OK,
                        result );
