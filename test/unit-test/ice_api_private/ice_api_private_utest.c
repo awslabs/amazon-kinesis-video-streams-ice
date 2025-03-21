@@ -2460,92 +2460,92 @@ void test_iceIsSameIPAddress_DifferentIpAddress( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Compute Candidate Priority check fail functionality.
-//  */
-// void test_iceComputeCandidatePriority_Invalid( void )
-// {
-//     IceCandidateType_t candidateType;
-//     uint8_t isPointToPoint;
-//     uint64_t result;
+/**
+ * @brief Validate ICE Compute Candidate Priority check fail functionality.
+ */
+void test_iceComputeCandidatePriority_Invalid( void )
+{
+    IceCandidateType_t candidateType;
+    uint8_t isPointToPoint;
+    uint64_t result;
 
-//     candidateType = 5; /* Unkown Type. */
-//     isPointToPoint = 1;
+    candidateType = 5; /* Unkown Type. */
+    isPointToPoint = 1;
 
-//     /* Priority calculation formula:
-//      * priority = ( 2^24 ) * ( type preference ) +
-//      *            ( 2^8 )  * ( local preference) +
-//      *            ( 2^0 )  * ( 256 - component ID ).
-//      *
-//      * In this test,
-//      * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
-//      */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
+     */
 
-//     result = Ice_ComputeCandidatePriority( candidateType,
-//                                            isPointToPoint );
+    result = Ice_ComputeCandidatePriority( candidateType,
+                                           isPointToPoint );
 
-//     TEST_ASSERT_EQUAL( 255,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 255,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Compute Candidate Priority check functionality for Peer Reflexive Candidate Type.
-//  */
-// void test_iceComputeCandidatePriority_PeerReflexive( void )
-// {
-//     IceCandidateType_t candidateType;
-//     uint8_t isPointToPoint;
-//     uint64_t result;
+/**
+ * @brief Validate ICE Compute Candidate Priority check functionality for Peer Reflexive Candidate Type.
+ */
+void test_iceComputeCandidatePriority_PeerReflexive( void )
+{
+    IceCandidateType_t candidateType;
+    uint8_t isPointToPoint;
+    uint64_t result;
 
-//     candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
-//     isPointToPoint = 1;
+    candidateType = ICE_CANDIDATE_TYPE_PEER_REFLEXIVE;
+    isPointToPoint = 1;
 
-//     /* Priority calculation formula:
-//      * priority = ( 2^24 ) * ( type preference ) +
-//      *            ( 2^8 )  * ( local preference) +
-//      *            ( 2^0 )  * ( 256 - component ID ).
-//      *
-//      * In this test,
-//      * priority = ( 2^24 ) * ( 110 ) + ( 2^8 ) * ( 0 ) + 255 = 1845494015.
-//      */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 110 ) + ( 2^8 ) * ( 0 ) + 255 = 1845494015.
+     */
 
-//     result = Ice_ComputeCandidatePriority( candidateType,
-//                                            isPointToPoint );
+    result = Ice_ComputeCandidatePriority( candidateType,
+                                           isPointToPoint );
 
-//     TEST_ASSERT_EQUAL( 1845494015,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 1845494015,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Compute Candidate Priority check functionality for Relayed Candidate Type.
-//  */
-// void test_iceComputeCandidatePriority_Relayed( void )
-// {
-//     IceCandidateType_t candidateType;
-//     uint8_t isPointToPoint;
-//     uint64_t result;
+/**
+ * @brief Validate ICE Compute Candidate Priority check functionality for Relayed Candidate Type.
+ */
+void test_iceComputeCandidatePriority_Relayed( void )
+{
+    IceCandidateType_t candidateType;
+    uint8_t isPointToPoint;
+    uint64_t result;
 
-//     candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     isPointToPoint = 1;
+    candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    isPointToPoint = 1;
 
-//     /* Priority calculation formula:
-//      * priority = ( 2^24 ) * ( type preference ) +
-//      *            ( 2^8 )  * ( local preference) +
-//      *            ( 2^0 )  * ( 256 - component ID ).
-//      *
-//      * In this test,
-//      * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
-//      */
+    /* Priority calculation formula:
+     * priority = ( 2^24 ) * ( type preference ) +
+     *            ( 2^8 )  * ( local preference) +
+     *            ( 2^0 )  * ( 256 - component ID ).
+     *
+     * In this test,
+     * priority = ( 2^24 ) * ( 0 ) + ( 2^8 ) * ( 0 ) + 255 = 255.
+     */
 
-//     result = Ice_ComputeCandidatePriority( candidateType,
-//                                            isPointToPoint );
+    result = Ice_ComputeCandidatePriority( candidateType,
+                                           isPointToPoint );
 
-//     TEST_ASSERT_EQUAL( 255,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 255,
+                       result );
+}
 
 /*-----------------------------------------------------------*/
