@@ -4737,6 +4737,45 @@ void test_iceCreateNextPairRequest_ChannelBind_NullRemoteCandidate( void )
 
 /**
  * @brief Validate Ice_CreateNextPairRequest functionality returns
+ * ICE_RESULT_NULL_RELAY_EXTENSION when the local candidate does
+ * not have relay extension.
+ */
+void test_iceCreateNextPairRequest_ChannelBind_NoRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    uint8_t stunMessageBuffer[ 96 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pRemoteCandidate = &localCandidate;
+
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.pRelayExtension = NULL;
+
+    result = Ice_CreateNextPairRequest( &( context ),
+                                        &( candidatePair ),
+                                        stunMessageBuffer,
+                                        &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateNextPairRequest functionality returns
  * ICE_RESULT_INVALID_CANDIDATE_TYPE when the local candidate is not
  * relay type in candidate pair and the state is channel bind.
  */
