@@ -465,6 +465,15 @@ void test_iceInit_BadParams( void )
                        result );
 
     initInfo.pCandidatePairsArray = &( candidatePairArray[ 0 ] );
+    initInfo.pRelayExtensionsArray = NULL;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    initInfo.pRelayExtensionsArray = &( relayExtensionArray[ 0 ] );
     initInfo.pStunBindingRequestTransactionIdStore = NULL;
 
     result = Ice_Init( &( context ),
