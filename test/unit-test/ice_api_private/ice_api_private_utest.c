@@ -2273,134 +2273,134 @@ void test_iceFinalizeStunPacket_StunError_NullStunContext( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same Transport Address check fail functionality for Bad Parameters.
-//  */
-// void test_iceIsSameTransportAddress_BadParms( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same Transport Address check fail functionality for Bad Parameters.
+ */
+void test_iceIsSameTransportAddress_BadParms( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t result;
 
-//     transportAddress1.port = 3478;
-//     transportAddress1.family = 0;
-//     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-//             ( const void * ) &( ipAddress[ 0 ] ),
-//             sizeof( ipAddress ) );
+    transportAddress1.port = 3478;
+    transportAddress1.family = 0;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) &( ipAddress[ 0 ] ),
+            sizeof( ipAddress ) );
 
-//     transportAddress2.port = 3478;
-//     transportAddress2.family = 1;
-//     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
+    transportAddress2.port = 3478;
+    transportAddress2.family = 1;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
-//     result = Ice_IsSameTransportAddress( NULL,
-//                                          &( transportAddress2 ) );
+    result = Ice_IsSameTransportAddress( NULL,
+                                         &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
+    TEST_ASSERT_EQUAL( 0,
+                       result );
 
-//     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
-//                                          NULL );
+    result = Ice_IsSameTransportAddress( &( transportAddress1 ),
+                                         NULL );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same Transport Address check fail functionality.
-//  */
-// void test_iceIsSameTransportAddress_DifferentFamily( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same Transport Address check fail functionality.
+ */
+void test_iceIsSameTransportAddress_DifferentFamily( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t result;
 
-//     transportAddress1.port = 3478;
-//     transportAddress1.family = 0;
-//     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-//             ( const void * ) &( ipAddress[ 0 ] ),
-//             sizeof( ipAddress ) );
+    transportAddress1.port = 3478;
+    transportAddress1.family = 0;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) &( ipAddress[ 0 ] ),
+            sizeof( ipAddress ) );
 
-//     transportAddress2.port = 3478;
-//     transportAddress2.family = 1;
-//     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-//             ( const void * ) &( ipAddress[ 0 ] ),
-//             sizeof( ipAddress ) );
+    transportAddress2.port = 3478;
+    transportAddress2.family = 1;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) &( ipAddress[ 0 ] ),
+            sizeof( ipAddress ) );
 
-//     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
-//                                          &( transportAddress2 ) );
+    result = Ice_IsSameTransportAddress( &( transportAddress1 ),
+                                         &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same Transport Address check fail functionality.
-//  */
-// void test_iceIsSameTransportAddress_DifferentPort( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same Transport Address check fail functionality.
+ */
+void test_iceIsSameTransportAddress_DifferentPort( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t result;
 
-//     transportAddress1.port = 3478;
-//     transportAddress1.family = 1;
-//     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-//             ( const void * ) &( ipAddress[ 0 ] ),
-//             sizeof( ipAddress ) );
+    transportAddress1.port = 3478;
+    transportAddress1.family = 1;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) &( ipAddress[ 0 ] ),
+            sizeof( ipAddress ) );
 
-//     transportAddress2.port = 2002;
-//     transportAddress2.family = 1;
-//     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-//             ( const void * ) &( ipAddress[ 0 ] ),
-//             sizeof( ipAddress ) );
+    transportAddress2.port = 2002;
+    transportAddress2.family = 1;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) &( ipAddress[ 0 ] ),
+            sizeof( ipAddress ) );
 
-//     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
-//                                          &( transportAddress2 ) );
+    result = Ice_IsSameTransportAddress( &( transportAddress1 ),
+                                         &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same Transport Address check fail functionality.
-//  */
-// void test_iceIsSameTransportAddress_DifferentIpAddress( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t ipAddress1[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
-//     uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E }; /* "192.168.1.110". */
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same Transport Address check fail functionality.
+ */
+void test_iceIsSameTransportAddress_DifferentIpAddress( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t ipAddress1[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
+    uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E }; /* "192.168.1.110". */
+    uint8_t result;
 
-//     transportAddress1.port = 3478;
-//     transportAddress1.family = 1;
-//     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-//             ( const void * ) &( ipAddress1[ 0 ] ),
-//             sizeof( ipAddress1 ) );
+    transportAddress1.port = 3478;
+    transportAddress1.family = 1;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) &( ipAddress1[ 0 ] ),
+            sizeof( ipAddress1 ) );
 
-//     transportAddress2.port = 3478;
-//     transportAddress2.family = 1;
-//     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-//             ( const void * ) &( ipAddress2[ 0 ] ),
-//             sizeof( ipAddress2 ) );
+    transportAddress2.port = 3478;
+    transportAddress2.family = 1;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) &( ipAddress2[ 0 ] ),
+            sizeof( ipAddress2 ) );
 
 
-//     result = Ice_IsSameTransportAddress( &( transportAddress1 ),
-//                                          &( transportAddress2 ) );
+    result = Ice_IsSameTransportAddress( &( transportAddress1 ),
+                                         &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Same IP Address check fail functionality.
