@@ -4010,6 +4010,45 @@ void test_iceCreateNextPairRequest_CreatePermission_LocalCandidateNotRelayType( 
 
 /**
  * @brief Validate Ice_CreateNextPairRequest functionality returns
+ * ICE_RESULT_NULL_RELAY_EXTENSION when local candidate doesn't have
+ * relay extension buffer.
+ */
+void test_iceCreateNextPairRequest_CreatePermission_NoRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceCandidatePair_t candidatePair;
+    uint8_t stunMessageBuffer[ 96 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+    IceResult_t result;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
+    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pRemoteCandidate = &localCandidate;
+
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.pRelayExtension = NULL;
+
+    result = Ice_CreateNextPairRequest( &( context ),
+                                        &( candidatePair ),
+                                        stunMessageBuffer,
+                                        &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate Ice_CreateNextPairRequest functionality returns
  * ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL when the long term password
  * in local candidate is invalid and the state is create permission.
  */
