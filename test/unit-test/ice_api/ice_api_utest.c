@@ -14760,55 +14760,55 @@ void test_iceGetRemoteCandidateCount( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Candidate Pair Count fail functionality for Bad Parameters.
-//  */
-// void test_iceGetCandidatePairCount_BadParams( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numCandidatePairs = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Candidate Pair Count fail functionality for Bad Parameters.
+ */
+void test_iceGetCandidatePairCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numCandidatePairs = 0;
+    IceResult_t result;
 
-//     result = Ice_GetCandidatePairCount( NULL,
-//                                         &( numCandidatePairs ) );
+    result = Ice_GetCandidatePairCount( NULL,
+                                        &( numCandidatePairs ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 
-//     result = Ice_GetCandidatePairCount( &( context ),
-//                                         NULL );
+    result = Ice_GetCandidatePairCount( &( context ),
+                                        NULL );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Candidate Pair Count functionality.
-//  */
-// void test_iceGetCandidatePairCount( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numCandidatePairs = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Candidate Pair Count functionality.
+ */
+void test_iceGetCandidatePairCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numCandidatePairs = 0;
+    IceResult_t result;
 
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_GetCandidatePairCount( &( context ),
-//                                         &( numCandidatePairs ) );
+    result = Ice_GetCandidatePairCount( &( context ),
+                                        &( numCandidatePairs ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( numCandidatePairs,
-//                        context.numCandidatePairs );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numCandidatePairs,
+                       context.numCandidatePairs );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate Ice_CheckTurnConnection functionality for bad parameters.
