@@ -196,13 +196,6 @@ static void ReleaseOtherCandidates( IceContext_t * pContext,
                 {
                     pContext->pLocalCandidates[i].state = ICE_CANDIDATE_STATE_RELEASING;
 
-                    if( TransactionIdStore_HasId( pContext->pStunBindingRequestTransactionIdStore,
-                                                  pContext->pLocalCandidates[i].transactionId ) == TRANSACTION_ID_STORE_RESULT_OK )
-                    {
-                        ( void ) TransactionIdStore_Remove( pContext->pStunBindingRequestTransactionIdStore,
-                                                            pContext->pLocalCandidates[i].transactionId );
-                    }
-
                     /* Regenerate transaction for refresh request to terminate TURN session. */
                     ( void ) pContext->cryptoFunctions.randomFxn( pContext->pLocalCandidates[i].transactionId,
                                                                   STUN_HEADER_TRANSACTION_ID_LENGTH );

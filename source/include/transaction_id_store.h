@@ -14,7 +14,8 @@ typedef enum TransactionIdStoreResult
 {
     TRANSACTION_ID_STORE_RESULT_OK,
     TRANSACTION_ID_STORE_RESULT_BAD_PARAM,
-    TRANSACTION_ID_STORE_RESULT_ID_NOT_FOUND
+    TRANSACTION_ID_STORE_RESULT_ID_NOT_FOUND,
+    TRANSACTION_ID_STORE_RESULT_STORE_FULL
 } TransactionIdStoreResult_t;
 
 /*----------------------------------------------------------------------------*/
@@ -29,7 +30,6 @@ typedef struct TransactionIdStore
 {
     TransactionIdSlot_t * pTransactionIdSlots;
     size_t numTransactionIdSlots;
-    size_t writeIndex;
 } TransactionIdStore_t;
 
 /*----------------------------------------------------------------------------*/

@@ -21,7 +21,6 @@ TransactionIdStoreResult_t TransactionIdStore_Init( TransactionIdStore_t * pStor
     {
         pStore->pTransactionIdSlots = pTransactionIdSlots;
         pStore->numTransactionIdSlots = numTransactionIdSlots;
-        pStore->writeIndex = 0;
 
         memset( &( pStore->pTransactionIdSlots[ 0 ] ),
                 0,
@@ -36,6 +35,7 @@ TransactionIdStoreResult_t TransactionIdStore_Init( TransactionIdStore_t * pStor
 TransactionIdStoreResult_t TransactionIdStore_Insert( TransactionIdStore_t * pStore,
                                                       uint8_t * pTransactionId )
 {
+    size_t i;
     TransactionIdStoreResult_t result = TRANSACTION_ID_STORE_RESULT_OK;
 
     if( ( pStore == NULL ) ||
@@ -46,12 +46,22 @@ TransactionIdStoreResult_t TransactionIdStore_Insert( TransactionIdStore_t * pSt
 
     if( result == TRANSACTION_ID_STORE_RESULT_OK )
     {
-        memcpy( &( pStore->pTransactionIdSlots[ pStore->writeIndex ].transactionId[ 0 ] ),
-                &( pTransactionId[ 0 ] ),
-                STUN_HEADER_TRANSACTION_ID_LENGTH );
-        pStore->pTransactionIdSlots[ pStore->writeIndex ].inUse = 1;
-
-        pStore->writeIndex = ( pStore->writeIndex + 1 ) % pStore->numTransactionIdSlots;
+        for( i = 0; i < pStore->numTransactionIdSlots; i++ )
+        {
+            if( pStore->pTransactionIdSlots[ i ].inUse == 0 )
+            {
+                memcpy( &( pStore->pTransactionIdSlots[ i ].transactionId[ 0 ] ),
+                        &( pTransactionId[ 0 ] ),
+                        STUN_HEADER_TRANSACTION_ID_LENGTH );
+                pStore->pTransactionIdSlots[ i ].inUse = 1;
+                break;
+            }
+        }
+        
+        if( i == pStore->numTransactionIdSlots )
+        {
+            result = TRANSACTION_ID_STORE_RESULT_STORE_FULL;
+        }
     }
 
     return result;

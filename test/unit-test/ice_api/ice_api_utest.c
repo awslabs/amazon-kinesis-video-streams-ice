@@ -2407,6 +2407,77 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_RandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Tests that Ice_CreateNextCandidateRequest get failure while
+ * inserting transaction ID into transaction ID store.
+ */
+void test_iceCreateNextCandidateRequest_NewSrflxCandidate_TransactionIdStoreFull( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 32 ];
+    size_t stunMessageBufferLength = 32;
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Make transaction ID store full. */
+    for( int i = 0; i < TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE; i++ )
+    {
+        transactionIdStore.pTransactionIdSlots[ i ].inUse = 1;
+    }
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+    localCandidate.state = ICE_CANDIDATE_STATE_NEW;
+    context.cryptoFunctions.randomFxn( localCandidate.transactionId, sizeof( localCandidate.transactionId ) );
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Tests that Ice_CreateNextCandidateRequest get failure while
+ * the buffer is too small to initialize STUN message.
+ */
+void test_iceCreateNextCandidateRequest_NewSrflxCandidate_StunBufferTooSmallToInit( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate;
+    IceResult_t result;
+    uint8_t stunMessageBuffer[ 10 ];
+    size_t stunMessageBufferLength = sizeof( stunMessageBuffer );
+
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
+    localCandidate.state = ICE_CANDIDATE_STATE_NEW;
+    result = Ice_CreateNextCandidateRequest( &( context ),
+                                             &( localCandidate ),
+                                             stunMessageBuffer,
+                                             &stunMessageBufferLength );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
  * BINDING_REQUEST STUN message to query IP address for new
  * srflx candidate and the transport ID already exists in
@@ -15146,503 +15217,3 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success( void )
 }
 
 /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader functionality with
-//  * bad parameters.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_BadParams( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     result = Ice_RemoveTurnChannelHeader( NULL,
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           NULL,
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           NULL,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           NULL,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           NULL,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader returns ICE_RESULT_OUT_OF_MEMORY
-//  * when the output buffer size is less than channel header.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_OutputBufferSmallerThanChannelHeader( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = ICE_TURN_CHANNEL_DATA_HEADER_LENGTH - 1U;
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OUT_OF_MEMORY,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader returns ICE_RESULT_OUT_OF_MEMORY
-//  * when the input buffer length is less than channel header.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_DataThanChannelHeader( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = ICE_TURN_CHANNEL_DATA_HEADER_LENGTH - 1U;
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_DATA_TOO_SMALL,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader returns ICE_RESULT_TURN_PREFIX_NOT_REQUIRED
-//  * when the local candidate type is not relay.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_LocalCandidateNotRelay( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader returns ICE_RESULT_TURN_PREFIX_NOT_REQUIRED
-//  * when the local candidate state is not valid.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_LocalCandidateNotValid( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate Ice_RemoveTurnChannelHeader returns ICE_RESULT_TURN_PREFIX_NOT_REQUIRED
-//  * when the first byte of buffer is not channel header.
-//  */
-// void test_Ice_RemoveTurnChannelHeader_NotChannelHeader( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[ 16 ];
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-
-//     /* From RFC8656 - section 12, the channel number must be in range of 0x4000 ~ 0x4FFF. */
-//     buffer[ 0 ] = 0x30;
-
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate RemoveTurnChannelHeader returns ICE_RESULT_OK
-//  * when the candidate pair remove the channel header successfully.
-//  */
-// void test_RemoveTurnChannelHeader_Success( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[] = {
-//         /* Channel header + length. */
-//         0x40, 0x00, 0x00, 0x0C,
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-//     uint8_t expectedBuffer[] = {
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t expectedBufferLength = sizeof( expectedBuffer );
-
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-//     localCandidate.endpoint.isPointToPoint = 0U;
-//     localCandidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
-//     localCandidate.endpoint.transportAddress.port = 0x1234;
-//     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
-
-//     /* Set local candidate into context. */
-//     context.numLocalCandidates = 1U;
-//     context.pLocalCandidates[ 0 ] = localCandidate;
-
-//     /* Set candidate pair into context. */
-//     context.numCandidatePairs = 1U;
-//     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4000U;
-//     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( expectedBufferLength,
-//                        outputBufferLength );
-//     TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
-//                                    &( buffer[ 0 ] ),
-//                                    outputBufferLength );
-//     TEST_ASSERT_EQUAL_PTR( &context.pCandidatePairs[ 0 ],
-//                            pCandidatePair );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate RemoveTurnChannelHeader returns ICE_RESULT_OK
-//  * when the candidate pair remove the channel header successfully.
-//  * And the output candidate pair pointer is NULL.
-//  */
-// void test_RemoveTurnChannelHeader_CandidatePairNullPointer_Success( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceResult_t result;
-//     uint8_t buffer[] = {
-//         /* Channel header + length. */
-//         0x40, 0x00, 0x00, 0x0C,
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-//     uint8_t expectedBuffer[] = {
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t expectedBufferLength = sizeof( expectedBuffer );
-
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-//     localCandidate.endpoint.isPointToPoint = 0U;
-//     localCandidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
-//     localCandidate.endpoint.transportAddress.port = 0x1234;
-//     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
-
-//     /* Set local candidate into context. */
-//     context.numLocalCandidates = 1U;
-//     context.pLocalCandidates[ 0 ] = localCandidate;
-
-//     /* Set candidate pair into context. */
-//     context.numCandidatePairs = 1U;
-//     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4000U;
-//     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           NULL );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( expectedBufferLength,
-//                        outputBufferLength );
-//     TEST_ASSERT_EQUAL_UINT8_ARRAY( &( expectedBuffer[ 0 ] ),
-//                                    &( buffer[ 0 ] ),
-//                                    outputBufferLength );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Tests TURN channel header length validation
-//  *
-//  * Verifies that RemoveTurnChannelHeader correctly detects and handles invalid
-//  * channel headers where the declared length exceeds the actual packet size.
-//  */
-// void test_RemoveTurnChannelHeader_TurnHeaderLengthLargerThanPacketSize( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[] = {
-//         /* Channel header + length. */
-//         0x40, 0x00, 0x00, 0x80, /* Set TURN header length to 128 (0x80), but the content inside it is smaller. */
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-//     localCandidate.endpoint.isPointToPoint = 0U;
-//     localCandidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
-//     localCandidate.endpoint.transportAddress.port = 0x1234;
-//     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
-
-//     /* Set local candidate into context. */
-//     context.numLocalCandidates = 1U;
-//     context.pLocalCandidates[ 0 ] = localCandidate;
-
-//     /* Set candidate pair into context. */
-//     context.numCandidatePairs = 1U;
-//     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4000U;
-//     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_LENGTH_INVALID,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
-
-// /**
-//  * @brief Validate RemoveTurnChannelHeader returns ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND
-//  * when the candidate pair is not found.
-//  */
-// void test_RemoveTurnChannelHeader_CandidatePairNotFound( void )
-// {
-//     IceContext_t context = { 0 };
-//     IceCandidate_t localCandidate;
-//     IceCandidate_t localCandidate2;
-//     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
-//     IceCandidatePair_t * pCandidatePair = NULL;
-//     IceResult_t result;
-//     uint8_t buffer[] = {
-//         /* Channel header + length. */
-//         0x40, 0x00, 0x00, 0x0C,
-//         0x12, 0x34, 0x56, 0x78,
-//         0x9A, 0xBC, 0xDE, 0xF0,
-//         0x12, 0x34, 0x56, 0x78
-//     };
-//     size_t inputBufferLength = sizeof( buffer );
-//     size_t outputBufferLength = sizeof( buffer );
-
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-
-//     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-//     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-//     localCandidate.endpoint.isPointToPoint = 0U;
-//     localCandidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
-//     localCandidate.endpoint.transportAddress.port = 0x1234;
-//     memcpy( ( void * ) &( localCandidate.endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
-
-//     memset( &localCandidate2, 0, sizeof( IceCandidate_t ) );
-//     localCandidate2.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-//     localCandidate2.state = ICE_CANDIDATE_STATE_VALID;
-//     localCandidate2.endpoint.isPointToPoint = 0U;
-//     localCandidate2.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
-//     localCandidate2.endpoint.transportAddress.port = 0x1234;
-//     memcpy( ( void * ) &( localCandidate2.endpoint.transportAddress.address[ 0 ] ),
-//             ( const void * ) ipAddress2,
-//             sizeof( ipAddress2 ) );
-
-//     /* Set local candidate into context. */
-//     context.numLocalCandidates = 2U;
-//     context.pLocalCandidates[ 0 ] = localCandidate;
-//     context.pLocalCandidates[ 1 ] = localCandidate2;
-
-//     /* Set candidate pair into context. */
-//     context.numCandidatePairs = 2U;
-//     /* Shift channel number to make it mismatch. */
-//     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4001U;
-//     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
-//     context.pCandidatePairs[ 1 ].turnChannelNumber = 0x4002U;
-//     context.pCandidatePairs[ 1 ].pLocalCandidate = &( context.pLocalCandidates[ 1 ] );
-//     result = Ice_RemoveTurnChannelHeader( &( context ),
-//                                           &( localCandidate ),
-//                                           buffer,
-//                                           inputBufferLength,
-//                                           buffer,
-//                                           &outputBufferLength,
-//                                           &pCandidatePair );
-
-//     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
-//                        result );
-// }
-
-// /*-----------------------------------------------------------*/
