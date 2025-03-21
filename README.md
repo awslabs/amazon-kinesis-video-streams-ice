@@ -96,22 +96,33 @@ the rest of the session.
 
 ## Using the library
 
+### Initialization
 1. Call `Ice_Init()` to initialize the ICE Context.
-2. Call `Ice_AddHostCandidate()` to add local host candidates .
-3. Call `Ice_AddServerReflexiveCandidate()` to add local server reflexive
-   candidates.
-4. Call `Ice_AddRemoteCandidate()` to add remote candidates, received in SDP
-   answer.
-5. Call `Ice_HandleStunResponse()` to process STUN message received from remote
+1. Add local candidates.
+    - Call `Ice_AddHostCandidate()` to add local host candidates.
+    - Call `Ice_AddServerReflexiveCandidate()` to add local server reflexive candidates.
+    - Call `Ice_AddRelayCandidate()` to add local relay candidates.
+1. Call `Ice_AddRemoteCandidate()` to add remote candidates.
+
+### Receive Side
+1. Call `Ice_HandleTurnPacket()` to get TURN data and corresponding candidate pair if local
+candidate type is relay.
+1. Call `Ice_HandleStunPacket()` to address STUN message received from remote
    peer.
-6. Based on the return values  `Ice_HandleStunResponse()`:
-    - Call `Ice_CreateRequestForConnectivityCheck()` to create STUN message to
-    be sent to the remote candidate for connectivity check.
-    - Call `Ice_CreateRequestForNominatingCandidatePair()` to create STUN
-    message to be sent by the Controlling ICE agent for nomination of a valid
-    candidate pair.
+1. Based on the return values  `Ice_HandleStunPacket()`:
     - Call `Ice_CreateResponseForRequest()` to create STUN message for response
     to a STUN Binding Request.
+
+### Send Side
+1. Send candidate pair requests (like connectivity check/nomination request,
+TURN create permission, and TURN channel binding request) to remote peer for every candidate pair.
+    1. Call `Ice_GetCandidatePairCount` to get the number of existing candidate pairs.
+    1. Loop through all candidate pairs, call `Ice_CreateNextPairRequest` to generate corresponding request.
+    1. Send the generated message over network.
+1. Send binding request for srflx candidates to query external IP or send allocation request for relay candidates.
+    1. Call `Ice_GetLocalCandidateCount` to get the number of existing local candidate.
+    1. Loop through all candidates, call `Ice_CreateNextCandidateRequest` to generate corresponding request.
+    1. Send the generated message over network.
     
 ## Building Unit Tests
 
