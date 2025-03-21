@@ -14710,55 +14710,55 @@ void test_iceGetLocalCandidateCount( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Remote Candidate Count fail functionality for Bad Parameters.
-//  */
-// void test_iceGetRemoteCandidateCount_BadParams( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numRemoteCandidates = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Remote Candidate Count fail functionality for Bad Parameters.
+ */
+void test_iceGetRemoteCandidateCount_BadParams( void )
+{
+    IceContext_t context = { 0 };
+    size_t numRemoteCandidates = 0;
+    IceResult_t result;
 
-//     result = Ice_GetRemoteCandidateCount( NULL,
-//                                           &( numRemoteCandidates ) );
+    result = Ice_GetRemoteCandidateCount( NULL,
+                                          &( numRemoteCandidates ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 
-//     result = Ice_GetRemoteCandidateCount( &( context ),
-//                                           NULL );
+    result = Ice_GetRemoteCandidateCount( &( context ),
+                                          NULL );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Get Remote Candidate Count functionality.
-//  */
-// void test_iceGetRemoteCandidateCount( void )
-// {
-//     IceContext_t context = { 0 };
-//     size_t numRemoteCandidates = 0;
-//     IceResult_t result;
+/**
+ * @brief Validate ICE Get Remote Candidate Count functionality.
+ */
+void test_iceGetRemoteCandidateCount( void )
+{
+    IceContext_t context = { 0 };
+    size_t numRemoteCandidates = 0;
+    IceResult_t result;
 
-//     result = Ice_Init( &( context ),
-//                        &( initInfo ) );
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
 
-//     result = Ice_GetRemoteCandidateCount( &( context ),
-//                                           &( numRemoteCandidates ) );
+    result = Ice_GetRemoteCandidateCount( &( context ),
+                                          &( numRemoteCandidates ) );
 
-//     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-//                        result );
-//     TEST_ASSERT_EQUAL( numRemoteCandidates,
-//                        context.numRemoteCandidates );
-// }
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+    TEST_ASSERT_EQUAL( numRemoteCandidates,
+                       context.numRemoteCandidates );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Get Candidate Pair Count fail functionality for Bad Parameters.
