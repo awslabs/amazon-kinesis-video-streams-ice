@@ -2402,63 +2402,63 @@ void test_iceIsSameTransportAddress_DifferentIpAddress( void )
 
 /*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same IP Address check fail functionality.
-//  */
-// void test_iceIsSameIPAddress_BadParams( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same IP Address check fail functionality.
+ */
+void test_iceIsSameIPAddress_BadParams( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t result;
 
-//     transportAddress1.family = 0x01;
-//     transportAddress2.family = 0x02;
+    transportAddress1.family = 0x01;
+    transportAddress2.family = 0x02;
 
-//     result = Ice_IsSameIpAddress( NULL,
-//                                   &( transportAddress2 ) );
+    result = Ice_IsSameIpAddress( NULL,
+                                  &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
+    TEST_ASSERT_EQUAL( 0,
+                       result );
 
-//     result = Ice_IsSameIpAddress( &( transportAddress1 ),
-//                                   NULL );
+    result = Ice_IsSameIpAddress( &( transportAddress1 ),
+                                  NULL );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
-// /**
-//  * @brief Validate ICE Same IP Address check fail functionality.
-//  */
-// void test_iceIsSameIPAddress_DifferentIpAddress( void )
-// {
-//     IceTransportAddress_t transportAddress1;
-//     IceTransportAddress_t transportAddress2;
-//     uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
-//     uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E };       /* "192.168.1.110". */
-//     uint8_t result;
+/**
+ * @brief Validate ICE Same IP Address check fail functionality.
+ */
+void test_iceIsSameIPAddress_DifferentIpAddress( void )
+{
+    IceTransportAddress_t transportAddress1;
+    IceTransportAddress_t transportAddress2;
+    uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
+    uint8_t ipAddress2[] = { 0x78, 0xA8, 0x01, 0x6E };       /* "192.168.1.110". */
+    uint8_t result;
 
-//     transportAddress1.family = 0x01;
-//     memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
-//             ( const void * ) ipAddress,
-//             sizeof( ipAddress ) );
+    transportAddress1.family = 0x01;
+    memcpy( ( void * ) &( transportAddress1.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
 
-//     transportAddress2.family = 0x01;
-//     memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
-//             ( const void * ) ipAddress2,
-//             sizeof( ipAddress2 ) );
+    transportAddress2.family = 0x01;
+    memcpy( ( void * ) &( transportAddress2.address[ 0 ] ),
+            ( const void * ) ipAddress2,
+            sizeof( ipAddress2 ) );
 
 
-//     result = Ice_IsSameIpAddress( &( transportAddress1 ),
-//                                   &( transportAddress2 ) );
+    result = Ice_IsSameIpAddress( &( transportAddress1 ),
+                                  &( transportAddress2 ) );
 
-//     TEST_ASSERT_EQUAL( 0,
-//                        result );
-// }
+    TEST_ASSERT_EQUAL( 0,
+                       result );
+}
 
-// /*-----------------------------------------------------------*/
+/*-----------------------------------------------------------*/
 
 // /**
 //  * @brief Validate ICE Compute Candidate Priority check fail functionality.
