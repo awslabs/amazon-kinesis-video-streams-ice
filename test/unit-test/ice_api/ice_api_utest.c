@@ -11219,6 +11219,254 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * local candidate type is not relay.
+ */
+void test_iceHandleStunPacket_AllocateErrorResponse_NotRelayCandidate( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_ERROR_RESPONSE (0x0113), Length = 52 bytes (excluding 20 bytes header). */
+        0x01, 0x13, 0x00, 0x34,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 00 (Error Code = 400 Unknown). */
+        0x00, 0x00, 0x04, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &( context.pRelayExtensionsArray[ 0 ] );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+    memcpy( &( localCandidate.transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * relay extension of local candidate is NULL.
+ */
+void test_iceHandleStunPacket_AllocateErrorResponse_NullRelayExtension( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_ERROR_RESPONSE (0x0113), Length = 52 bytes (excluding 20 bytes header). */
+        0x01, 0x13, 0x00, 0x34,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 00 (Error Code = 400 Unknown). */
+        0x00, 0x00, 0x04, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    localCandidate.pRelayExtension = NULL;
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+    memcpy( &( localCandidate.transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * fail to generate random transaction ID for next round.
+ */
+void test_iceHandleStunPacket_AllocateErrorResponse_GenerateRandomFail( void )
+{
+    IceContext_t context = { 0 };
+    IceCandidate_t localCandidate = { 0 };
+    IceEndpoint_t remoteEndpoint = { 0 };
+    uint8_t * pTransactionId;
+    IceCandidatePair_t * pCandidatePair = NULL;
+    IceResult_t iceResult;
+    IceHandleStunPacketResult_t result;
+    uint8_t transactionID[] =
+    {
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B
+    };
+    uint8_t stunMessage[] =
+    {
+        /* STUN header: Message Type = ALLOCATE_ERROR_RESPONSE (0x0113), Length = 52 bytes (excluding 20 bytes header). */
+        0x01, 0x13, 0x00, 0x34,
+        /* Magic Cookie (0x2112A442). */
+        0x21, 0x12, 0xA4, 0x42,
+        /* 12 bytes (96 bits) transaction ID which is same as transactionID. */
+        0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
+        0x00, 0x09, 0x00, 0x10,
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 00 (Error Code = 400 Unknown). */
+        0x00, 0x00, 0x04, 0x00,
+        /* Error Phrase = "Error Phrase". */
+        0x45, 0x72, 0x72, 0x6F,
+        0x72, 0x20, 0x50, 0x68,
+        0x72, 0x61, 0x73, 0x65,
+        /* Attribute type = REALM (0x0014), Length = 5 bytes. */
+        0x00, 0x14, 0x00, 0x05,
+        /* Attribute Value: "realm". */
+        0x72, 0x65, 0x61, 0x6C,
+        0x6D, 0x00, 0x00, 0x00,
+        /* Attribute type = NONCE (0x0015), Length = 5 bytes. */
+        0x00, 0x15, 0x00, 0x05,
+        /* Attribute Value: "nonce". */
+        0x6E, 0x6F, 0x6E, 0x63,
+        0x65, 0x00, 0x00, 0x00,
+        /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
+        0x80, 0x28, 0x00, 0x04,
+        /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
+        0x00, 0x00, 0x00, 0x00
+    };
+    size_t stunMessageLength = sizeof( stunMessage );
+
+    iceResult = Ice_Init( &( context ),
+                          &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       iceResult );
+
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
+    context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
+
+    memset( &( localCandidate ),
+            0,
+            sizeof( IceCandidate_t ) );
+    context.numRelayExtensions = 1;
+    localCandidate.pRelayExtension = &( context.pRelayExtensionsArray[ 0 ] );
+    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
+
+    memcpy( &( localCandidate.transactionId[ 0 ] ),
+            &( transactionID[ 0 ] ),
+            sizeof( transactionID ) );
+
+    result = Ice_HandleStunPacket( &( context ),
+                                   &( stunMessage[ 0 ] ),
+                                   stunMessageLength,
+                                   &( localCandidate ),
+                                   &( remoteEndpoint ),
+                                   &( pTransactionId ),
+                                   &( pCandidatePair ) );
+
+    TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
  * the transaction ID is not found in store.
  */
