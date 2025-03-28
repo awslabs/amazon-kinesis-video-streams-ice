@@ -2141,6 +2141,10 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
             /* Regenerate transaction ID for next create permission request. */
             iceResult = pContext->cryptoFunctions.randomFxn( pIceCandidatePair->transactionId,
                                                              STUN_HEADER_TRANSACTION_ID_LENGTH );
+            if( iceResult != ICE_RESULT_OK )
+            {
+                handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
+            }
         }
     }
 
