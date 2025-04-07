@@ -18,8 +18,7 @@ uint8_t Ice_IsSameIpAddress( const IceTransportAddress_t * pTransportAddress1,
 
 IceResult_t Ice_AddCandidatePair( IceContext_t * pContext,
                                   IceCandidate_t * pLocalCandidate,
-                                  IceCandidate_t * pRemoteCandidate,
-                                  IceCandidatePair_t ** ppIceCandidatePair );
+                                  IceCandidate_t * pRemoteCandidate );
 
 uint32_t Ice_ComputeCandidatePriority( IceCandidateType_t candidateType,
                                        uint8_t isPointToPoint );
@@ -36,13 +35,13 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
 
 IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
                                                    IceCandidatePair_t * pIceCandidatePair,
-                                                   uint8_t * pStunMessageBuffer,
-                                                   size_t * pStunMessageBufferLength );
+                                                   uint8_t * pMessageBuffer,
+                                                   size_t * pMessageBufferLength );
 
 IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext,
                                                          IceCandidatePair_t * pIceCandidatePair,
-                                                         uint8_t * pStunMessageBuffer,
-                                                         size_t * pStunMessageBufferLength );
+                                                         uint8_t * pMessageBuffer,
+                                                         size_t * pMessageBufferLength );
 
 IceResult_t Ice_CreateServerReflexiveBindingRequest( IceContext_t * pContext,
                                                      IceCandidate_t * pIceCandidate,
@@ -60,15 +59,15 @@ IceResult_t Ice_CreateRefreshRequest( IceContext_t * pContext,
                                       uint8_t * pStunMessageBuffer,
                                       size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_CreateRequestForCreatePermission( IceContext_t * pContext,
-                                                  IceCandidatePair_t * pIceCandidatePair,
-                                                  uint8_t * pStunMessageBuffer,
-                                                  size_t * pStunMessageBufferLength );
+IceResult_t Ice_CreatePermissionRequest( IceContext_t * pContext,
+                                         IceCandidatePair_t * pIceCandidatePair,
+                                         uint8_t * pStunMessageBuffer,
+                                         size_t * pStunMessageBufferLength );
 
-IceResult_t Ice_CreateRequestForChannelBind( IceContext_t * pContext,
-                                             IceCandidatePair_t * pIceCandidatePair,
-                                             uint8_t * pStunMessageBuffer,
-                                             size_t * pStunMessageBufferLength );
+IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
+                                          IceCandidatePair_t * pIceCandidatePair,
+                                          uint8_t * pStunMessageBuffer,
+                                          size_t * pStunMessageBufferLength );
 
 IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                        StunContext_t * pStunCtx,
@@ -96,7 +95,8 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
 IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t * pContext,
                                                                    StunContext_t * pStunCtx,
                                                                    const StunHeader_t * pStunHeader,
-                                                                   IceCandidate_t * pLocalCandidate );
+                                                                   IceCandidate_t * pLocalCandidate,
+                                                                   uint64_t currentTimeSeconds );
 
 IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * pContext,
                                                                  StunContext_t * pStunCtx,
@@ -107,6 +107,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
                                                                            StunContext_t * pStunCtx,
                                                                            const StunHeader_t * pStunHeader,
                                                                            const IceCandidate_t * pLocalCandidate,
+                                                                           uint64_t currentTimeSeconds,
                                                                            IceCandidatePair_t ** ppIceCandidatePair );
 
 IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceContext_t * pContext,
@@ -126,10 +127,12 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
                                                                     const StunHeader_t * pStunHeader,
                                                                     const IceCandidate_t * pLocalCandidate,
                                                                     IceCandidatePair_t ** ppIceCandidatePair );
+
 IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t * pContext,
                                                                   StunContext_t * pStunCtx,
                                                                   const StunHeader_t * pStunHeader,
-                                                                  IceCandidate_t * pLocalCandidate );
+                                                                  IceCandidate_t * pLocalCandidate,
+                                                                  uint64_t currentTimeSeconds );
 
 IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * pContext,
                                                                 StunContext_t * pStunCtx,

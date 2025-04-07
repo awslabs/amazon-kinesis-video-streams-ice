@@ -14,19 +14,11 @@
 
 /*----------------------------------------------------------------------------*/
 
-static IceRelayExtension_t * AllocateRelayExtension( IceContext_t * pContext )
-{
-    IceRelayExtension_t * pRelayExtension = NULL;
+#define ICE_CANDIDATE_ID_START ( 0x7000 )
 
-    if( pContext->numRelayExtensions < pContext->maxRelayExtensions )
-    {
-        pRelayExtension = &pContext->pRelayExtensionsArray[ pContext->numRelayExtensions ];
-        pContext->numRelayExtensions++;
-        memset( pRelayExtension, 0, sizeof( IceRelayExtension_t ) );
-    }
-
-    return pRelayExtension;
-}
+/* Helper macros. */
+#define ICE_WRITE_UINT16   ( pContext->readWriteFunctions.writeUint16Fn )
+#define ICE_READ_UINT16    ( pContext->readWriteFunctions.readUint16Fn )
 
 /*----------------------------------------------------------------------------*/
 
@@ -40,7 +32,7 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         ( pInitInfo->pLocalCandidatesArray == NULL ) ||
         ( pInitInfo->pRemoteCandidatesArray == NULL ) ||
         ( pInitInfo->pCandidatePairsArray == NULL ) ||
-        ( pInitInfo->pRelayExtensionsArray == NULL ) ||
+        ( pInitInfo->pTurnServerArray == NULL ) ||
         ( pInitInfo->pStunBindingRequestTransactionIdStore == NULL ) ||
         ( pInitInfo->cryptoFunctions.randomFxn == NULL ) ||
         ( pInitInfo->cryptoFunctions.crc32Fxn == NULL ) ||
@@ -50,8 +42,7 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         ( pInitInfo->creds.pLocalPassword == NULL ) ||
         ( pInitInfo->creds.pRemoteUsername == NULL ) ||
         ( pInitInfo->creds.pRemotePassword == NULL ) ||
-        ( pInitInfo->creds.pCombinedUsername == NULL ) ||
-        ( pInitInfo->getCurrentTimeSecondsFxn == NULL ) )
+        ( pInitInfo->creds.pCombinedUsername == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
@@ -76,15 +67,14 @@ IceResult_t Ice_Init( IceContext_t * pContext,
         pContext->maxCandidatePairs = pInitInfo->candidatePairsArrayLength;
         pContext->numCandidatePairs = 0;
 
-        pContext->pRelayExtensionsArray = pInitInfo->pRelayExtensionsArray;
-        pContext->maxRelayExtensions = pInitInfo->relayExtensionsArrayLength;
-        pContext->numRelayExtensions = 0;
+        pContext->pTurnServers = pInitInfo->pTurnServerArray;
+        pContext->maxTurnServers = pInitInfo->turnServerArrayLength;
+        pContext->numTurnServers = 0;
 
         pContext->isControlling = pInitInfo->isControlling;
         pContext->pStunBindingRequestTransactionIdStore = pInitInfo->pStunBindingRequestTransactionIdStore;
 
         pContext->cryptoFunctions = pInitInfo->cryptoFunctions;
-        pContext->getCurrentTimeSecondsFxn = pInitInfo->getCurrentTimeSecondsFxn;
 
         pContext->nextCandidateId = ICE_CANDIDATE_ID_START;
 
@@ -138,15 +128,15 @@ IceResult_t Ice_AddHostCandidate( IceContext_t * pContext,
         pHostCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pHostCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
-        pHostCandidate->candidateId = pContext->nextCandidateId++;
+        pHostCandidate->candidateId = pContext->nextCandidateId;
+        pContext->nextCandidateId++;
 
         /* Create candidate pairs with all the existing remote candidates. */
         for( i = 0; ( i < pContext->numRemoteCandidates ) && ( result == ICE_RESULT_OK ); i++ )
         {
             result = Ice_AddCandidatePair( pContext,
                                            pHostCandidate,
-                                           &( pContext->pRemoteCandidates[ i ] ),
-                                           NULL );
+                                           &( pContext->pRemoteCandidates[ i ] ) );
         }
     }
 
@@ -178,6 +168,19 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
     if( result == ICE_RESULT_OK )
     {
         pServerReflexiveCandidate = &( pContext->pLocalCandidates[ pContext->numLocalCandidates ] );
+
+        result = pContext->cryptoFunctions.randomFxn( &( pServerReflexiveCandidate->transactionId[ 0 ] ),
+                                                      STUN_HEADER_TRANSACTION_ID_LENGTH );
+
+        if( result != ICE_RESULT_OK )
+        {
+            result = ICE_RESULT_RANDOM_GENERATION_ERROR;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        /* Consume the candidate form the array. */
         pContext->numLocalCandidates += 1;
 
         pServerReflexiveCandidate->candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
@@ -190,7 +193,8 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
         pServerReflexiveCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pServerReflexiveCandidate->state = ICE_CANDIDATE_STATE_NEW;
 
-        pServerReflexiveCandidate->candidateId = pContext->nextCandidateId++;
+        pServerReflexiveCandidate->candidateId = pContext->nextCandidateId;
+        pContext->nextCandidateId++;
     }
 
     return result;
@@ -200,29 +204,23 @@ IceResult_t Ice_AddServerReflexiveCandidate( IceContext_t * pContext,
 
 IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
                                    const IceEndpoint_t * pEndpoint,
-                                   const char * pUsername,
-                                   size_t usernameLength,
-                                   const char * pPassword,
-                                   size_t passwordLength )
+                                   const char * pTurnServerUsername,
+                                   size_t turnServerUsernameLength,
+                                   const char * pTurnServerPassword,
+                                   size_t turnServerPasswordLength )
 {
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pRelayCandidate = NULL;
+    IceTurnServer_t * pTurnServer = NULL;
 
     if( ( pContext == NULL ) ||
         ( pEndpoint == NULL ) ||
-        ( pUsername == NULL ) ||
-        ( pPassword == NULL ) )
+        ( pTurnServerUsername == NULL ) ||
+        ( pTurnServerPassword == NULL ) ||
+        ( turnServerUsernameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
+        ( turnServerPasswordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
     {
         result = ICE_RESULT_BAD_PARAM;
-    }
-    else if( ( usernameLength > ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ) ||
-             ( passwordLength > ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ) )
-    {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-    else
-    {
-        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
@@ -231,48 +229,49 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
         {
             result = ICE_RESULT_MAX_CANDIDATE_THRESHOLD;
         }
-        else
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        if( pContext->numTurnServers == pContext->maxTurnServers )
         {
-            pRelayCandidate = &( pContext->pLocalCandidates[ pContext->numLocalCandidates ] );
-            pContext->numLocalCandidates += 1;
+            result = ICE_RESULT_MAX_TURN_SERVER_THRESHOLD;
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        result = pContext->cryptoFunctions.randomFxn( pRelayCandidate->transactionId,
+        pRelayCandidate = &( pContext->pLocalCandidates[ pContext->numLocalCandidates ] );
+
+        result = pContext->cryptoFunctions.randomFxn( &( pRelayCandidate->transactionId[ 0 ] ),
                                                       STUN_HEADER_TRANSACTION_ID_LENGTH );
 
         if( result != ICE_RESULT_OK )
         {
-            pContext->numLocalCandidates -= 1;
             result = ICE_RESULT_RANDOM_GENERATION_ERROR;
         }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        pRelayCandidate->pRelayExtension = AllocateRelayExtension( pContext );
+        /* Consume the candidate form the array. */
+        pContext->numLocalCandidates += 1;
 
-        if( pRelayCandidate->pRelayExtension == NULL )
-        {
-            pContext->numLocalCandidates -= 1;
-            result = ICE_RESULT_MAX_RELAY_EXTENSION;
-        }
-    }
+        pTurnServer = &( pContext->pTurnServers[ pContext->numTurnServers ] );
+        pContext->numTurnServers += 1;
+        memset( pTurnServer, 0, sizeof( IceTurnServer_t ) );
 
-    if( result == ICE_RESULT_OK )
-    {
-        memcpy( &pRelayCandidate->pRelayExtension->iceRelayServerInfo.userName[ 0 ],
-                pUsername,
-                usernameLength );
-        pRelayCandidate->pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
+        memcpy( &( pTurnServer->userName[ 0 ] ),
+                pTurnServerUsername,
+                turnServerUsernameLength );
+        pTurnServer->userNameLength = turnServerUsernameLength;
 
-        memcpy( &pRelayCandidate->pRelayExtension->iceRelayServerInfo.password[ 0 ],
-                pPassword,
-                passwordLength );
-        pRelayCandidate->pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
+        memcpy( &( pTurnServer->password[ 0 ] ),
+                pTurnServerPassword,
+                turnServerPasswordLength );
+        pTurnServer->passwordLength = turnServerPasswordLength;
 
+        pRelayCandidate->pTurnServer = pTurnServer;
         pRelayCandidate->candidateType = ICE_CANDIDATE_TYPE_RELAY;
         pRelayCandidate->isRemote = 0;
         memcpy( &( pRelayCandidate->endpoint ),
@@ -283,7 +282,8 @@ IceResult_t Ice_AddRelayCandidate( IceContext_t * pContext,
         pRelayCandidate->remoteProtocol = ICE_SOCKET_PROTOCOL_NONE;
         pRelayCandidate->state = ICE_CANDIDATE_STATE_ALLOCATING;
 
-        pRelayCandidate->candidateId = pContext->nextCandidateId++;
+        pRelayCandidate->candidateId = pContext->nextCandidateId;
+        pContext->nextCandidateId++;
     }
 
     return result;
@@ -297,7 +297,6 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
     size_t i;
     IceResult_t result = ICE_RESULT_OK;
     IceCandidate_t * pRemoteCandidate = NULL;
-    IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pContext == NULL ) ||
         ( pRemoteCandidateInfo == NULL ) )
@@ -341,7 +340,9 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
             memcpy( &( pRemoteCandidate->endpoint ),
                     pRemoteCandidateInfo->pEndpoint,
                     sizeof( IceEndpoint_t ) );
-            pRemoteCandidate->candidateId = pContext->nextCandidateId++;
+
+            pRemoteCandidate->candidateId = pContext->nextCandidateId;
+            pContext->nextCandidateId++;
 
             /* Create candidate pairs with all the existing local candidates. */
             for( i = 0; ( i < pContext->numLocalCandidates ) && ( result == ICE_RESULT_OK ); i++ )
@@ -350,8 +351,7 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
                 {
                     result = Ice_AddCandidatePair( pContext,
                                                    &( pContext->pLocalCandidates[ i ] ),
-                                                   pRemoteCandidate,
-                                                   &pIceCandidatePair );
+                                                   pRemoteCandidate );
                 }
             }
         }
@@ -378,7 +378,7 @@ IceResult_t Ice_CloseCandidatePair( IceContext_t * pContext,
     {
         for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
-            if( &pContext->pCandidatePairs[i] == pIceCandidatePair )
+            if( &( pContext->pCandidatePairs[ i ] ) == pIceCandidatePair )
             {
                 break;
             }
@@ -416,7 +416,7 @@ IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
     {
         for( i = 0; i < pContext->numLocalCandidates; i++ )
         {
-            if( &pContext->pLocalCandidates[i] == pLocalCandidate )
+            if( &( pContext->pLocalCandidates[ i ] ) == pLocalCandidate )
             {
                 break;
             }
@@ -430,17 +430,24 @@ IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( ( pLocalCandidate->state == ICE_CANDIDATE_STATE_ALLOCATING ) ||
-            ( pLocalCandidate->state == ICE_CANDIDATE_STATE_VALID ) )
+        /* Relay candidates in "Allocating" or "Valid" state need to release
+         * resources on the Turn server. */
+        if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            if( pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+            if( ( pLocalCandidate->state == ICE_CANDIDATE_STATE_ALLOCATING ) ||
+                ( pLocalCandidate->state == ICE_CANDIDATE_STATE_VALID ) )
             {
                 pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASING;
+
+                /* Regenerate Transaction Id to be used in the TURN request to
+                * release resources on the TURN server. */
+                ( void ) pContext->cryptoFunctions.randomFxn( &( pLocalCandidate->transactionId[ 0 ] ),
+                                                            STUN_HEADER_TRANSACTION_ID_LENGTH );
             }
-            else
-            {
-                pLocalCandidate->state = ICE_CANDIDATE_STATE_INVALID;
-            }
+        }
+        else
+        {
+            pLocalCandidate->state = ICE_CANDIDATE_STATE_INVALID;
         }
     }
 
@@ -455,36 +462,40 @@ IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
 IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                           const IceCandidatePair_t * pIceCandidatePair,
                                           uint8_t * pTransactionId,
-                                          uint8_t * pStunMessageBuffer,
-                                          size_t * pStunMessageBufferLength )
+                                          uint8_t * pMessageBuffer,
+                                          size_t * pMessageBufferLength )
 {
     StunContext_t stunCtx;
     StunHeader_t stunHeader;
     IceResult_t result = ICE_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
-    uint8_t * pApplicationData = pStunMessageBuffer;
-    size_t applicationDataLength = 0U;
-    uint8_t needChannelDataHeader = 0U;
+    uint8_t * pStunMessageStart;
+    size_t stunMessageBufferLength;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
         ( pTransactionId == NULL ) ||
-        ( pStunMessageBuffer == NULL ) ||
-        ( pStunMessageBufferLength == NULL ) )
+        ( pMessageBuffer == NULL ) ||
+        ( pMessageBufferLength == NULL ) ||
+        ( ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+          ( *pMessageBufferLength < ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
 
     if( result == ICE_RESULT_OK )
     {
-        applicationDataLength = *pStunMessageBufferLength;
-
-        /* For Relay candidate, reserve 4 bytes to add TURN channel header for connectivity check. */
+        /* For Relay candidate, reserve 4 bytes to add TURN channel data message
+         * header. */
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            needChannelDataHeader = 1U;
-            applicationDataLength = *pStunMessageBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
-            pApplicationData = pStunMessageBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
+            pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
+            stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+        }
+        else
+        {
+            pStunMessageStart = pMessageBuffer;
+            stunMessageBufferLength = *pMessageBufferLength;
         }
     }
 
@@ -494,8 +505,8 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
         stunHeader.pTransactionId = pTransactionId;
 
         stunResult = StunSerializer_Init( &( stunCtx ),
-                                          pApplicationData,
-                                          applicationDataLength,
+                                          pStunMessageStart,
+                                          stunMessageBufferLength,
                                           &( stunHeader ) );
 
         if( stunResult == STUN_RESULT_OK )
@@ -524,7 +535,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                              &( stunCtx ),
                                              pContext->creds.pLocalPassword,
                                              pContext->creds.localPasswordLength,
-                                             &applicationDataLength );
+                                             &( stunMessageBufferLength ) );
         }
         else
         {
@@ -533,24 +544,25 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     }
 
     if( ( result == ICE_RESULT_OK ) &&
-        ( needChannelDataHeader != 0U ) )
+        ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY ) )
     {
-        /* For TURN candidate pair, create TURN channel header for nomination request. */
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
-                                                   pApplicationData,
-                                                   applicationDataLength,
-                                                   pStunMessageBuffer,
-                                                   pStunMessageBufferLength );
+                                                   pStunMessageStart,
+                                                   stunMessageBufferLength );
     }
-    else if( result == ICE_RESULT_OK )
+
+
+    if( result == ICE_RESULT_OK )
     {
-        /* For non TURN candidate pair, update the buffer length. */
-        *pStunMessageBufferLength = applicationDataLength;
-    }
-    else
-    {
-        /* Empty else marker. */
+        if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
+        {
+            *pMessageBufferLength = stunMessageBufferLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+        }
+        else
+        {
+            *pMessageBufferLength = stunMessageBufferLength;
+        }
     }
 
     return result;
@@ -559,58 +571,54 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
-                                  IceCandidate_t * pIceLocalCandidate,
-                                  const uint8_t * pReceivedBuffer,
-                                  size_t receivedBufferLength,
-                                  const uint8_t ** ppTurnPayloadBuffer,
-                                  uint16_t * pTurnPayloadBufferLength,
+                                  const uint8_t * pReceivedTurnMessage,
+                                  size_t receivedTurnMessageLength,
+                                  IceCandidate_t * pLocalCandidate,
+                                  const uint8_t ** ppTurnPayload,
+                                  uint16_t * pTurnPayloadLength,
                                   IceCandidatePair_t ** ppIceCandidatePair )
 {
     IceResult_t result = ICE_RESULT_OK;
     size_t i;
     IceCandidatePair_t * pCandidatePair = NULL;
-    IceTurnChannelMessageHeader_t turnChannelMessageHdr;
+    uint16_t channelNumber, messageLength;
 
     if( ( pContext == NULL ) ||
-        ( pIceLocalCandidate == NULL ) ||
-        ( pReceivedBuffer == NULL ) ||
-        ( ppTurnPayloadBuffer == NULL ) ||
-        ( pTurnPayloadBufferLength == NULL ) ||
+        ( pReceivedTurnMessage == NULL ) ||
+        ( pLocalCandidate == NULL ) ||
+        ( ppTurnPayload == NULL ) ||
+        ( pTurnPayloadLength == NULL ) ||
         ( ppIceCandidatePair == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( receivedBufferLength < ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
+
+    if( result == ICE_RESULT_OK )
     {
-        /* The data is less than channel message header. */
-        result = ICE_RESULT_DATA_TOO_SMALL;
-    }
-    else if( pIceLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
-    {
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else if( pIceLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
-    {
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else if( ( pReceivedBuffer[ 0 ] & 0xF0 ) != 0x40 )
-    {
-        /* The first byte must be channel number, which must be in the range of 0x4000~0x4FFF. */
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else
-    {
-        /* Empty else marker. */
+        if( ( receivedTurnMessageLength < ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) ||
+            ( ( pReceivedTurnMessage[ 0 ] & 0xF0 ) != 0x40 ) )
+        {
+            result = ICE_RESULT_TURN_INVALID_MESSAGE;
+        }
     }
 
     if( result == ICE_RESULT_OK )
     {
-        turnChannelMessageHdr.channelNumber = pContext->readWriteFunctions.readUint16Fn( &pReceivedBuffer[ 0 ] );
-        turnChannelMessageHdr.messageLength = pContext->readWriteFunctions.readUint16Fn( &pReceivedBuffer[ 2 ] );
-
-        if( turnChannelMessageHdr.messageLength > receivedBufferLength - ICE_TURN_CHANNEL_DATA_HEADER_LENGTH )
+        if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+            ( pLocalCandidate->state != ICE_CANDIDATE_STATE_VALID ) )
         {
-            result = ICE_RESULT_TURN_LENGTH_INVALID;
+            result = ICE_RESULT_TURN_UNEXPECTED_MESSAGE;
+        }
+    }
+
+    if( result == ICE_RESULT_OK )
+    {
+        channelNumber = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ) );
+        messageLength = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ) );
+
+        if( receivedTurnMessageLength < ( messageLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) )
+        {
+            result = ICE_RESULT_TURN_INVALID_MESSAGE;
         }
     }
 
@@ -618,11 +626,11 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
     {
         for( i = 0; i < pContext->numCandidatePairs; i++ )
         {
-            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[i].pLocalCandidate->endpoint.transportAddress ),
-                                              &( pIceLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
-                ( turnChannelMessageHdr.channelNumber == pContext->pCandidatePairs[i].turnChannelNumber ) )
+            if( ( Ice_IsSameTransportAddress( &( pContext->pCandidatePairs[ i ].pLocalCandidate->endpoint.transportAddress ),
+                                              &( pLocalCandidate->endpoint.transportAddress ) ) == 1 ) &&
+                ( channelNumber == pContext->pCandidatePairs[ i ].turnChannelNumber ) )
             {
-                pCandidatePair = &pContext->pCandidatePairs[i];
+                pCandidatePair = &( pContext->pCandidatePairs[ i ] );
                 break;
             }
         }
@@ -636,8 +644,8 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
     if( result == ICE_RESULT_OK )
     {
         /* Update output parameters. */
-        *ppTurnPayloadBuffer = pReceivedBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH;
-        *pTurnPayloadBufferLength = turnChannelMessageHdr.messageLength;
+        *ppTurnPayload = &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
+        *pTurnPayloadLength = messageLength;
         *ppIceCandidatePair = pCandidatePair;
     }
 
@@ -652,6 +660,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                   size_t receivedStunMessageLength,
                                                   IceCandidate_t * pLocalCandidate,
                                                   const IceEndpoint_t * pRemoteCandidateEndpoint,
+                                                  uint64_t currentTimeSeconds,
                                                   uint8_t ** ppTransactionId,
                                                   IceCandidatePair_t ** ppIceCandidatePair )
 {
@@ -720,35 +729,20 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_ALLOCATE_SUCCESS_RESPONSE:
                 {
-                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
-                    {
-                        handleStunPacketResult = Ice_HandleTurnAllocateSuccessResponse( pContext,
-                                                                                        &( stunCtx ),
-                                                                                        &( stunHeader ),
-                                                                                        pLocalCandidate );
-                    }
-                    else
-                    {
-                        /* Drop the packet if transaction ID doesn't match. */
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
-                    }
+                    handleStunPacketResult = Ice_HandleTurnAllocateSuccessResponse( pContext,
+                                                                                    &( stunCtx ),
+                                                                                    &( stunHeader ),
+                                                                                    pLocalCandidate,
+                                                                                    currentTimeSeconds );
                 }
                 break;
 
                 case STUN_MESSAGE_TYPE_ALLOCATE_ERROR_RESPONSE:
                 {
-                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
-                    {
-                        handleStunPacketResult = Ice_HandleTurnAllocateErrorResponse( pContext,
-                                                                                      &( stunCtx ),
-                                                                                      &( stunHeader ),
-                                                                                      pLocalCandidate );
-                    }
-                    else
-                    {
-                        /* Drop the packet if transaction ID doesn't match. */
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
-                    }
+                    handleStunPacketResult = Ice_HandleTurnAllocateErrorResponse( pContext,
+                                                                                  &( stunCtx ),
+                                                                                  &( stunHeader ),
+                                                                                  pLocalCandidate );
                 }
                 break;
 
@@ -758,6 +752,7 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
                                                                                             &( stunCtx ),
                                                                                             &( stunHeader ),
                                                                                             pLocalCandidate,
+                                                                                            currentTimeSeconds,
                                                                                             ppIceCandidatePair );
                 }
                 break;
@@ -794,35 +789,20 @@ IceHandleStunPacketResult_t Ice_HandleStunPacket( IceContext_t * pContext,
 
                 case STUN_MESSAGE_TYPE_REFRESH_SUCCESS_RESPONSE:
                 {
-                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
-                    {
-                        handleStunPacketResult = Ice_HandleTurnRefreshSuccessResponse( pContext,
-                                                                                       &( stunCtx ),
-                                                                                       &( stunHeader ),
-                                                                                       pLocalCandidate );
-                    }
-                    else
-                    {
-                        /* Drop the packet if transaction ID doesn't match. */
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
-                    }
+                    handleStunPacketResult = Ice_HandleTurnRefreshSuccessResponse( pContext,
+                                                                                   &( stunCtx ),
+                                                                                   &( stunHeader ),
+                                                                                   pLocalCandidate,
+                                                                                   currentTimeSeconds );
                 }
                 break;
 
                 case STUN_MESSAGE_TYPE_REFRESH_ERROR_RESPONSE:
                 {
-                    if( memcmp( stunHeader.pTransactionId, pLocalCandidate->transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH ) == 0 )
-                    {
-                        handleStunPacketResult = Ice_HandleTurnRefreshErrorResponse( pContext,
-                                                                                     &( stunCtx ),
-                                                                                     &( stunHeader ),
-                                                                                     pLocalCandidate );
-                    }
-                    else
-                    {
-                        /* Drop the packet if transaction ID doesn't match. */
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET;
-                    }
+                    handleStunPacketResult = Ice_HandleTurnRefreshErrorResponse( pContext,
+                                                                                 &( stunCtx ),
+                                                                                 &( stunHeader ),
+                                                                                 pLocalCandidate );
                 }
                 break;
 
@@ -923,6 +903,7 @@ IceResult_t Ice_GetCandidatePairCount( IceContext_t * pContext,
 
 IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
                                             IceCandidate_t * pIceCandidate,
+                                            uint64_t currentTimeSeconds,
                                             uint8_t * pStunMessageBuffer,
                                             size_t * pStunMessageBufferLength )
 {
@@ -931,24 +912,18 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
     if( ( pContext == NULL ) ||
         ( pIceCandidate == NULL ) ||
         ( pStunMessageBuffer == NULL ) ||
-        ( pStunMessageBufferLength == NULL ) )
+        ( pStunMessageBufferLength == NULL ) ||
+        ( pIceCandidate->isRemote != 0 ) )
     {
         result = ICE_RESULT_BAD_PARAM;
-    }
-    else if( pIceCandidate->isRemote != 0 )
-    {
-        result = ICE_RESULT_INVALID_CANDIDATE;
-    }
-    else
-    {
-        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
     {
         if( pIceCandidate->candidateType == ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE )
         {
-            /* Generate STUN request for srflx candidate to query external IP address. */
+            /* Generate STUN request for server reflexive candidate to query
+             * external IP address. */
             if( pIceCandidate->state == ICE_CANDIDATE_STATE_NEW )
             {
                 result = Ice_CreateServerReflexiveBindingRequest( pContext,
@@ -958,16 +933,17 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
             }
             else
             {
-                /* If the srflx candidate already have the external IP address,
-                 * then we return ICE_RESULT_NO_NEXT_ACTION. */
+                /* If the server reflexive candidate already has the external IP
+                 * address, no action is needed. */
                 result = ICE_RESULT_NO_NEXT_ACTION;
             }
         }
         else if( pIceCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            /* Generate TURN Allocation request for relay candidate to allocate TURN resource. */
             if( pIceCandidate->state == ICE_CANDIDATE_STATE_ALLOCATING )
             {
+                /* Generate TURN allocation request for relay candidate to
+                 * allocate resources on the TURN server. */
                 result = Ice_CreateAllocationRequest( pContext,
                                                       pIceCandidate,
                                                       pStunMessageBuffer,
@@ -975,16 +951,26 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
             }
             else if( pIceCandidate->state == ICE_CANDIDATE_STATE_RELEASING )
             {
+                /* Generate request for relay candidate to release resources on
+                 * the TURN server. */
                 result = Ice_CreateRefreshRequest( pContext,
                                                    pIceCandidate,
                                                    0U,
                                                    pStunMessageBuffer,
                                                    pStunMessageBufferLength );
             }
+            else if( ( currentTimeSeconds + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS ) >= pIceCandidate->pTurnServer->turnAllocationExpirationTimeSeconds )
+            {
+                /* Generate request for relay candidate to refresh allocation on
+                 * the TURN server. */
+                result = Ice_CreateRefreshRequest( pContext,
+                                                   pIceCandidate,
+                                                   ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
+                                                   pStunMessageBuffer,
+                                                   pStunMessageBufferLength );
+            }
             else
             {
-                /* If the srflx candidate already have the external IP address,
-                 * then we return ICE_RESULT_NO_NEXT_ACTION. */
                 result = ICE_RESULT_NO_NEXT_ACTION;
             }
         }
@@ -1001,11 +987,11 @@ IceResult_t Ice_CreateNextCandidateRequest( IceContext_t * pContext,
 
 IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        IceCandidatePair_t * pIceCandidatePair,
+                                       uint64_t currentTimeSeconds,
                                        uint8_t * pStunMessageBuffer,
                                        size_t * pStunMessageBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
-    uint64_t currentTimeSeconds;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1033,7 +1019,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
             {
                 if( pContext->isControlling == 1 )
                 {
-                    /* Generate nominate binding request. */
+                    /* Generate request for nominating a candidate pair. */
                     result = Ice_CreateRequestForNominatingCandidatePair( pContext,
                                                                           pIceCandidatePair,
                                                                           pStunMessageBuffer,
@@ -1041,10 +1027,12 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                 }
                 else
                 {
-                    /* Controlled side might receive USE-CANDIDATE in connectivity check stage.
-                     * So we keep sending connectivity check even though we're in nominated state.
-                     * Note that controlled side will mark state into succeed when receive USE-CANDIDATE
-                     * Binding Request. */
+                    /* Controlled ICE agent might receive USE-CANDIDATE in
+                     * connectivity check stage which would transition the
+                     * pair's state to nominated. We still keep sending
+                     * connectivity checks requests until connectivity check is
+                     * successful at which point the pair's state would
+                     * transition to succeeded. */
                     result = Ice_CreateRequestForConnectivityCheck( pContext,
                                                                     pIceCandidatePair,
                                                                     pStunMessageBuffer,
@@ -1055,65 +1043,41 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
             case ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION:
             {
-                /* Generate STUN request for TURN create permission. */
-                result = Ice_CreateRequestForCreatePermission( pContext,
-                                                               pIceCandidatePair,
-                                                               pStunMessageBuffer,
-                                                               pStunMessageBufferLength );
+                /* Generate request to create permission on the TURN server. */
+                result = Ice_CreatePermissionRequest( pContext,
+                                                      pIceCandidatePair,
+                                                      pStunMessageBuffer,
+                                                      pStunMessageBufferLength );
             }
             break;
 
             case ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND:
             {
-                /* Generate STUN request for TURN create permission. */
-                result = Ice_CreateRequestForChannelBind( pContext,
-                                                          pIceCandidatePair,
-                                                          pStunMessageBuffer,
-                                                          pStunMessageBufferLength );
+                /* Generate request for binding a channel number to a remote peer. */
+                result = Ice_CreateChannelBindRequest( pContext,
+                                                       pIceCandidatePair,
+                                                       pStunMessageBuffer,
+                                                       pStunMessageBufferLength );
             }
             break;
 
             case ICE_CANDIDATE_PAIR_STATE_SUCCEEDED:
-                currentTimeSeconds = pContext->getCurrentTimeSecondsFxn();
+            {
+                result = ICE_RESULT_NO_NEXT_ACTION;
 
-                if( pIceCandidatePair->pLocalCandidate == NULL )
+                if( ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
+                    ( pIceCandidatePair->pLocalCandidate->state == ICE_CANDIDATE_STATE_VALID ) &&
+                    ( ( currentTimeSeconds + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS ) >= pIceCandidatePair->turnPermissionExpirationTime ) )
                 {
-                    result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
+                    result = Ice_CreatePermissionRequest( pContext,
+                                                          pIceCandidatePair,
+                                                          pStunMessageBuffer,
+                                                          pStunMessageBufferLength );
                 }
-                else if( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY )
-                {
-                    result = ICE_RESULT_NO_NEXT_ACTION;
-                }
-                else if( pIceCandidatePair->pLocalCandidate->pRelayExtension == NULL )
-                {
-                    /* relay extension must be assigned while adding relay candidate, unexpected behavior if it's NULL. */
-                    result = ICE_RESULT_NULL_RELAY_EXTENSION;
-                }
-                else if( pIceCandidatePair->pLocalCandidate->state != ICE_CANDIDATE_STATE_VALID )
-                {
-                    result = ICE_RESULT_NO_NEXT_ACTION;
-                }
-                else if( currentTimeSeconds + ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->pLocalCandidate->pRelayExtension->turnAllocationExpirationSeconds )
-                {
-                    result = Ice_CreateRefreshRequest( pContext,
-                                                       pIceCandidatePair->pLocalCandidate,
-                                                       ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS,
-                                                       pStunMessageBuffer,
-                                                       pStunMessageBufferLength );
-                }
-                else if( currentTimeSeconds + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS >= pIceCandidatePair->turnPermissionExpirationSeconds )
-                {
-                    result = Ice_CreateRequestForCreatePermission( pContext,
-                                                                   pIceCandidatePair,
-                                                                   pStunMessageBuffer,
-                                                                   pStunMessageBufferLength );
-                }
-                else
-                {
-                    result = ICE_RESULT_NO_NEXT_ACTION;
-                }
-                break;
+            }
+            break;
 
+            /* Intentional fall through. */
             case ICE_CANDIDATE_PAIR_STATE_VALID:
             case ICE_CANDIDATE_PAIR_STATE_FROZEN:
             default:
@@ -1132,51 +1096,38 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                                               const IceCandidatePair_t * pIceCandidatePair,
-                                              const uint8_t * pInputBuffer,
-                                              size_t inputBufferLength,
-                                              uint8_t * pOutputBuffer,
-                                              size_t * pOutputBufferLength )
+                                              uint8_t * pTurnPayload,
+                                              size_t turnPayloadLength )
 {
     IceResult_t result = ICE_RESULT_OK;
-    /* Calculate the padding by rounding up to 4. */
-    uint16_t padding = ( ( inputBufferLength + 3 ) & ~3 ) - inputBufferLength;
+    uint8_t * pChannelDataHeader = NULL;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
-        ( pInputBuffer == NULL ) ||
-        ( pOutputBuffer == NULL ) ||
-        ( pOutputBufferLength == NULL ) )
+        ( pTurnPayload == NULL )  )
     {
         result = ICE_RESULT_BAD_PARAM;
-    }
-    else if( inputBufferLength + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH + padding > *pOutputBufferLength )
-    {
-        /* We always append 4 bytes prefix into TURN channel message. */
-        result = ICE_RESULT_OUT_OF_MEMORY;
-    }
-    else if( ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_WAITING ) &&
-             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_VALID ) &&
-             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) &&
-             ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
-    {
-        result = ICE_RESULT_TURN_PREFIX_NOT_REQUIRED;
-    }
-    else
-    {
-        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
     {
-        IceTurnChannelMessageHeader_t * pTurnChannelMessageHdr = ( IceTurnChannelMessageHeader_t * ) pOutputBuffer;
+        if( ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_WAITING ) &&
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_VALID ) &&
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) &&
+            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+        {
+            result = ICE_RESULT_TURN_CHANNEL_DATA_HEADER_NOT_REQUIRED;
+        }
+    }
 
-        /* Append the channel number and payload length, followed by the payload itself.
-         * Finally, add padding to ensure the packet is 4-byte aligned. */
-        memcpy( pOutputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH, pInputBuffer, inputBufferLength );
-        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->channelNumber, pIceCandidatePair->turnChannelNumber );
-        pContext->readWriteFunctions.writeUint16Fn( ( uint8_t * ) &pTurnChannelMessageHdr->messageLength, inputBufferLength );
-        memset( pOutputBuffer + ICE_TURN_CHANNEL_DATA_HEADER_LENGTH + inputBufferLength, 0, padding );
-        *pOutputBufferLength = 4U + inputBufferLength + padding;
+    if( result == ICE_RESULT_OK )
+    {
+        pChannelDataHeader = pTurnPayload - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+
+        ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ),
+                          pIceCandidatePair->turnChannelNumber );
+        ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ),
+                          turnPayloadLength );
     }
 
     return result;

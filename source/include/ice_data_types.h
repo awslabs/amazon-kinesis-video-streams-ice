@@ -25,31 +25,28 @@
                                       ICE_STUN_REQUEST_RECEIVED_FLAG |      \
                                       ICE_STUN_RESPONSE_SENT_FLAG ) )
 
-// Max stun username attribute len: https://tools.ietf.org/html/rfc5389#section-15.3
-#define ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ( 512 )
+/* https://tools.ietf.org/html/rfc5389#section-15.3. */
+#define ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH  ( 512 )
 
-/**
- * Maximum allowed ICE configuration password length
- * https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password
- */
-#define ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ( 256 )
+/* https://docs.aws.amazon.com/kinesisvideostreams/latest/dg/API_AWSAcuitySignalingService_IceServer.html#KinesisVideo-Type-AWSAcuitySignalingService_IceServer-Password */
+#define ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH   ( 256 )
 
-/* https://tools.ietf.org/html/rfc5389#section-15.7 */
-#define ICE_SERVER_CONFIG_MAX_REALM_LENGTH ( 128 )
+/* https://tools.ietf.org/html/rfc5389#section-15.7. */
+#define ICE_SERVER_CONFIG_MAX_REALM_LENGTH      ( 128 )
 
-/* https://tools.ietf.org/html/rfc5389#section-15.8 */
-#define ICE_SERVER_CONFIG_MAX_NONCE_LENGTH ( 128 )
+/* https://tools.ietf.org/html/rfc5389#section-15.8. */
+#define ICE_SERVER_CONFIG_MAX_NONCE_LENGTH      ( 128 )
 
-/*
- * According to https://datatracker.ietf.org/doc/html/rfc5389#section-15.4,
- * long-term credentials are generated using MD5 hash, resulting in a fixed size of 16 bytes.
- */
-#define ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH ( 16 )
+/* According to https://datatracker.ietf.org/doc/html/rfc5389#section-15.4,
+ * long-term credentials are generated using MD5 hash, resulting in a fixed size
+ * of 16 bytes. */
+#define ICE_SERVER_CONFIG_LONG_TERM_PASSWORD_LENGTH         ( 16 )
 
-#define ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS ( 600 )
-#define ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS ( 30 )
-#define ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS ( 300 )
-#define ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS ( 30 )
+/* Various TURN times. */
+#define ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS        ( 600 )
+#define ICE_TURN_ALLOCATION_REFRESH_GRACE_PERIOD_SECONDS    ( 30 )
+#define ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS        ( 300 )
+#define ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS    ( 30 )
 
 /*
  * According to https://datatracker.ietf.org/doc/html/rfc8656#section-12,
@@ -59,12 +56,26 @@
 #define ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX ( 0x4FFF )
 
 /*
- * According to https://datatracker.ietf.org/doc/html/rfc8656#name-the-channeldata-message,
- * TURN channel header must be 4 bytes long.
- */
-#define ICE_TURN_CHANNEL_DATA_HEADER_LENGTH ( 4 )
+ * TURN ChannelData Message:
 
-#define ICE_CANDIDATE_ID_START ( 0x7000 )
+ * RFC: https://datatracker.ietf.org/doc/html/rfc8656#name-the-channeldata-message
+
+ *  0                   1                   2                   3
+ *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |         Channel Number        |            Length             |
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ * |                                                               |
+ * /                       Application Data                        /
+ * /                                                               /
+ * |                                                               |
+ * |                               +-------------------------------+
+ * |                               |
+ * +-------------------------------+
+ */
+#define ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH         ( 4 )
+#define ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ( 0 )
+#define ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET         ( 2 )
 
 /*----------------------------------------------------------------------------*/
 
@@ -80,10 +91,9 @@ typedef enum IceCandidateState
 {
     ICE_CANDIDATE_STATE_INVALID,
     ICE_CANDIDATE_STATE_NEW,
-    ICE_CANDIDATE_STATE_ALLOCATING, /* Dedicate for relay candidate to allocate resource with TURN server. */
+    ICE_CANDIDATE_STATE_ALLOCATING, /* Relay candidate to allocate resources on the TURN server. */
     ICE_CANDIDATE_STATE_VALID,
-    ICE_CANDIDATE_STATE_RELEASING, /* Dedicate for relay candidate to refresh the lifetime to 0. */
-    ICE_CANDIDATE_STATE_RELEASED /* Dedicate for relay candidate, means the TURN resource has been released. */
+    ICE_CANDIDATE_STATE_RELEASING, /* Relay candidate to release resources on the TURN server. */
 } IceCandidateState_t;
 
 typedef enum IceCandidatePairState
@@ -94,8 +104,8 @@ typedef enum IceCandidatePairState
     ICE_CANDIDATE_PAIR_STATE_VALID,
     ICE_CANDIDATE_PAIR_STATE_NOMINATED,
     ICE_CANDIDATE_PAIR_STATE_SUCCEEDED,
-    ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION, /* Dedicate for relay candidate to create permission for remote candidate. */
-    ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND /* Dedicate for relay candidate to associate channel number with remote candidate. */
+    ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION, /* Relay candidate to create permission for remote candidate. */
+    ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND /* Relay candidate to associate channel number with remote candidate. */
 } IceCandidatePairState_t;
 
 typedef enum IceSocketProtocol
@@ -110,13 +120,14 @@ typedef enum IceResult
     /* Info codes. */
     ICE_RESULT_OK,
     ICE_RESULT_NO_NEXT_ACTION,
-    ICE_RESULT_TURN_PREFIX_NOT_REQUIRED,
+    ICE_RESULT_TURN_CHANNEL_DATA_HEADER_NOT_REQUIRED,
 
     /* Error code. */
     ICE_RESULT_BAD_PARAM,
     ICE_RESULT_MAX_CANDIDATE_THRESHOLD,
     ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
-    ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
+    ICE_RESULT_MAX_TURN_SERVER_THRESHOLD,
+    ICE_RESULT_MAX_CHANNEL_NUMBER_THRESHOLD,
     ICE_RESULT_MAX_RELAY_EXTENSION,
     ICE_RESULT_STUN_ERROR,
     ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
@@ -134,13 +145,13 @@ typedef enum IceResult
     ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
     ICE_RESULT_OUT_OF_MEMORY,
     ICE_RESULT_INVALID_CANDIDATE_CREDENTIAL,
-    ICE_RESULT_INVALID_CANDIDATE_TYPE,
     ICE_RESULT_INVALID_CANDIDATE,
     ICE_RESULT_INVALID_CANDIDATE_PAIR,
     ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
     ICE_RESULT_TURN_LENGTH_INVALID,
+    ICE_RESULT_TURN_INVALID_MESSAGE,
+    ICE_RESULT_TURN_UNEXPECTED_MESSAGE,
     ICE_RESULT_DATA_TOO_SMALL,
-    ICE_RESULT_NULL_RELAY_EXTENSION,
 } IceResult_t;
 
 typedef enum IceHandleStunPacketResult
@@ -153,7 +164,6 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_VALID_CANDIDATE_PAIR,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
     ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION,
-    ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATION_UNEXPECTED_COMPLETE,
     ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE,
     ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED,
     ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET,
@@ -167,35 +177,31 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_INVALID_FAMILY_TYPE,
     ICE_HANDLE_STUN_PACKET_RESULT_INVALID_CANDIDATE_TYPE,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_NOT_FOUND,
-    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_ALLOCATING,
     ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_NOT_REFRESHING,
-    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_PAIR_NOT_CREATING_PERMISSION,
-    ICE_HANDLE_STUN_PACKET_RESULT_RELAY_CANDIDATE_PAIR_NOT_CHANNEL_BINDING,
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_ADDRESS_ATTRIBUTE_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_MATCHING_TRANSACTION_ID_NOT_FOUND,
     ICE_HANDLE_STUN_PACKET_RESULT_NON_ZERO_ERROR_CODE,
+    ICE_HANDLE_STUN_PACKET_RESULT_INVALID_RESPONSE,
     ICE_HANDLE_STUN_PACKET_RESULT_ZERO_LIFETIME,
     ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE,
-    ICE_HANDLE_STUN_PACKET_RESULT_NONCE_LENGTH_EXCEEDED,
-    ICE_HANDLE_STUN_PACKET_RESULT_REALM_LENGTH_EXCEEDED,
     ICE_HANDLE_STUN_PACKET_RESULT_ALLOCATE_UNKNOWN_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_REFRESH_UNKNOWN_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_LONG_TERM_CREDENTIAL_CALCULATION_ERROR,
     ICE_HANDLE_STUN_PACKET_RESULT_ADD_REMOTE_CANDIDATE_FAILED,
     ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE,
-    ICE_HANDLE_STUN_PACKET_RESULT_NULL_RELAY_EXTENSION,
 
     /* Application needs to take action. */
     ICE_HANDLE_STUN_PACKET_RESULT_NOT_STUN_PACKET,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_REMOTE_REQUEST,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_TRIGGERED_CHECK,
     ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_AND_START_NOMINATION,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_RESPONSE_FOR_NOMINATION,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_ALLOCATION_REQUEST,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_REFRESH_REQUEST,
     ICE_HANDLE_STUN_PACKET_RESULT_SEND_CHANNEL_BIND_REQUEST,
-    ICE_HANDLE_STUN_PACKET_RESULT_SEND_CONNECTIVITY_BINDING_REQUEST,
+    ICE_HANDLE_STUN_PACKET_RESULT_SEND_CONNECTIVITY_CHECK_REQUEST,
 } IceHandleStunPacketResult_t;
 
 /*----------------------------------------------------------------------------*/
@@ -216,7 +222,6 @@ typedef IceResult_t ( * IceMd5_t ) ( const uint8_t * pBuffer,
                                      size_t bufferLength,
                                      uint8_t * pOutputBuffer,
                                      uint16_t * pOutputBufferLength );
-typedef uint64_t ( * IceGetCurrentTimeSeconds_t ) ( void );
 
 /*----------------------------------------------------------------------------*/
 
@@ -228,26 +233,21 @@ typedef struct IceEndpoint
     uint8_t isPointToPoint;
 } IceEndpoint_t;
 
-typedef struct IceRelayServerInfo
+typedef struct IceTurnServer
 {
-    uint8_t userName[ ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ];                  //!< Username for the server
-    size_t userNameLength;                                                       //!< Length of username
-    uint8_t password[ ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ];                   //!< Password for the server
-    size_t passwordLength;                                                       //!< Length of password
-    uint8_t nonce[ ICE_SERVER_CONFIG_MAX_NONCE_LENGTH ];                         //!< Nonce for the server
-    size_t nonceLength;                                                          //!< Length of Nonce
-    uint8_t realm[ ICE_SERVER_CONFIG_MAX_REALM_LENGTH ];                         //!< Realm for the server
-    size_t realmLength;                                                          //!< Length of realm
-    uint8_t longTermPassword[ ICE_SERVER_CONFIG_MAX_LONG_TERM_PASSWORD_LENGTH ]; //!< Long term password for the server
-    size_t longTermPasswordLength;                                               //!< Length of long term password
-} IceRelayServerInfo_t;
-
-typedef struct IceRelayExtension
-{
-    IceRelayServerInfo_t iceRelayServerInfo;
+    uint8_t userName[ ICE_SERVER_CONFIG_MAX_USER_NAME_LENGTH ];                 /* Username for the server. */
+    size_t userNameLength;                                                      /* Length of the username. */
+    uint8_t password[ ICE_SERVER_CONFIG_MAX_PASSWORD_LENGTH ];                  /* Password for the server. */
+    size_t passwordLength;                                                      /* Length of the password. */
+    uint8_t nonce[ ICE_SERVER_CONFIG_MAX_NONCE_LENGTH ];                        /* Nonce for the server. */
+    size_t nonceLength;                                                         /* Length of the nonce. */
+    uint8_t realm[ ICE_SERVER_CONFIG_MAX_REALM_LENGTH ];                        /* Realm for the server. */
+    size_t realmLength;                                                         /* Length of the realm. */
+    uint8_t longTermPassword[ ICE_SERVER_CONFIG_LONG_TERM_PASSWORD_LENGTH ];    /* Long term password for the server. */
+    size_t longTermPasswordLength;                                              /* Length of the long term password. */
+    uint64_t turnAllocationExpirationTimeSeconds;
     uint16_t nextAvailableTurnChannelNumber;
-    uint64_t turnAllocationExpirationSeconds;
-} IceRelayExtension_t;
+} IceTurnServer_t;
 
 typedef struct IceCandidate
 {
@@ -258,8 +258,8 @@ typedef struct IceCandidate
     uint32_t priority;
     IceSocketProtocol_t remoteProtocol;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
-    uint16_t candidateId;
-    IceRelayExtension_t * pRelayExtension;
+    uint16_t candidateId; /* Debugging aid only. */
+    IceTurnServer_t * pTurnServer;
 } IceCandidate_t;
 
 typedef struct IceCandidatePair
@@ -273,7 +273,7 @@ typedef struct IceCandidatePair
 
     /* Below fields are for TURN. */
     uint16_t turnChannelNumber;
-    uint64_t turnPermissionExpirationSeconds;
+    uint64_t turnPermissionExpirationTime;
 } IceCandidatePair_t;
 
 typedef struct IceCryptoFunctions
@@ -310,15 +310,14 @@ typedef struct IceContext
     IceCandidatePair_t * pCandidatePairs;
     size_t maxCandidatePairs;
     size_t numCandidatePairs;
-    IceRelayExtension_t * pRelayExtensionsArray;
-    size_t maxRelayExtensions;
-    size_t numRelayExtensions;
-    IceCandidatePair_t * pNominatePairs;
+    IceTurnServer_t * pTurnServers;
+    size_t maxTurnServers;
+    size_t numTurnServers;
+    IceCandidatePair_t * pNominatedPair;
     uint64_t tieBreaker;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     IceCryptoFunctions_t cryptoFunctions;
-    IceGetCurrentTimeSeconds_t getCurrentTimeSecondsFxn;
     StunReadWriteFunctions_t readWriteFunctions;
     uint16_t nextCandidateId;
 } IceContext_t;
@@ -332,12 +331,11 @@ typedef struct IceInitInfo
     size_t remoteCandidatesArrayLength;
     IceCandidatePair_t * pCandidatePairsArray;
     size_t candidatePairsArrayLength;
-    IceRelayExtension_t * pRelayExtensionsArray;
-    size_t relayExtensionsArrayLength;
+    IceTurnServer_t * pTurnServerArray;
+    size_t turnServerArrayLength;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
     IceCryptoFunctions_t cryptoFunctions;
-    IceGetCurrentTimeSeconds_t getCurrentTimeSecondsFxn;
 } IceInitInfo_t;
 
 typedef struct IceRemoteCandidateInfo
@@ -363,12 +361,6 @@ typedef struct IceStunDeserializedPacketInfo
     size_t realmLength;
     uint32_t lifetimeSeconds;
 } IceStunDeserializedPacketInfo_t;
-
-typedef struct IceTurnChannelMessageHeader
-{
-    uint16_t channelNumber;
-    uint16_t messageLength;
-} IceTurnChannelMessageHeader_t;
 
 /*----------------------------------------------------------------------------*/
 
