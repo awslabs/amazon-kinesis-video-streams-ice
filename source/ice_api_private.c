@@ -2094,8 +2094,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
         }
     }
 
-    if( ( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK ) &&
-        ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION ) )
+    if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
         /* Once the candidate pair received create permission success response,
          * we continue to do channel binding. */

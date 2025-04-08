@@ -1126,10 +1126,8 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_WAITING ) &&
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_VALID ) &&
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_NOMINATED ) &&
-            ( pIceCandidatePair->state != ICE_CANDIDATE_PAIR_STATE_SUCCEEDED ) )
+        if( ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_INVALID ) &&
+            ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_FROZEN ) )
         {
             result = ICE_RESULT_TURN_CHANNEL_DATA_HEADER_NOT_REQUIRED;
         }
