@@ -471,6 +471,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
+    size_t stunMessageBufferSize;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -491,6 +492,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            stunMessageBufferSize = *pMessageBufferLength;
         }
         else
         {
@@ -549,7 +551,8 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
-                                                   stunMessageBufferLength );
+                                                   stunMessageBufferLength,
+                                                   &stunMessageBufferSize );
     }
 
 
@@ -557,7 +560,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     {
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            *pMessageBufferLength = stunMessageBufferSize;
         }
         else
         {
@@ -1097,16 +1100,28 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                                               const IceCandidatePair_t * pIceCandidatePair,
                                               uint8_t * pTurnPayload,
-                                              size_t turnPayloadLength )
+                                              size_t turnPayloadLength,
+                                              size_t * pTotalBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
     uint8_t * pChannelDataHeader = NULL;
+    /* Calculate the padding by rounding up to 4. */
+    uint16_t padding = ( ( turnPayloadLength + 3 ) & ~3 ) - turnPayloadLength;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
-        ( pTurnPayload == NULL )  )
+        ( pTurnPayload == NULL ) ||
+        ( pTotalBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
+    }
+    else if( *pTotalBufferLength < turnPayloadLength + padding )
+    {
+        result = ICE_RESULT_OUT_OF_MEMORY;
+    }
+    else
+    {
+        /* Empty else marker. */
     }
 
     if( result == ICE_RESULT_OK )
@@ -1128,6 +1143,8 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                           pIceCandidatePair->turnChannelNumber );
         ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ),
                           turnPayloadLength );
+
+        *pTotalBufferLength = turnPayloadLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + padding;
     }
 
     return result;

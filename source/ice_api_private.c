@@ -464,6 +464,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
+    size_t stunMessageBufferSize;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -481,6 +482,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            stunMessageBufferSize = *pMessageBufferLength;
         }
         else
         {
@@ -548,7 +550,8 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
-                                                   stunMessageBufferLength );
+                                                   stunMessageBufferLength,
+                                                   &stunMessageBufferSize );
     }
 
     if( result == ICE_RESULT_OK )
@@ -557,7 +560,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
 
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            *pMessageBufferLength = stunMessageBufferSize;
         }
         else
         {
@@ -584,6 +587,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
+    size_t stunMessageBufferSize;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -601,6 +605,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            stunMessageBufferSize = *pMessageBufferLength;
         }
         else
         {
@@ -663,14 +668,15 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
-                                                   stunMessageBufferLength );
+                                                   stunMessageBufferLength,
+                                                   &stunMessageBufferSize );
     }
 
     if( result == ICE_RESULT_OK )
     {
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
+            *pMessageBufferLength = stunMessageBufferSize;
         }
         else
         {
