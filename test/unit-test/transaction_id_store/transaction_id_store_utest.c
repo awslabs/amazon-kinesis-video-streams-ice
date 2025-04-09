@@ -12,10 +12,7 @@
 
 /* ===========================  EXTERN VARIABLES    =========================== */
 
-
 /* ===========================  EXTERN FUNCTIONS   =========================== */
-
-
 
 /*-----------------------------------------------------------*/
 
@@ -132,6 +129,49 @@ void test_iceTransactionIdStore_Remove_BadParams( void )
                                         NULL );
 
     TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_BAD_PARAM,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Validate TransactionIdStore_Remove returns TRANSACTION_ID_STORE_RESULT_ID_NOT_FOUND
+ * when the input transaction ID is not found in the store.
+ */
+void test_iceTransactionIdStore_Remove_TransactionIDNotFound( void )
+{
+    TransactionIdStore_t transactionIdStore;
+    const size_t transactionIdMaxNum = 32;
+    TransactionIdSlot_t transactionIdSlots[ transactionIdMaxNum ];
+    uint8_t commonTransactionID[] = {
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16
+    };
+    uint8_t targetTransactionID[] = {
+        0xFF, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16
+    };
+    TransactionIdStoreResult_t result;
+
+    result = TransactionIdStore_Init( &( transactionIdStore ),
+                                      &( transactionIdSlots[ 0 ] ),
+                                      transactionIdMaxNum );
+
+    TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_OK,
+                       result );
+
+    /* Store two transaction IDs in the store at index 0,2. */
+    transactionIdStore.numTransactionIdSlots = 3U;
+    transactionIdSlots[0].inUse = 1U;
+    memcpy( transactionIdSlots[0].transactionId, commonTransactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
+
+    transactionIdSlots[1].inUse = 0U;
+
+    transactionIdSlots[2].inUse = 1U;
+    memcpy( transactionIdSlots[2].transactionId, commonTransactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
+
+    result = TransactionIdStore_Remove( &transactionIdStore,
+                                        &( targetTransactionID[ 0 ] ) );
+
+    TEST_ASSERT_EQUAL( TRANSACTION_ID_STORE_RESULT_ID_NOT_FOUND,
                        result );
 }
 
