@@ -26,7 +26,7 @@ uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
 #define LOCAL_CANDIDATE_ARRAY_SIZE               10
 #define REMOTE_CANDIDATE_ARRAY_SIZE              10
 #define CANDIDATE_PAIR_ARRAY_SIZE                100
-#define RELAY_EXTENSION_ARRAY_SIZE               10
+#define ICE_TURN_SERVER_ARRAY_SIZE               10
 #define TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE    32
 
 /* Specific TURN channel number used for testing. */
@@ -37,7 +37,7 @@ TransactionIdStore_t transactionIdStore;
 IceCandidate_t localCandidateArray[ LOCAL_CANDIDATE_ARRAY_SIZE ];
 IceCandidate_t remoteCandidateArray[ REMOTE_CANDIDATE_ARRAY_SIZE ];
 IceCandidatePair_t candidatePairArray[ CANDIDATE_PAIR_ARRAY_SIZE ];
-IceRelayExtension_t relayExtensionArray[ RELAY_EXTENSION_ARRAY_SIZE ];
+IceTurnServer_t iceTurnServerArray[ ICE_TURN_SERVER_ARRAY_SIZE ];
 TransactionIdSlot_t transactionIdSlots[ TRANSACTION_ID_SLOTS_ARRAY_ARRAY_SIZE ];
 
 /* ===========================  EXTERN FUNCTIONS   =========================== */
@@ -330,13 +330,12 @@ static void Info_Init_For_Tests( void )
     initInfo.pLocalCandidatesArray = &( localCandidateArray[ 0 ] );
     initInfo.pRemoteCandidatesArray = &( remoteCandidateArray[ 0 ] );
     initInfo.pCandidatePairsArray = &( candidatePairArray[ 0 ] );
-    initInfo.pRelayExtensionsArray = &( relayExtensionArray[ 0 ] );
+    initInfo.pTurnServerArray = &( iceTurnServerArray[ 0 ] );
     initInfo.pStunBindingRequestTransactionIdStore = &( transactionIdStore );
     initInfo.cryptoFunctions.randomFxn = testRandomFxn;
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn;
     initInfo.cryptoFunctions.md5Fxn = testMd5Fxn;
-    initInfo.getCurrentTimeSecondsFxn = testGetCurrentTime;
     initInfo.creds.pLocalUsername = ( uint8_t * ) "localUsername";
     initInfo.creds.localUsernameLength = strlen( "localUsername" );
     initInfo.creds.pLocalPassword = ( uint8_t * ) "localPassword";
@@ -350,7 +349,7 @@ static void Info_Init_For_Tests( void )
     initInfo.localCandidatesArrayLength = LOCAL_CANDIDATE_ARRAY_SIZE;
     initInfo.remoteCandidatesArrayLength = REMOTE_CANDIDATE_ARRAY_SIZE;
     initInfo.candidatePairsArrayLength = CANDIDATE_PAIR_ARRAY_SIZE;
-    initInfo.relayExtensionsArrayLength = RELAY_EXTENSION_ARRAY_SIZE;
+    initInfo.turnServerArrayLength = ICE_TURN_SERVER_ARRAY_SIZE;
     initInfo.isControlling = 1;
 }
 
@@ -370,9 +369,9 @@ void setUp( void )
             0,
             CANDIDATE_PAIR_ARRAY_SIZE * sizeof( IceCandidatePair_t ) );
 
-    memset( &( relayExtensionArray[ 0 ] ),
+    memset( &( iceTurnServerArray[ 0 ] ),
             0,
-            RELAY_EXTENSION_ARRAY_SIZE * sizeof( IceRelayExtension_t ) );
+            ICE_TURN_SERVER_ARRAY_SIZE * sizeof( IceTurnServer_t ) );
 
     memset( &( transactionIdSlots[ 0 ] ),
             0,
@@ -409,23 +408,20 @@ void test_iceAddCandidatePair_BadParams( void )
 
     result = Ice_AddCandidatePair( NULL,
                                    &( localCandidate ),
-                                   &( remoteCandidate ),
-                                   NULL );
+                                   &( remoteCandidate ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddCandidatePair( &( context ),
                                    NULL,
-                                   &( remoteCandidate ),
-                                   NULL );
+                                   &( remoteCandidate ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
-                                   NULL,
                                    NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
@@ -455,41 +451,9 @@ void test_iceAddCandidatePair_MaxCandidatePairThreshold( void )
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
-                                   &( remoteCandidate ),
-                                   NULL );
+                                   &( remoteCandidate ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CANDIDATE_PAIR_THRESHOLD,
-                       result );
-}
-
-/*-----------------------------------------------------------*/
-
-/**
- * @brief Validate ICE Add Candidate Pair fail functionality for missing relay extension
- * of local relay candidate.
- */
-void test_iceAddCandidatePair_LocalRelayCandidateMissingRelayExtension( void )
-{
-    IceContext_t context = { 0 };
-    IceCandidate_t localCandidate = { 0 };
-    IceCandidate_t remoteCandidate = { 0 };
-    IceResult_t result;
-
-    result = Ice_Init( &( context ),
-                       &( initInfo ) );
-
-    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
-                       result );
-
-    localCandidate.pRelayExtension = NULL;
-    localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-
-    result = Ice_AddCandidatePair( &( context ),
-                                   &( localCandidate ),
-                                   &( remoteCandidate ),
-                                   NULL );
-
-    TEST_ASSERT_EQUAL( ICE_RESULT_NULL_RELAY_EXTENSION,
                        result );
 }
 
@@ -512,17 +476,16 @@ void test_iceAddCandidatePair_MaxTurnChannelNumber( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-    localCandidate.pRelayExtension->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX + 1;
+    localCandidate.pTurnServer->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX + 1;
 
     result = Ice_AddCandidatePair( &( context ),
                                    &( localCandidate ),
-                                   &( remoteCandidate ),
-                                   NULL );
+                                   &( remoteCandidate ) );
 
-    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CHANNEL_NUMBER_ID,
+    TEST_ASSERT_EQUAL( ICE_RESULT_MAX_CHANNEL_NUMBER_THRESHOLD,
                        result );
 }
 
@@ -1075,10 +1038,10 @@ void test_iceCreateRequestForConnectivityCheck_TurnChannelHeader( void )
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_ALLOCATING,
                        context.pLocalCandidates[ 0 ].state );
     TEST_ASSERT_NOT_EQUAL( NULL,
-                           context.pLocalCandidates[ 0 ].pRelayExtension );
+                           context.pLocalCandidates[ 0 ].pTurnServer );
 
     context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
-    context.pLocalCandidates[ 0 ].pRelayExtension->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
+    context.pLocalCandidates[ 0 ].pTurnServer->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -1407,10 +1370,10 @@ void test_iceCreateRequestForNominatingCandidatePair_TurnChannelHeader( void )
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_STATE_ALLOCATING,
                        context.pLocalCandidates[ 0 ].state );
     TEST_ASSERT_NOT_EQUAL( NULL,
-                           context.pLocalCandidates[ 0 ].pRelayExtension );
+                           context.pLocalCandidates[ 0 ].pTurnServer );
 
     context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
-    context.pLocalCandidates[ 0 ].pRelayExtension->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
+    context.pLocalCandidates[ 0 ].pTurnServer->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -1467,8 +1430,8 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToInit( v
                        result );
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1501,8 +1464,8 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddLife
                        result );
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1539,16 +1502,16 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddUser
                        result );
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    memcpy( &localCandidate.pTurnServer->userName[0],
             pUsername,
             usernameLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+    localCandidate.pTurnServer->userNameLength = usernameLength;
+    memcpy( &localCandidate.pTurnServer->password[0],
             pPassword,
             passwordLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
+    localCandidate.pTurnServer->passwordLength = passwordLength;
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1589,24 +1552,24 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddReal
                        result );
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    memcpy( &localCandidate.pTurnServer->userName[0],
             pUsername,
             usernameLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+    localCandidate.pTurnServer->userNameLength = usernameLength;
+    memcpy( &localCandidate.pTurnServer->password[0],
             pPassword,
             passwordLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.realm[0],
+    localCandidate.pTurnServer->passwordLength = passwordLength;
+    memcpy( &localCandidate.pTurnServer->realm[0],
             pRealm,
             realmLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.realmLength = realmLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.nonce[0],
+    localCandidate.pTurnServer->realmLength = realmLength;
+    memcpy( &localCandidate.pTurnServer->nonce[0],
             pNonce,
             nonceLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.nonceLength = nonceLength;
+    localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1647,24 +1610,24 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddNonc
                        result );
 
     memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
-    context.numRelayExtensions = 1;
-    localCandidate.pRelayExtension = &context.pRelayExtensionsArray[ 0 ];
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.userName[0],
+    context.numTurnServers = 1;
+    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    memcpy( &localCandidate.pTurnServer->userName[0],
             pUsername,
             usernameLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.userNameLength = usernameLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.password[0],
+    localCandidate.pTurnServer->userNameLength = usernameLength;
+    memcpy( &localCandidate.pTurnServer->password[0],
             pPassword,
             passwordLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.passwordLength = passwordLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.realm[0],
+    localCandidate.pTurnServer->passwordLength = passwordLength;
+    memcpy( &localCandidate.pTurnServer->realm[0],
             pRealm,
             realmLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.realmLength = realmLength;
-    memcpy( &localCandidate.pRelayExtension->iceRelayServerInfo.nonce[0],
+    localCandidate.pTurnServer->realmLength = realmLength;
+    memcpy( &localCandidate.pTurnServer->nonce[0],
             pNonce,
             nonceLength );
-    localCandidate.pRelayExtension->iceRelayServerInfo.nonceLength = nonceLength;
+    localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),

@@ -1408,7 +1408,6 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
     IceRemoteCandidateInfo_t remoteCandidateInfo;
-    uint8_t performConnectivityCheck = 1;
     size_t i;
 
     handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
@@ -1524,6 +1523,7 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                     if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                     {
                         pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                        pContext->pNominatedPair = pIceCandidatePair;
                         ReleaseOtherCandidates( pContext, pIceCandidatePair );
                     }
                     else
@@ -1766,6 +1766,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                    pContext->pSelectedPair = pIceCandidatePair;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
 
                     ReleaseOtherCandidates( pContext, pIceCandidatePair );
@@ -1787,6 +1788,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+                    pContext->pSelectedPair = pIceCandidatePair;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
 
                     ReleaseOtherCandidates( pContext, pIceCandidatePair );
@@ -2083,7 +2085,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        pIceCandidatePair->turnPermissionExpirationTime = currentTimeSeconds + ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS;
+        pIceCandidatePair->turnPermissionExpirationSeconds = currentTimeSeconds + ICE_DEFAULT_TURN_PERMISSION_LIFETIME_SECONDS;
 
         /* Regenerate Transaction ID for next request. */
         iceResult = pContext->cryptoFunctions.randomFxn( &( pIceCandidatePair->transactionId[ 0 ] ),
@@ -2273,11 +2275,21 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /* Once the candidate pair receives channel bind success response,
-         * request the application to do connectivity check. */
-        pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-
-        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_CONNECTIVITY_CHECK_REQUEST;
+        /* 
+         * Validates the candidate pair's selection status:
+         * - If already selected: Updates state to succeeded
+         * - If not selected: Triggers connectivity check
+         */
+        if( pContext->pSelectedPair == pIceCandidatePair )
+        {
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_CHANNEL_BIND_COMPLETE;
+        }
+        else
+        {
+            pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+            handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_SEND_CONNECTIVITY_CHECK_REQUEST;
+        }
     }
 
     if( pIceCandidatePair != NULL )

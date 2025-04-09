@@ -619,7 +619,7 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
         channelNumber = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ) );
         messageLength = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ) );
 
-        if( receivedTurnMessageLength < ( messageLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) )
+        if( receivedTurnMessageLength < (size_t) ( messageLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) )
         {
             result = ICE_RESULT_TURN_INVALID_MESSAGE;
         }
@@ -1003,6 +1003,15 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
+    else if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
+             ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    {
+        result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
+    }
+    else
+    {
+        /* Empty else marker. */
+    }
 
     if( result == ICE_RESULT_OK )
     {
@@ -1070,7 +1079,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
                 if( ( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY ) &&
                     ( pIceCandidatePair->pLocalCandidate->state == ICE_CANDIDATE_STATE_VALID ) &&
-                    ( ( currentTimeSeconds + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS ) >= pIceCandidatePair->turnPermissionExpirationTime ) )
+                    ( ( currentTimeSeconds + ICE_TURN_PERMISSION_REFRESH_GRACE_PERIOD_SECONDS ) >= pIceCandidatePair->turnPermissionExpirationSeconds ) )
                 {
                     result = Ice_CreatePermissionRequest( pContext,
                                                           pIceCandidatePair,
@@ -1115,7 +1124,7 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( *pTotalBufferLength < turnPayloadLength + padding )
+    else if( *pTotalBufferLength < ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + turnPayloadLength + padding )
     {
         result = ICE_RESULT_OUT_OF_MEMORY;
     }
@@ -1126,7 +1135,7 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        if( ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_INVALID ) &&
+        if( ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_INVALID ) ||
             ( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_FROZEN ) )
         {
             result = ICE_RESULT_TURN_CHANNEL_DATA_HEADER_NOT_REQUIRED;

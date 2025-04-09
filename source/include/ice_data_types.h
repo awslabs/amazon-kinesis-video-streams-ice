@@ -147,10 +147,8 @@ typedef enum IceResult
     ICE_RESULT_INVALID_CANDIDATE,
     ICE_RESULT_INVALID_CANDIDATE_PAIR,
     ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
-    ICE_RESULT_TURN_LENGTH_INVALID,
     ICE_RESULT_TURN_INVALID_MESSAGE,
     ICE_RESULT_TURN_UNEXPECTED_MESSAGE,
-    ICE_RESULT_DATA_TOO_SMALL,
 } IceResult_t;
 
 typedef enum IceHandleStunPacketResult
@@ -164,6 +162,7 @@ typedef enum IceHandleStunPacketResult
     ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
     ICE_HANDLE_STUN_PACKET_RESULT_STUN_BINDING_INDICATION,
     ICE_HANDLE_STUN_PACKET_RESULT_FRESH_COMPLETE,
+    ICE_HANDLE_STUN_PACKET_RESULT_FRESH_CHANNEL_BIND_COMPLETE,
     ICE_HANDLE_STUN_PACKET_RESULT_TURN_SESSION_TERMINATED,
     ICE_HANDLE_STUN_PACKET_RESULT_DROP_PACKET,
 
@@ -272,7 +271,7 @@ typedef struct IceCandidatePair
 
     /* Below fields are for TURN. */
     uint16_t turnChannelNumber;
-    uint64_t turnPermissionExpirationTime;
+    uint64_t turnPermissionExpirationSeconds;
 } IceCandidatePair_t;
 
 typedef struct IceCryptoFunctions
@@ -313,6 +312,7 @@ typedef struct IceContext
     size_t maxTurnServers;
     size_t numTurnServers;
     IceCandidatePair_t * pNominatedPair;
+    IceCandidatePair_t * pSelectedPair;
     uint64_t tieBreaker;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
