@@ -82,14 +82,25 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        uint8_t * pStunMessageBuffer,
                                        size_t * pStunMessageBufferLength );
 
-/* Writes 4 byte TURN channel data message header before the payload. It assumes
- * that the caller has reserved 4 (ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH) bytes for the header.
- * - [in, out] pTotalBufferLength: On input, the total buffer length excluding the reserved 4 bytes header.
- *                                 On output, the total buffer length including the header.
+/* Writes 4 byte TURN channel data message header before the payload and the
+ * required padding after the payload. It assumes that the caller has reserved
+ * 4 (ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH) bytes for the header.
  *
- * | Reserved 4 bytes header | ------ pTurnPayload ------ | 4-byte align padding |.
- *                           |      turnPayloadLength     |
- * | --------------------------- *pTotalBufferLength --------------------------- | */
+ * @param pTotalBufferLength [in, out]: On input, the total buffer length.
+ *                                      On output, the turn message size
+ *                                      including header and padding.
+ *            pTurnPayload
+ *            |
+ *            V         turnPayloadLength
+ *            <-------------------------------------->
+ * +----------+--------------------------------------+----------+------------------+
+ * |  Header  |           TURN Payload               |  Padding |                  |
+ * +----------+--------------------------------------+----------+------------------+
+ * <------------------------------------------------------------------------------->
+ *                       *pTotalBufferLength (on input)
+ * <------------------------------------------------------------>
+ *                 *pTotalBufferLength (on output)
+ */
 IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                                               const IceCandidatePair_t * pIceCandidatePair,
                                               uint8_t * pTurnPayload,

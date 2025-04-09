@@ -471,7 +471,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
-    size_t stunMessageBufferSize;
+    size_t turnMessageBufferLength;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -492,7 +492,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
-            stunMessageBufferSize = *pMessageBufferLength;
+            turnMessageBufferLength = *pMessageBufferLength;
         }
         else
         {
@@ -552,7 +552,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
                                                    stunMessageBufferLength,
-                                                   &stunMessageBufferSize );
+                                                   &( turnMessageBufferLength ) );
     }
 
 
@@ -560,7 +560,7 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
     {
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferSize;
+            *pMessageBufferLength = turnMessageBufferLength;
         }
         else
         {
@@ -1003,14 +1003,14 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
-             ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+
+    if( result == ICE_RESULT_OK )
     {
-        result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
-    }
-    else
-    {
-        /* Empty else marker. */
+        if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
+            ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+        {
+            result = ICE_RESULT_INVALID_CANDIDATE_PAIR;
+        }
     }
 
     if( result == ICE_RESULT_OK )
@@ -1114,8 +1114,7 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
 {
     IceResult_t result = ICE_RESULT_OK;
     uint8_t * pChannelDataHeader = NULL;
-    /* Calculate the padding by rounding up to 4. */
-    uint16_t padding = ( ( turnPayloadLength + 3 ) & ~3 ) - turnPayloadLength;
+    uint16_t padding;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -1124,13 +1123,16 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
     {
         result = ICE_RESULT_BAD_PARAM;
     }
-    else if( *pTotalBufferLength < ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + turnPayloadLength + padding )
+
+    if( result == ICE_RESULT_OK )
     {
-        result = ICE_RESULT_OUT_OF_MEMORY;
-    }
-    else
-    {
-        /* Empty else marker. */
+        /* Calculate the padding by rounding up to 4. */
+        padding = ( ( turnPayloadLength + 3 ) & ~3 ) - turnPayloadLength;
+
+        if( *pTotalBufferLength < ( ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + turnPayloadLength + padding ) )
+        {
+            result = ICE_RESULT_OUT_OF_MEMORY;
+        }
     }
 
     if( result == ICE_RESULT_OK )
@@ -1150,6 +1152,11 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                           pIceCandidatePair->turnChannelNumber );
         ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ),
                           turnPayloadLength );
+
+        if( padding > 0 )
+        {
+            memset( &( pTurnPayload[ turnPayloadLength ] ), 0, padding );
+        }
 
         *pTotalBufferLength = turnPayloadLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + padding;
     }

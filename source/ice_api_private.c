@@ -464,7 +464,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
-    size_t stunMessageBufferSize;
+    size_t turnMessageBufferLength;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -482,7 +482,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
-            stunMessageBufferSize = *pMessageBufferLength;
+            turnMessageBufferLength = *pMessageBufferLength;
         }
         else
         {
@@ -551,7 +551,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
                                                    stunMessageBufferLength,
-                                                   &stunMessageBufferSize );
+                                                   &( turnMessageBufferLength ) );
     }
 
     if( result == ICE_RESULT_OK )
@@ -560,7 +560,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
 
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferSize;
+            *pMessageBufferLength = turnMessageBufferLength;
         }
         else
         {
@@ -587,7 +587,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
     StunResult_t stunResult = STUN_RESULT_OK;
     uint8_t * pStunMessageStart;
     size_t stunMessageBufferLength;
-    size_t stunMessageBufferSize;
+    size_t turnMessageBufferLength;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
@@ -605,7 +605,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
         {
             pStunMessageStart = &( pMessageBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ] );
             stunMessageBufferLength = *pMessageBufferLength - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
-            stunMessageBufferSize = *pMessageBufferLength;
+            turnMessageBufferLength = *pMessageBufferLength;
         }
         else
         {
@@ -669,14 +669,14 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
                                                    pIceCandidatePair,
                                                    pStunMessageStart,
                                                    stunMessageBufferLength,
-                                                   &stunMessageBufferSize );
+                                                   &( turnMessageBufferLength ) );
     }
 
     if( result == ICE_RESULT_OK )
     {
         if( pIceCandidatePair->pLocalCandidate->candidateType == ICE_CANDIDATE_TYPE_RELAY )
         {
-            *pMessageBufferLength = stunMessageBufferSize;
+            *pMessageBufferLength = turnMessageBufferLength;
         }
         else
         {
@@ -2275,11 +2275,9 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /*
-         * Validates the candidate pair's selection status:
-         * - If already selected: Updates state to succeeded
-         * - If not selected: Triggers connectivity check
-         */
+        /* If the candidate pair is already selected, the application need not
+         * take any action. Otherwise, the application need to initiate
+         * connectivity check. */
         if( pContext->pSelectedPair == pIceCandidatePair )
         {
             pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
