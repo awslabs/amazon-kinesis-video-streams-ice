@@ -28,7 +28,7 @@
 /*
  * IP Address used in the tests.
  */
-uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 };        /* "192.168.1.100". */
+uint8_t ipAddress[] = { 0xC0, 0xA8, 0x01, 0x64 }; /* "192.168.1.100". */
 
 /*
  * Arrays used in the tests.
@@ -231,17 +231,19 @@ IceResult_t testMd5Fxn( const uint8_t * pBuffer,
     const uint16_t md5Length = 16U;
     uint16_t i;
 
-    if( ( pBuffer == NULL ) || ( pOutputBuffer == NULL ) || ( pOutputBufferLength == NULL ) )
+    if( ( pBuffer == NULL ) ||
+        ( pOutputBuffer == NULL ) ||
+        ( pOutputBufferLength == NULL ) )
     {
         ret = ICE_RESULT_MD5_ERROR;
     }
-    else if( *pOutputBufferLength < md5Length )
+
+    if( ret == ICE_RESULT_OK )
     {
-        ret = ICE_RESULT_MD5_ERROR;
-    }
-    else
-    {
-        /* Empty else marker. */
+        if( *pOutputBufferLength < md5Length )
+        {
+            ret = ICE_RESULT_MD5_ERROR;
+        }
     }
 
     if( ret == ICE_RESULT_OK )
@@ -273,7 +275,7 @@ IceResult_t testHmacFxn_Wrong( const uint8_t * pPassword,
                                uint16_t * pOutputBufferLength )
 {
     /* Assume a fixed HMAC output length of 16 bytes (128 bits). */
-    const uint16_t hmacLength = 16;                 /* This HMAC Lenght is not correct */
+    const uint16_t hmacLength = 16; /* This HMAC Length is not correct. */
     uint16_t i;
     IceResult_t result = ICE_RESULT_OK;
 
@@ -1260,10 +1262,10 @@ void test_iceAddRemoteCandidate_CandidatePairFull( void )
 
     /* Set 2 local candidate to trigger adding candidate pair flow. */
     context.numLocalCandidates = 2;
-    context.pLocalCandidates[0].state = ICE_CANDIDATE_STATE_VALID;
-    context.pLocalCandidates[0].candidateType = ICE_CANDIDATE_TYPE_HOST;
-    context.pLocalCandidates[1].state = ICE_CANDIDATE_STATE_VALID;
-    context.pLocalCandidates[1].candidateType = ICE_CANDIDATE_TYPE_HOST;
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
+    context.pLocalCandidates[ 1 ].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[ 1 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
 
     /* Set full candidate pair to make adding candidate pair fail. */
     context.numCandidatePairs = CANDIDATE_PAIR_ARRAY_SIZE;
@@ -1308,11 +1310,11 @@ void test_iceAddRemoteCandidate_AddCandidatePairForLocalRelayCandidate( void )
 
     /* Set 2 local candidate to trigger adding candidate pair flow. */
     context.numLocalCandidates = 1;
-    context.pLocalCandidates[0].state = ICE_CANDIDATE_STATE_VALID;
-    context.pLocalCandidates[0].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    context.pLocalCandidates[0].pTurnServer = &( context.pTurnServers[0] );
-    context.pLocalCandidates[0].pTurnServer->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
+    context.pLocalCandidates[ 0 ].pTurnServer = &( context.pTurnServers[ 0 ] );
+    context.pLocalCandidates[ 0 ].pTurnServer->nextAvailableTurnChannelNumber = TEST_TURN_CHANNEL_NUMBER_START;
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -1347,12 +1349,12 @@ void test_iceAddRemoteCandidate_AddCandidatePairForLocalRelayCandidate( void )
     /* Verify candidate pair. */
     TEST_ASSERT_EQUAL( 1,
                        context.numCandidatePairs );
-    TEST_ASSERT_EQUAL_PTR( context.pCandidatePairs[0].pLocalCandidate,
-                           &context.pLocalCandidates[0] );
+    TEST_ASSERT_EQUAL_PTR( context.pCandidatePairs[ 0 ].pLocalCandidate,
+                           &( context.pLocalCandidates[ 0 ] ) );
     TEST_ASSERT_EQUAL( TEST_TURN_CHANNEL_NUMBER_START,
-                       context.pCandidatePairs[0].turnChannelNumber );
+                       context.pCandidatePairs[ 0 ].turnChannelNumber );
     TEST_ASSERT_EQUAL( TEST_TURN_CHANNEL_NUMBER_START + 1,
-                       context.pCandidatePairs[0].pLocalCandidate->pTurnServer->nextAvailableTurnChannelNumber );
+                       context.pCandidatePairs[ 0 ].pLocalCandidate->pTurnServer->nextAvailableTurnChannelNumber );
 }
 
 /*-----------------------------------------------------------*/
@@ -1447,10 +1449,10 @@ void test_iceAddRemoteCandidate_NoValidLocalCandidate( void )
 
     /* Set 2 local candidate to trigger adding candidate pair flow. */
     context.numLocalCandidates = 1;
-    context.pLocalCandidates[0].state = ICE_CANDIDATE_STATE_ALLOCATING;
-    context.pLocalCandidates[0].candidateType = ICE_CANDIDATE_TYPE_RELAY;
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_ALLOCATING;
+    context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    context.pLocalCandidates[0].pTurnServer = &( context.pTurnServers[0] );
+    context.pLocalCandidates[ 0 ].pTurnServer = &( context.pTurnServers[ 0 ] );
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -1627,7 +1629,7 @@ void test_iceAddCandidatePair_MultipleCandidatePairs( void )
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
-    remoteCandidateInfo.priority = 500;             /* Priority P1 */
+    remoteCandidateInfo.priority = 500; /* Priority P1. */
     remoteCandidateInfo.pEndpoint = &( endpoint );
 
     result = Ice_AddRemoteCandidate( &( context ),
@@ -1640,7 +1642,7 @@ void test_iceAddCandidatePair_MultipleCandidatePairs( void )
 
     remoteCandidateInfo2.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     remoteCandidateInfo2.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
-    remoteCandidateInfo2.priority = 1000;            /* Priority P2 > P1 */
+    remoteCandidateInfo2.priority = 1000; /* Priority P2 > P1. */
     remoteCandidateInfo2.pEndpoint = &( endpoint );
 
     result = Ice_AddRemoteCandidate( &( context ),
@@ -1653,7 +1655,7 @@ void test_iceAddCandidatePair_MultipleCandidatePairs( void )
 
     remoteCandidateInfo2.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     remoteCandidateInfo2.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
-    remoteCandidateInfo2.priority = 200;            /* Priority P2 > P1 > P3 */
+    remoteCandidateInfo2.priority = 200; /* Priority P2 > P1 > P3. */
     remoteCandidateInfo2.pEndpoint = &( endpoint );
 
     result = Ice_AddRemoteCandidate( &( context ),
@@ -1663,7 +1665,7 @@ void test_iceAddCandidatePair_MultipleCandidatePairs( void )
                        result );
 
     /* Verify candidate pair Info. */
-    TEST_ASSERT_EQUAL( 3,               /* 1 Local x 3 Remote = 3 Candidate Pairs */
+    TEST_ASSERT_EQUAL( 3,               /* 1 Local x 3 Remote = 3 Candidate Pairs. */
                        context.numCandidatePairs );
     TEST_ASSERT_EQUAL( 1000, context.pCandidatePairs[ 0 ].pRemoteCandidate->priority );
     TEST_ASSERT_EQUAL( 500, context.pCandidatePairs[ 1 ].pRemoteCandidate->priority );
@@ -2047,9 +2049,9 @@ void test_iceCreateResponseForRequest_TurnChannelHeader( void )
     size_t expectedStunMessageLength = sizeof( expectedStunMessage );
     uint8_t expectedTurnChannelHeader[] =
     {
-        /* Channel Number */
+        /* Channel Number. */
         0x40, 0x10,
-        /* Content Length = 0x4C ( 0x38 + STUN header 20 bytes ) */
+        /* Content Length = 0x4C ( 0x38 + STUN header 20 bytes ). */
         0x00, 0x4C
     };
     size_t expectedTurnChannelHeaderLength = sizeof( expectedTurnChannelHeader );
@@ -2240,7 +2242,7 @@ void test_iceCreateNextCandidateRequest_BadParams( void )
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -2249,7 +2251,7 @@ void test_iceCreateNextCandidateRequest_BadParams( void )
                                              NULL,
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -2258,7 +2260,7 @@ void test_iceCreateNextCandidateRequest_BadParams( void )
                                              &( localCandidate ),
                                              0ULL,
                                              NULL,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -2292,7 +2294,7 @@ void test_iceCreateNextCandidateRequest_IsRemoteCandidate( void )
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -2303,7 +2305,7 @@ void test_iceCreateNextCandidateRequest_IsRemoteCandidate( void )
 /**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
  * BINDING_REQUEST STUN message to query IP address for new
- * srflx candidate.
+ * server reflexive candidate.
  */
 void test_iceCreateNextCandidateRequest_NewSrflxCandidate( void )
 {
@@ -2335,7 +2337,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_NEW;
     /* Generate transaction ID which should be set while adding server reflexive candidate. */
@@ -2345,7 +2347,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate( void )
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( STUN_RESULT_OK,
                        result );
@@ -2382,7 +2384,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_TransactionIdStoreFull
         transactionIdStore.pTransactionIdSlots[ i ].inUse = 1;
     }
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_NEW;
     context.cryptoFunctions.randomFxn( localCandidate.transactionId, sizeof( localCandidate.transactionId ) );
@@ -2390,7 +2392,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_TransactionIdStoreFull
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TRANSACTION_ID_STORE_ERROR,
                        result );
@@ -2416,14 +2418,14 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_StunBufferTooSmallToIn
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_NEW;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
                        result );
@@ -2476,7 +2478,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_ReuseTransactionID( vo
             &( transactionID[ 0 ] ),
             sizeof( transactionID ) );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_NEW;
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -2486,7 +2488,7 @@ void test_iceCreateNextCandidateRequest_NewSrflxCandidate_ReuseTransactionID( vo
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( STUN_RESULT_OK,
                        result );
@@ -2518,14 +2520,14 @@ void test_iceCreateNextCandidateRequest_SrflxCandidateAlreadyValid( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
                        result );
@@ -2551,14 +2553,14 @@ void test_iceCreateNextCandidateRequest_HostCandidateNoNextAction( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
                        result );
@@ -2641,25 +2643,25 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_WithAllInfo_Suc
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -2716,17 +2718,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_MissInfo_Succes
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -2758,7 +2760,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_NoRelayExtensio
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     localCandidate.pTurnServer = NULL;
@@ -2766,7 +2768,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_NoRelayExtensio
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE,
                        result );
@@ -2793,16 +2795,16 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR,
                        result );
@@ -2829,16 +2831,16 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_LIFETIME,
                        result );
@@ -2865,17 +2867,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REQUESTED_TRANSPORT,
                        result );
@@ -2910,25 +2912,25 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_USERNAME,
                        result );
@@ -2963,25 +2965,25 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_REALM,
                        result );
@@ -3016,25 +3018,25 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_StunBufferTooSm
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_STUN_ERROR_ADD_NONCE,
                        result );
@@ -3090,17 +3092,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_ReuseTransactio
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     memcpy( localCandidate.transactionId, transactionID, sizeof( transactionID ) );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -3146,7 +3148,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_WithAllInfo_Succ
         0x08, 0x09, 0x0A, 0x0B,
         /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
         0x00, 0x0D, 0x00, 0x04,
-        /* Attribute Value: 0 when relesing. */
+        /* Attribute Value: 0 when releasing. */
         0x00, 0x00, 0x00, 0x00,
         /* Attribute type = USERNAME (0x0006), Length = 8 bytes. */
         0x00, 0x06, 0x00, 0x08,
@@ -3184,25 +3186,25 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_WithAllInfo_Succ
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate ).transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -3240,7 +3242,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_MissInfo_Success
         0x08, 0x09, 0x0A, 0x0B,
         /* Attribute type = LIFETIME (0x000D), Length = 4 bytes. */
         0x00, 0x0D, 0x00, 0x04,
-        /* Attribute Value: 0 when relesing. */
+        /* Attribute Value: 0 when releasing. */
         0x00, 0x00, 0x00, 0x00,
         /* Attribute type = FINGERPRINT (0x8028), Length = 4 bytes. */
         0x80, 0x28, 0x00, 0x04,
@@ -3255,17 +3257,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_MissInfo_Success
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    ( void ) context.cryptoFunctions.randomFxn( &localCandidate.transactionId[ 0 ], STUN_HEADER_TRANSACTION_ID_LENGTH );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    ( void ) context.cryptoFunctions.randomFxn( &( localCandidate.transactionId[ 0 ] ), STUN_HEADER_TRANSACTION_ID_LENGTH );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -3322,17 +3324,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_ReuseTransaction
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     memcpy( localCandidate.transactionId, transactionID, sizeof( transactionID ) );
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -3364,7 +3366,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_NoRelayExtension
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_RELEASING;
     localCandidate.pTurnServer = NULL;
@@ -3372,7 +3374,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_NoRelayExtension
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE,
                        result );
@@ -3400,17 +3402,17 @@ void test_iceCreateNextCandidateRequest_RelayCandidateReleased_NoNextAction( voi
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_INVALID;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.pTurnServer->turnAllocationExpirationTimeSeconds = currentTimeSeconds + 0xFFFF;
     result = Ice_CreateNextCandidateRequest( &( context ),
                                              &( localCandidate ),
                                              0ULL,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
                        result );
@@ -3491,20 +3493,20 @@ void test_iceCreateNextCandidateRequest_SucceedRefreshNeeded( void )
     context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.pTurnServer->turnAllocationExpirationTimeSeconds = currentTimeSeconds - 1;
     context.cryptoFunctions.randomFxn( localCandidate.transactionId, sizeof( localCandidate.transactionId ) );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -3518,7 +3520,7 @@ void test_iceCreateNextCandidateRequest_SucceedRefreshNeeded( void )
                                              &( localCandidate ),
                                              currentTimeSeconds,
                                              stunMessageBuffer,
-                                             &stunMessageBufferLength );
+                                             &( stunMessageBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -3639,12 +3641,13 @@ void test_iceCreateNextPairRequest_Waiting_CreateConnectivityCheckBindingRequest
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -3725,12 +3728,13 @@ void test_iceCreateNextPairRequest_Nominated_ControllingSendNominatingRequest( v
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -3809,7 +3813,7 @@ void test_iceCreateNextPairRequest_Nominated_ControlledConnectivityCheckRequest(
     size_t expectedStunMessageLength = sizeof( expectedStunMessage );
 
     initInfo.isControlling = 0U;
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set HMAC function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -3819,12 +3823,13 @@ void test_iceCreateNextPairRequest_Nominated_ControlledConnectivityCheckRequest(
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -3863,12 +3868,13 @@ void test_iceCreateNextPairRequest_Valid_NoNextAction( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_VALID;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -3902,17 +3908,18 @@ void test_iceCreateNextPairRequest_Succeed_NoRefreshNeeded( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.pTurnServer->turnAllocationExpirationTimeSeconds = currentTimeSeconds + 0xFFFF;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds + 0xFFFF;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -3946,7 +3953,7 @@ void test_iceCreateNextPairRequest_Succeed_NullLocalCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.pLocalCandidate = NULL;
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds + 0xFFFF;
@@ -3984,14 +3991,15 @@ void test_iceCreateNextPairRequest_Succeed_NotRelayCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds + 0xFFFF;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4027,16 +4035,16 @@ void test_iceCreateNextPairRequest_Succeed_RefreshPermissionNoTurnServerArray( v
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     localCandidate.pTurnServer = NULL;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds - 1;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4070,12 +4078,13 @@ void test_iceCreateNextPairRequest_Frozen_NoNextAction( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_FROZEN;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -4108,12 +4117,13 @@ void test_iceCreateNextPairRequest_Invalid_NoNextAction( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.priority = 1000;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_INVALID;
     candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -4147,10 +4157,10 @@ void test_iceCreateNextPairRequest_CreatePermission_NullLocalCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
     candidatePair.pLocalCandidate = NULL;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -4184,9 +4194,9 @@ void test_iceCreateNextPairRequest_CreatePermission_NullRemoteCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
     candidatePair.pRemoteCandidate = NULL;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4195,7 +4205,7 @@ void test_iceCreateNextPairRequest_CreatePermission_NullRemoteCandidate( void )
                                         stunMessageBuffer,
                                         &( stunMessageBufferLength ) );
 
-    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
                        result );
 }
 
@@ -4221,10 +4231,10 @@ void test_iceCreateNextPairRequest_CreatePermission_LocalCandidateNotRelayType( 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
 
@@ -4260,10 +4270,10 @@ void test_iceCreateNextPairRequest_CreatePermission_NoRelayExtension( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.pTurnServer = NULL;
@@ -4306,20 +4316,20 @@ void test_iceCreateNextPairRequest_CreatePermission_InValidLongTermPassword( voi
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
     localCandidate.pTurnServer->longTermPasswordLength = 0U;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4360,20 +4370,20 @@ void test_iceCreateNextPairRequest_CreatePermission_InValidRealm( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
     localCandidate.pTurnServer->realmLength = 0U;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4414,19 +4424,19 @@ void test_iceCreateNextPairRequest_CreatePermission_InValidNonce( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
     localCandidate.pTurnServer->nonceLength = 0U;
 
@@ -4473,22 +4483,22 @@ void test_iceCreateNextPairRequest_CreatePermission_StunBufferTooSmall( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4542,22 +4552,22 @@ void test_iceCreateNextPairRequest_CreatePermission_UnknownAddressFamily( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4613,22 +4623,22 @@ void test_iceCreateNextPairRequest_CreatePermission_InvalidUsername( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4683,22 +4693,22 @@ void test_iceCreateNextPairRequest_CreatePermission_InvalidRealm( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4753,22 +4763,22 @@ void test_iceCreateNextPairRequest_CreatePermission_InvalidNonce( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4863,22 +4873,22 @@ void test_iceCreateNextPairRequest_CreatePermission_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CREATE_PERMISSION;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -4925,10 +4935,10 @@ void test_iceCreateNextPairRequest_ChannelBind_NullLocalCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
     candidatePair.pLocalCandidate = NULL;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     result = Ice_CreateNextPairRequest( &( context ),
                                         &( candidatePair ),
@@ -4962,9 +4972,9 @@ void test_iceCreateNextPairRequest_ChannelBind_NullRemoteCandidate( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
     candidatePair.pRemoteCandidate = NULL;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -4973,7 +4983,7 @@ void test_iceCreateNextPairRequest_ChannelBind_NullRemoteCandidate( void )
                                         stunMessageBuffer,
                                         &( stunMessageBufferLength ) );
 
-    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+    TEST_ASSERT_EQUAL( ICE_RESULT_INVALID_CANDIDATE_PAIR,
                        result );
 }
 
@@ -4999,10 +5009,10 @@ void test_iceCreateNextPairRequest_ChannelBind_NoRelayExtension( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.pTurnServer = NULL;
@@ -5039,10 +5049,10 @@ void test_iceCreateNextPairRequest_ChannelBind_LocalCandidateNotRelayType( void 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
 
@@ -5084,20 +5094,20 @@ void test_iceCreateNextPairRequest_ChannelBind_InValidLongTermPassword( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
     localCandidate.pTurnServer->longTermPasswordLength = 0U;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -5138,20 +5148,20 @@ void test_iceCreateNextPairRequest_ChannelBind_InValidRealm( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
     localCandidate.pTurnServer->realmLength = 0U;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     result = Ice_CreateNextPairRequest( &( context ),
@@ -5192,19 +5202,19 @@ void test_iceCreateNextPairRequest_ChannelBind_InValidNonce( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
     localCandidate.pTurnServer->nonceLength = 0U;
 
@@ -5251,23 +5261,23 @@ void test_iceCreateNextPairRequest_ChannelBind_StunBufferTooSmall( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5321,23 +5331,23 @@ void test_iceCreateNextPairRequest_ChannelBind_UnknownAddressFamily( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5392,23 +5402,23 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidChannelNumber( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5463,23 +5473,23 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidUsername( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5534,23 +5544,23 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidRealm( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5605,23 +5615,23 @@ void test_iceCreateNextPairRequest_ChannelBind_InvalidNonce( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5720,23 +5730,23 @@ void test_iceCreateNextPairRequest_ChannelBind_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     memcpy( candidatePair.transactionId, transactionID, sizeof( transactionID ) );
     candidatePair.turnChannelNumber = 0x4000;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5836,10 +5846,10 @@ void test_iceCreateNextPairRequest_SucceedPermissionNeeded( void )
     context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.turnChannelNumber = 0x4000;
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds - 1;
     context.cryptoFunctions.randomFxn( candidatePair.transactionId, STUN_HEADER_TRANSACTION_ID_LENGTH );
@@ -5847,15 +5857,15 @@ void test_iceCreateNextPairRequest_SucceedPermissionNeeded( void )
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.pTurnServer->turnAllocationExpirationTimeSeconds = currentTimeSeconds + 0xFFFF;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -5913,24 +5923,24 @@ void test_iceCreateNextPairRequest_SucceedNoRefreshPermissionNeeded( void )
     context.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
-    memset( &candidatePair, 0, sizeof( IceCandidatePair_t ) );
+    memset( &( candidatePair ), 0, sizeof( IceCandidatePair_t ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.turnChannelNumber = 0x4000;
     candidatePair.turnPermissionExpirationSeconds = currentTimeSeconds + 0xFFFF;
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.pTurnServer->turnAllocationExpirationTimeSeconds = currentTimeSeconds + 0xFFFF;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->longTermPassword, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->longTermPassword[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->longTermPasswordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     localCandidate.endpoint.isPointToPoint = 0U;
@@ -6069,12 +6079,12 @@ void test_iceCloseCandidatePair_Success( void )
                        result );
 
     result = Ice_CloseCandidatePair( &( context ),
-                                     &( context.pCandidatePairs[0] ) );
+                                     &( context.pCandidatePairs[ 0 ] ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_FROZEN,
-                       context.pCandidatePairs[0].state );
+                       context.pCandidatePairs[ 0 ].state );
 }
 
 /*-----------------------------------------------------------*/
@@ -6346,7 +6356,7 @@ void test_iceHandlTurnPacket_BadParams( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
-    uint8_t receivedBuffer[ 10 ];
+    uint8_t receivedBuffer[ 10 ] = { 0 };
     size_t receivedBufferLength = sizeof( receivedBuffer );
     const uint8_t * pTurnPayloadBuffer;
     uint16_t turnPayloadBufferLength;
@@ -6356,64 +6366,64 @@ void test_iceHandlTurnPacket_BadParams( void )
     result = Ice_HandleTurnPacket( NULL,
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    NULL,
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
                                    NULL,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
+                                   &( localCandidate ),
                                    NULL,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
                                    NULL,
-                                   &pCandidatePair );
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
                                    NULL );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
@@ -6429,20 +6439,20 @@ void test_iceHandlTurnPacket_ReceivedLessData( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
-    uint8_t receivedBuffer[ 10 ];
+    uint8_t receivedBuffer[ 10 ] = { 0 };
     size_t receivedBufferLength = ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH - 1;
     const uint8_t * pTurnPayloadBuffer;
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
 
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_INVALID_MESSAGE,
                        result );
@@ -6465,15 +6475,15 @@ void test_iceHandlTurnPacket_NotRelayCandidate( void )
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_UNEXPECTED_MESSAGE,
                        result );
@@ -6496,16 +6506,16 @@ void test_iceHandlTurnPacket_CandidateNotReady( void )
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_UNEXPECTED_MESSAGE,
                        result );
@@ -6524,23 +6534,24 @@ void test_iceHandlTurnPacket_NoTurnChannelHeader( void )
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
-    uint8_t receivedBuffer[] = {
+    uint8_t receivedBuffer[] =
+    {
         /* Create a packet with the first two bytes outside the range 0x4000 to 0x4FFF. */
         0x00, 0x01,
         0x02, 0x03
     };
     size_t receivedBufferLength = sizeof( receivedBuffer );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_INVALID_MESSAGE,
                        result );
@@ -6560,7 +6571,8 @@ void test_iceHandlTurnPacket_LargeTurnHeaderLength( void )
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
-    uint8_t receivedBuffer[] = {
+    uint8_t receivedBuffer[] =
+    {
         0x40, 0x01,
         /* Create a packet with length 16. */
         0x00, 0x10,
@@ -6574,16 +6586,16 @@ void test_iceHandlTurnPacket_LargeTurnHeaderLength( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_INVALID_MESSAGE,
                        result );
@@ -6606,7 +6618,8 @@ void test_iceHandlTurnPacket_NoMatchTransportAddress( void )
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
-    uint8_t receivedBuffer[] = {
+    uint8_t receivedBuffer[] =
+    {
         0x40, 0x01,
         0x00, 0x01,
         0x02, 0x03,
@@ -6619,35 +6632,35 @@ void test_iceHandlTurnPacket_NoMatchTransportAddress( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    memset( &( endpoint1 ), 0, sizeof( IceEndpoint_t ) );
     endpoint1.transportAddress.address[ 0 ] = 0x00;
     endpoint1.transportAddress.address[ 1 ] = 0x01;
     endpoint1.transportAddress.address[ 2 ] = 0x02;
     endpoint1.transportAddress.address[ 3 ] = 0x03;
-    memset( &endpoint2, 0, sizeof( IceEndpoint_t ) );
+    memset( &( endpoint2 ), 0, sizeof( IceEndpoint_t ) );
     endpoint2.transportAddress.address[ 0 ] = 0x03;
     endpoint2.transportAddress.address[ 1 ] = 0x02;
     endpoint2.transportAddress.address[ 2 ] = 0x01;
     endpoint2.transportAddress.address[ 3 ] = 0x00;
 
-    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate1 ), 0, sizeof( IceCandidate_t ) );
     localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
-    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
-    memset( &localCandidate2, 0, sizeof( IceCandidate_t ) );
+    memcpy( &( localCandidate1.endpoint ), &( endpoint1 ), sizeof( IceEndpoint_t ) );
+    memset( &( localCandidate2 ), 0, sizeof( IceCandidate_t ) );
     localCandidate2.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate2.state = ICE_CANDIDATE_STATE_VALID;
-    memcpy( &localCandidate2.endpoint, &endpoint2, sizeof( IceEndpoint_t ) );
+    memcpy( &( localCandidate2.endpoint ), &( endpoint2 ), sizeof( IceEndpoint_t ) );
 
     context.numCandidatePairs = 1;
-    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
-    result = Ice_HandleTurnPacket( &context,
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( localCandidate1 );
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate2,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate2 ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
                        result );
@@ -6668,7 +6681,8 @@ void test_iceHandlTurnPacket_NoMatchTurnChannelNumber( void )
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
-    uint8_t receivedBuffer[] = {
+    uint8_t receivedBuffer[] =
+    {
         0x40, 0x01,
         0x00, 0x01,
         0x02, 0x03,
@@ -6681,27 +6695,27 @@ void test_iceHandlTurnPacket_NoMatchTurnChannelNumber( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    memset( &( endpoint1 ), 0, sizeof( IceEndpoint_t ) );
     endpoint1.transportAddress.address[ 0 ] = 0x00;
     endpoint1.transportAddress.address[ 1 ] = 0x01;
     endpoint1.transportAddress.address[ 2 ] = 0x02;
     endpoint1.transportAddress.address[ 3 ] = 0x03;
 
-    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate1 ), 0, sizeof( IceCandidate_t ) );
     localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
-    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
+    memcpy( &( localCandidate1.endpoint ), &( endpoint1 ), sizeof( IceEndpoint_t ) );
 
     context.numCandidatePairs = 1;
-    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( localCandidate1 );
     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x40FF;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate1,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate1 ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CANDIDATE_PAIR_NOT_FOUND,
                        result );
@@ -6722,7 +6736,8 @@ void test_iceHandlTurnPacket_Success( void )
     uint16_t turnPayloadBufferLength;
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t result;
-    uint8_t receivedBuffer[] = {
+    uint8_t receivedBuffer[] =
+    {
         0x40, 0x01,
         0x00, 0x02,
         0x02, 0x03,
@@ -6735,27 +6750,27 @@ void test_iceHandlTurnPacket_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &endpoint1, 0, sizeof( IceEndpoint_t ) );
+    memset( &( endpoint1 ), 0, sizeof( IceEndpoint_t ) );
     endpoint1.transportAddress.address[ 0 ] = 0x00;
     endpoint1.transportAddress.address[ 1 ] = 0x01;
     endpoint1.transportAddress.address[ 2 ] = 0x02;
     endpoint1.transportAddress.address[ 3 ] = 0x03;
 
-    memset( &localCandidate1, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate1 ), 0, sizeof( IceCandidate_t ) );
     localCandidate1.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate1.state = ICE_CANDIDATE_STATE_VALID;
-    memcpy( &localCandidate1.endpoint, &endpoint1, sizeof( IceEndpoint_t ) );
+    memcpy( &( localCandidate1.endpoint ), &( endpoint1 ), sizeof( IceEndpoint_t ) );
 
     context.numCandidatePairs = 1;
-    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate1;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( localCandidate1 );
     context.pCandidatePairs[ 0 ].turnChannelNumber = 0x4001;
-    result = Ice_HandleTurnPacket( &context,
+    result = Ice_HandleTurnPacket( &( context ),
                                    &( receivedBuffer[ 0 ] ),
                                    receivedBufferLength,
-                                   &localCandidate1,
-                                   &pTurnPayloadBuffer,
-                                   &turnPayloadBufferLength,
-                                   &pCandidatePair );
+                                   &( localCandidate1 ),
+                                   &( pTurnPayloadBuffer ),
+                                   &( turnPayloadBufferLength ),
+                                   &( pCandidatePair ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -6935,7 +6950,7 @@ void test_iceHandleStunPacket_BindingRequest_Invalid( void )
         0x80, 0x28, 0x00, 0x04,
         /* Attribute Value: 0x9A8841E2 as calculated by testCrc32Fxn. */
         0x9A, 0x88, 0x41, 0xE2,
-        /* Attribute type = UNKNOWN , Length = 4 bytes. */                      /* This Unknown Attribute results in Deserialization Error */
+        /* Attribute type = UNKNOWN , Length = 4 bytes. */ /* This Unknown Attribute results in Deserialization Error. */
         0x40, 0x28, 0x00, 0x04,
         /* Attribute Value: 0x010267E8. */
         0x01, 0x02, 0x67, 0xE8,
@@ -7411,11 +7426,11 @@ void test_iceHandleStunPacket_BindingRequest_ForRemoteRequest( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* 1st step of 4-Way Handshake is done */
+    /* 1st step of 4-Way Handshake is done. */
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
-    /* Here we are assuming for the 4-Way Hanshake process,
-     *  Binding Request has been sent and then we have received a Response for it. */
+    /* Here we are assuming for the 4-Way Handshake process,
+     * Binding Request has been sent and then we have received a Response for it. */
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessageBuffer[ 0 ] ),
@@ -7430,7 +7445,10 @@ void test_iceHandleStunPacket_BindingRequest_ForRemoteRequest( void )
                        result );
     TEST_ASSERT_EQUAL_PTR( &( stunMessageBuffer[ 8 ] ),
                            pTransactionId );
-    TEST_ASSERT_EQUAL( ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG, pCandidatePair->connectivityCheckFlags );
+    TEST_ASSERT_EQUAL( ICE_STUN_REQUEST_SENT_FLAG |
+                       ICE_STUN_REQUEST_RECEIVED_FLAG |
+                       ICE_STUN_RESPONSE_SENT_FLAG,
+                       pCandidatePair->connectivityCheckFlags );
 }
 
 /*-----------------------------------------------------------*/
@@ -7519,9 +7537,12 @@ void test_iceHandleStunPacket_BindingRequest_ForNomination( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* All 4 steps of 4-Way Handshake are done */
+    /* All 4 steps of 4-Way Handshake are done. */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* The tests covers that all 4 steps are done and for the
      * chosen candidate Pair the state has been modified to Nominated. */
@@ -7595,7 +7616,7 @@ void test_iceHandleStunPacket_BindingRequest_StartNomination( void )
     size_t stunMessageLength = sizeof( stunMessage );
 
     initInfo.isControlling = 1;
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -7631,9 +7652,12 @@ void test_iceHandleStunPacket_BindingRequest_StartNomination( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* All 4 steps of 4-Way Handshake are done */
+    /* All 4 steps of 4-Way Handshake are done. */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* The tests covers that all 4 steps are done and for the
      * chosen candidate Pair the state has been modified to Nominated. */
@@ -7705,7 +7729,7 @@ void test_iceHandleStunPacket_BindingRequest_AlreadyHaveNominatedPair( void )
     size_t stunMessageLength = sizeof( stunMessage );
 
     initInfo.isControlling = 1;
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -7741,15 +7765,21 @@ void test_iceHandleStunPacket_BindingRequest_AlreadyHaveNominatedPair( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* All 4 steps of 4-Way Handshake are done */
+    /* All 4 steps of 4-Way Handshake are done. */
     context.numCandidatePairs = 2;
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* Set nominated pair as it's nominated. */
     context.pCandidatePairs[ 1 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-    context.pCandidatePairs[ 1 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
-    context.pNominatedPair = &context.pCandidatePairs[ 1 ];
+    context.pCandidatePairs[ 1 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pNominatedPair = &( context ).pCandidatePairs[ 1 ];
 
     /* The tests covers that all 4 steps are done and for the
      * chosen candidate Pair the state has been modified to Nominated. */
@@ -7782,7 +7812,8 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t transactionID[] = {
+    uint8_t transactionID[] =
+    {
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
     uint8_t stunMessage[] =
@@ -7824,11 +7855,12 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     size_t stunMessageLength = sizeof( stunMessage );
     IceCandidate_t candidate;
     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
-    uint8_t transactionIDInStore[] = {
+    uint8_t transactionIDInStore[] =
+    {
         0xFF, 0xFF, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -7839,7 +7871,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( candidate ), 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -7848,7 +7880,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
             sizeof( ipAddress2 ) );
 
     context.numLocalCandidates = 6;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -7856,7 +7888,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     memcpy( ( void * ) &( context.pLocalCandidates[ 0 ].endpoint.transportAddress.address[ 0 ] ),
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
 
     /* Add a relay candidate to be freed to release TURN server allocation. */
     context.pLocalCandidates[ 1 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
@@ -7913,7 +7945,7 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -7927,11 +7959,14 @@ void test_iceHandleStunPacket_BindingRequest_Nomination_ReleaseOtherCandidates( 
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
-    pCandidatePair = &context.pCandidatePairs[ 0 ];
+    pCandidatePair = &( context ).pCandidatePairs[ 0 ];
 
-    /* All 4 steps of 4-Way Handshake are done */
+    /* All 4 steps of 4-Way Handshake are done. */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG | ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
     /* The tests covers that all 4 steps are done and for the
      * chosen candidate Pair the state has been modified to Nominated. */
@@ -8538,7 +8573,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_NoCandidatePair( void )
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote */
+    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
     iceResult = Ice_AddHostCandidate( &( context ),
                                       &( localCandidate.endpoint ) );
@@ -8615,7 +8650,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_FoundPeerReflexiveCandidate
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote */
+    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
     iceResult = Ice_AddServerReflexiveCandidate( &( context ),
                                                  &( localCandidate.endpoint ) );
@@ -8623,13 +8658,13 @@ void test_iceHandleStunPacket_BindingResponseSuccess_FoundPeerReflexiveCandidate
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;  /* [ Imitating the Ice_HandleServerReflexiveResponse() functionality */
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID; /* Imitating the Ice_HandleServerReflexiveResponse() functionality. */
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0;
 
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 0;
     memset( &( transactionIdStore ),
             0,
-            sizeof( TransactionIdStore_t ) );      /* Imitating the Ice_HandleServerReflexiveResponse() functionality ] */
+            sizeof( TransactionIdStore_t ) ); /* Imitating the Ice_HandleServerReflexiveResponse() functionality. */
 
     /* Here a valid state Server Reflexive Local Candidate is created by this process. */
 
@@ -8679,7 +8714,8 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HaveUnexpectedIntegrity( vo
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t transactionID[] = {
+    uint8_t transactionID[] =
+    {
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
     uint8_t stunMessageReceived[] =
@@ -8728,7 +8764,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HaveUnexpectedIntegrity( vo
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote */
+    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
     iceResult = Ice_AddServerReflexiveCandidate( &( context ),
                                                  &( localCandidate.endpoint ) );
@@ -8736,7 +8772,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HaveUnexpectedIntegrity( vo
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;  /* [ Imitating the Ice_HandleServerReflexiveResponse() functionality */
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;  /* Imitating the Ice_HandleServerReflexiveResponse() functionality. */
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0;
 
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 1;
@@ -8819,7 +8855,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_NoAddressFound( void )
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote */
+    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
     iceResult = Ice_AddHostCandidate( &( context ),
                                       &( localCandidate.endpoint ) );
@@ -8914,7 +8950,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_SuccessLocalResponse( void 
             ( const void * ) ipAddress,
             sizeof( ipAddress ) );
 
-    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote */
+    remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
     iceResult = Ice_AddServerReflexiveCandidate( &( context ),
                                                  &( localCandidate.endpoint ) );
@@ -8922,13 +8958,13 @@ void test_iceHandleStunPacket_BindingResponseSuccess_SuccessLocalResponse( void 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID;        /* [ Imitating the Ice_HandleServerReflexiveResponse() functionality */
+    context.pLocalCandidates[ 0 ].state = ICE_CANDIDATE_STATE_VALID; /* [ Imitating the Ice_HandleServerReflexiveResponse() functionality. */
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0;
 
     transactionIdStore.pTransactionIdSlots[ 0 ].inUse = 0;
     memset( &( transactionIdStore ),
             0,
-            sizeof( TransactionIdStore_t ) );      /* Imitating the Ice_HandleServerReflexiveResponse() functionality  ] */
+            sizeof( TransactionIdStore_t ) ); /* Imitating the Ice_HandleServerReflexiveResponse() functionality. */
 
     remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_SERVER_REFLEXIVE;
     remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
@@ -9488,7 +9524,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
     IceCandidate_t candidate;
     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -9498,7 +9534,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( candidate ), 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -9507,7 +9543,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
             sizeof( ipAddress2 ) );
 
     context.numLocalCandidates = 1;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9518,7 +9554,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9532,7 +9568,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_HostCandidateEndpointNotMat
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
-    pCandidatePair = &context.pCandidatePairs[ 0 ];
+    pCandidatePair = &( context ).pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -9560,7 +9596,8 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t transactionID[] = {
+    uint8_t transactionID[] =
+    {
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
     uint8_t stunMessage[] =
@@ -9592,7 +9629,7 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
     IceCandidate_t candidate;
     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -9602,7 +9639,7 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( candidate ), 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -9611,7 +9648,7 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
             sizeof( ipAddress2 ) );
 
     context.numLocalCandidates = 1;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9622,7 +9659,7 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9636,7 +9673,7 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
-    pCandidatePair = &context.pCandidatePairs[ 0 ];
+    pCandidatePair = &( context ).pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -9664,7 +9701,8 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t transactionID[] = {
+    uint8_t transactionID[] =
+    {
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
     uint8_t stunMessage[] =
@@ -9700,7 +9738,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
     IceCandidate_t candidate;
     uint8_t ipAddress2[] = { 0xC0, 0xA8, 0x01, 0x65 }; /* "192.168.1.101". */
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -9710,7 +9748,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    memset( &candidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( candidate ), 0, sizeof( IceCandidate_t ) );
     candidate.endpoint.isPointToPoint = 0U;
     candidate.endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
     candidate.endpoint.transportAddress.port = 8080;
@@ -9719,7 +9757,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
             sizeof( ipAddress2 ) );
 
     context.numLocalCandidates = 1;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_HOST;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9730,7 +9768,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9744,7 +9782,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RemoteEndpointNotMatching( 
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
-    pCandidatePair = &context.pCandidatePairs[ 0 ];
+    pCandidatePair = &( context ).pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -9772,7 +9810,8 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
     IceCandidatePair_t * pCandidatePair = NULL;
     IceResult_t iceResult;
     IceHandleStunPacketResult_t result;
-    uint8_t transactionID[] = {
+    uint8_t transactionID[] =
+    {
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
     };
     uint8_t stunMessage[] =
@@ -9806,7 +9845,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -9817,7 +9856,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
                        iceResult );
 
     context.numLocalCandidates = 1;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9828,7 +9867,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9842,7 +9881,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate( void )
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     memcpy( context.pCandidatePairs[ 0 ].transactionId, transactionID, STUN_HEADER_TRANSACTION_ID_LENGTH );
-    pCandidatePair = &context.pCandidatePairs[ 0 ];
+    pCandidatePair = &( context ).pCandidatePairs[ 0 ];
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -9903,7 +9942,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate_NoInputCandi
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -9914,7 +9953,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate_NoInputCandi
                        iceResult );
 
     context.numLocalCandidates = 1;
-    memset( &context.pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pLocalCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pLocalCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pLocalCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pLocalCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -9925,7 +9964,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_RelayCandidate_NoInputCandi
 
     /* To simplify, set remote candidate with same endpoint of local candidate. */
     context.numRemoteCandidates = 1;
-    memset( &context.pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
+    memset( &( context ).pRemoteCandidates[ 0 ], 0, sizeof( IceCandidate_t ) );
     context.pRemoteCandidates[ 0 ].candidateType = ICE_CANDIDATE_TYPE_RELAY;
     context.pRemoteCandidates[ 0 ].endpoint.isPointToPoint = 0U;
     context.pRemoteCandidates[ 0 ].endpoint.transportAddress.family = STUN_ADDRESS_IPv4;
@@ -10160,7 +10199,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_TransactionIDNotFound( void 
  * @brief Validate Ice_HandleStunPacket update realm, nonce, and long term key
  * in the local candidate.
  */
-void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UpdateServerInfo( void )
+void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_UpdateServerInfo( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -10229,9 +10268,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UpdateServerInfo
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -10244,7 +10283,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_UpdateServerInfo
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -10337,9 +10376,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_StaleNonce_UpdateServerInfo(
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -10428,9 +10467,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_CandidateNotAllocating( void
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
@@ -10458,7 +10497,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_CandidateNotAllocating( void
  * @brief Receive a ALLOCATE_ERROR_RESPONSE and the nonce inside is longer than default
  * buffer size ( 128 ).
  */
-void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NonceTooLong( void )
+void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_NonceTooLong( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -10684,10 +10723,10 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_RealmTooLong( vo
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE with
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE with
  * no nonce inside.
  */
-void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
+void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_NoNonce( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -10739,7 +10778,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -10753,9 +10792,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -10768,7 +10807,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -10798,10 +10837,10 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoNonce( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE with
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE with
  * no realm inside.
  */
-void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
+void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_NoRealm( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -10849,7 +10888,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
     char * pExpectedNonce = "nonce";
     size_t expectedNonceLength = strlen( pExpectedNonce );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -10863,9 +10902,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -10897,7 +10936,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unautorized_NoRealm( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE but
  * the error code is 0.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
@@ -10950,7 +10989,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
     char * pPassword = "password";
     size_t passwordLength = strlen( pPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -10964,9 +11003,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -10991,7 +11030,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_ZeroError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE and
  * the error code is unknown.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
@@ -11044,7 +11083,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
     char * pPassword = "password";
     size_t passwordLength = strlen( pPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -11058,9 +11097,9 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
             sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_ALLOCATING;
@@ -11085,7 +11124,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_UnknownError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE and
  * local candidate type is not relay.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_NotRelayCandidate( void )
@@ -11168,7 +11207,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_NotRelayCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE and
  * relay extension of local candidate is NULL.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_NullRelayExtension( void )
@@ -11250,7 +11289,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_NullRelayExtension( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_ERROR_RESPONSE and
  * fail to generate random transaction ID for next round.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_GenerateRandomFail( void )
@@ -11336,7 +11375,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_GenerateRandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * the transaction ID is not found in store.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_TransactionIDNotFound( void )
@@ -11388,7 +11427,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_TransactionIDNotFound( voi
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -11419,7 +11458,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_TransactionIDNotFound( voi
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * the local candidate type is not relay.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_NotRelayCandidate( void )
@@ -11475,7 +11514,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotRelayCandidate( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -11512,7 +11551,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotRelayCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * relay extension is NULL in local candidate.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_NullRelayExtension( void )
@@ -11568,7 +11607,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NullRelayExtension( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -11604,7 +11643,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NullRelayExtension( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * fail to generate transaction ID for next round.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_GenerateRandomFail( void )
@@ -11662,7 +11701,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_GenerateRandomFail( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
 
@@ -11706,7 +11745,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_GenerateRandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * the local candidate is not allocating.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
@@ -11762,7 +11801,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     iceResult = Ice_Init( &( context ),
@@ -11799,7 +11838,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NotAllocating( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE in pass.
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE in pass.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
 {
@@ -11860,7 +11899,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
     uint8_t * pExpectIpAddress = ipAddress;
     size_t expectIpAddressLength = sizeof( ipAddress );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -11914,7 +11953,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * the error code is not zero.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
@@ -11940,7 +11979,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
         0x00, 0x09, 0x00, 0x10,
-        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 401 Unautorized). */
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (Error Code = 401 Unauthorized). */
         0x00, 0x00, 0x04, 0x01,
         /* Error Phrase = "Error Phrase". */
         0x45, 0x72, 0x72, 0x6F,
@@ -11972,7 +12011,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12015,7 +12054,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_NonZeroError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE and add
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE and add
  * two candidate pairs by pre-adding two remote candidates.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePair( void )
@@ -12077,7 +12116,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePai
     uint8_t * pExpectIpAddress = ipAddress;
     size_t expectIpAddressLength = sizeof( ipAddress );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12136,7 +12175,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_Success_AddTwoCandidatePai
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * hitting max channel ID by adding 4097 remote candidates.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void )
@@ -12198,7 +12237,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void 
     IceCandidate_t localRemoteCandidateArray[ localRemoteCandidateArrayLength ];
     IceCandidatePair_t localCandidatePairArray[ localCandidatePairArrayLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12252,7 +12291,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_ChannelNumberExceed( void 
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a ALLOCATE_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a ALLOCATE_SUCCESS_RESPONSE but
  * fail to add candidate pair because the number of candidate pair is full.
  */
 void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void )
@@ -12310,7 +12349,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12359,7 +12398,7 @@ void test_iceHandleStunPacket_AllocateSuccessResponse_FailAddCandidatePair( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * the candidate pair is found in the ICE context.
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_Pass( void )
@@ -12408,7 +12447,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_Pass( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12454,7 +12493,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_Pass( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * the candidate pair having transaction ID is not creating permission.
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_PairNotCreatePermission( void )
@@ -12503,7 +12542,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_PairNotCreatePermiss
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12547,7 +12586,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_PairNotCreatePermiss
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * the candidate pair is not found for that transaction ID.
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_CandidatePairNotFound( void )
@@ -12592,7 +12631,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_CandidatePairNotFoun
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12636,7 +12675,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_CandidatePairNotFoun
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * the password is missing while deserializing STUN packet.
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_DeserializeStunFail( void )
@@ -12683,7 +12722,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_DeserializeStunFail(
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12723,7 +12762,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_DeserializeStunFail(
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * the candidate type is not relay
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_NotRelayCandidate( void )
@@ -12772,7 +12811,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_NotRelayCandidate( v
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12816,7 +12855,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_NotRelayCandidate( v
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_ERROR_RESPONSE and
  * TURN server pointer is NULL.
  */
 void test_iceHandleStunPacket_CreatePermissionErrorResponse_NullTurnServerArray( void )
@@ -12863,7 +12902,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_NullTurnServerArray(
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12902,7 +12941,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_NullTurnServerArray(
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE and
  * the candidate pair is found in the ICE context.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateCreatePermission( void )
@@ -12951,7 +12990,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateCreatePe
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -12999,7 +13038,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateCreatePe
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE and
  * the candidate pair is found in the ICE context. ICE library should ask user to
  * continue the channel bind to refresh its lifetime.
  */
@@ -13049,7 +13088,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateSucceede
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13097,7 +13136,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_Pass_StateSucceede
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * random returns fail while creating new transaction ID.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_RandomFail( void )
@@ -13146,7 +13185,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_RandomFail( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13193,7 +13232,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_RandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * the candidate pair state is neither create permission nor succeeded.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_StateNotWaitingCreatePermission( void )
@@ -13242,7 +13281,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_StateNotWaitingCre
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13286,7 +13325,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_StateNotWaitingCre
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * no candidate pair has that transaction ID.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_CandidateNotFound( void )
@@ -13331,7 +13370,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_CandidateNotFound(
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13375,7 +13414,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_CandidateNotFound(
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * the error code is non-zero.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NonZeroError( void )
@@ -13420,7 +13459,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NonZeroError( void
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13459,7 +13498,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NonZeroError( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * the password is missing while deserializing STUN packet.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_DeserializeStunFail( void )
@@ -13502,7 +13541,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_DeserializeStunFai
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13533,7 +13572,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_DeserializeStunFai
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * the candidate type is not relay.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NotRelayCandidate( void )
@@ -13578,7 +13617,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NotRelayCandidate(
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13617,7 +13656,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NotRelayCandidate(
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CREATE_PERMISSION_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CREATE_PERMISSION_SUCCESS_RESPONSE but
  * the TURN server pointer is NULL.
  */
 void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NullTurnServerArray( void )
@@ -13660,7 +13699,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NullTurnServerArra
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13694,7 +13733,7 @@ void test_iceHandleStunPacket_CreatePermissionSuccessResponse_NullTurnServerArra
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE and
  * the candidate pair is found in the ICE context.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_Pass( void )
@@ -13743,7 +13782,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_Pass( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13789,7 +13828,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_Pass( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE but
  * the candidate pair state is not waiting for channel bind response.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_StateNotChannelBind( void )
@@ -13838,7 +13877,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_StateNotChannelBind( void
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13882,7 +13921,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_StateNotChannelBind( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE but
  * no candidate pair has same transaction ID.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_CandidatePairNotFound( void )
@@ -13927,7 +13966,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_CandidatePairNotFound( vo
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -13971,7 +14010,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_CandidatePairNotFound( vo
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE but
  * the password is missing while deserializing STUN packet.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_DeserializeStunFail( void )
@@ -14018,7 +14057,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_DeserializeStunFail( void
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14059,7 +14098,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_DeserializeStunFail( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE and
  * the candidate type is not relay.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_NotRelayCandidate( void )
@@ -14108,7 +14147,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_NotRelayCandidate( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14152,7 +14191,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_NotRelayCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE and
  * the TURN server pointer is NULL.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_NullTurnServerArray( void )
@@ -14199,7 +14238,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_NullTurnServerArray( void
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14238,7 +14277,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_NullTurnServerArray( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_ERROR_RESPONSE and
  * it fail to generate transaction ID for next round.
  */
 void test_iceHandleStunPacket_ChannelBindErrorResponse_GenerateRandomFail( void )
@@ -14287,7 +14326,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_GenerateRandomFail( void 
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14333,7 +14372,7 @@ void test_iceHandleStunPacket_ChannelBindErrorResponse_GenerateRandomFail( void 
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE and
  * the candidate pair is found in the ICE context.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_Pass( void )
@@ -14382,7 +14421,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_Pass( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14428,7 +14467,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_Pass( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE but
  * it gets fail when generating transaction ID by calling random function.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_RandomFail( void )
@@ -14477,7 +14516,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_RandomFail( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14524,7 +14563,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_RandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE but
  * the candidate pair state is not waiting for channel binding.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_StateNotBinding( void )
@@ -14573,7 +14612,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_StateNotBinding( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14617,7 +14656,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_StateNotBinding( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE but
  * no candidate pair has same transaction ID.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_CandidatePairNotFound( void )
@@ -14662,7 +14701,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_CandidatePairNotFound( 
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14706,7 +14745,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_CandidatePairNotFound( 
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE but
  * the error code is non-zero.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_NonZeroError( void )
@@ -14751,7 +14790,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NonZeroError( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14790,7 +14829,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NonZeroError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE but
  * the password is missing while deserializing STUN packet.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_DeserializeStunFail( void )
@@ -14833,7 +14872,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_DeserializeStunFail( vo
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14864,7 +14903,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_DeserializeStunFail( vo
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE and
  * the candidate type is not relay.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_NotRelayCandidate( void )
@@ -14913,7 +14952,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NotRelayCandidate( void
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -14957,7 +14996,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NotRelayCandidate( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a CHANNEL_BIND_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a CHANNEL_BIND_SUCCESS_RESPONSE and
  * relay extension is NULL.
  */
 void test_iceHandleStunPacket_ChannelBindSuccessResponse_NullRelayExtension( void )
@@ -15004,7 +15043,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NullRelayExtension( voi
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15043,7 +15082,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_NullRelayExtension( voi
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the candidate is found in the ICE context with error code Authorized.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void )
@@ -15110,7 +15149,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15132,13 +15171,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15149,7 +15188,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15182,7 +15221,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorUnauthorized( void 
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the candidate is found in the ICE context with error code Stale Nonce.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
@@ -15249,7 +15288,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15271,13 +15310,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15288,7 +15327,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15321,7 +15360,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the candidate is found in the ICE context with unknown error code.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
@@ -15388,7 +15427,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15410,13 +15449,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15427,7 +15466,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15445,7 +15484,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_UnknownError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the error code in STUN message is zero.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
@@ -15512,7 +15551,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15534,13 +15573,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15551,7 +15590,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15569,7 +15608,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_ZeroError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE but
  * the fingerprint in STUN packet is wrong.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
@@ -15636,7 +15675,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15658,13 +15697,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15675,7 +15714,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15693,7 +15732,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_DeserializeStunFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the candidate is found in the ICE context with error code Stale Nonce.
  * And the candidate state is releasing.
  */
@@ -15761,7 +15800,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15783,13 +15822,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -15800,7 +15839,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -15820,7 +15859,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_Pass_ErrorStaleNonce_StateRel
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the transaction ID is not found in store.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_TransactionIdNotFound( void )
@@ -15869,7 +15908,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_TransactionIdNotFound( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15904,7 +15943,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_TransactionIdNotFound( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the candidate type is not relay.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_NotRelayCandidate( void )
@@ -15971,7 +16010,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NotRelayCandidate( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -15993,13 +16032,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NotRelayCandidate( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -16010,7 +16049,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NotRelayCandidate( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -16028,7 +16067,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NotRelayCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * the TURN server pointer is NULL.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_NullTurnServerArray( void )
@@ -16081,7 +16120,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NullTurnServerArray( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16119,7 +16158,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_NullTurnServerArray( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_ERROR_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_ERROR_RESPONSE and
  * fail to generate transaction ID for next round.
  */
 void test_iceHandleStunPacket_RefreshErrorResponse_GenerateRandomFail( void )
@@ -16186,7 +16225,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_GenerateRandomFail( void )
     uint16_t expectedLongTermPasswordLength = 16; /* It's always 16 bytes as MD5 result. */
     uint8_t pExpectedLongTermPassword[ expectedLongTermPasswordLength ];
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16210,13 +16249,13 @@ void test_iceHandleStunPacket_RefreshErrorResponse_GenerateRandomFail( void )
             longTermPassword,
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
-    memcpy( &localCandidate.pTurnServer->userName, pUsername, usernameLength );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ), pUsername, usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password, pPassword, passwordLength );
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ), pPassword, passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm, pRealm, realmLength );
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ), pRealm, realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce, pNonce, nonceLength );
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ), pNonce, nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
 
     memcpy( &( localCandidate.transactionId[ 0 ] ),
@@ -16227,7 +16266,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_GenerateRandomFail( void )
     ( void ) testMd5Fxn( ( const uint8_t * ) pPreLongTermPassword,
                          preLongTermPasswordLength,
                          pExpectedLongTermPassword,
-                         &expectedLongTermPasswordLength );
+                         &( expectedLongTermPasswordLength ) );
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -16245,7 +16284,7 @@ void test_iceHandleStunPacket_RefreshErrorResponse_GenerateRandomFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE and
  * the candidate is found in the ICE context.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_Pass( void )
@@ -16308,7 +16347,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_Pass( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16353,7 +16392,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_Pass( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE and
  * the candidate is releasing.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_CandidateReleasing( void )
@@ -16416,7 +16455,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_CandidateReleasing( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16461,7 +16500,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_CandidateReleasing( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE but
  * the password is missing while deserializing STUN packet.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_DeserializeStunFail( void )
@@ -16522,7 +16561,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_DeserializeStunFail( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16561,7 +16600,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_DeserializeStunFail( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE but
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE but
  * the transaction ID is not found.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_TransactionIdNotFound( void )
@@ -16618,7 +16657,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_TransactionIdNotFound( void
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16653,7 +16692,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_TransactionIdNotFound( void
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE and
  * the candidate type is not relay.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_NotRelayCandidate( void )
@@ -16716,7 +16755,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_NotRelayCandidate( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16759,7 +16798,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_NotRelayCandidate( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE and
  * the Turn server pointer is NULL.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_NullTurnServerArray( void )
@@ -16820,7 +16859,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_NullTurnServerArray( void )
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -16858,7 +16897,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_NullTurnServerArray( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Ice_HandleStunPacket recieves a REFRESH_SUCCESS_RESPONSE and
+ * @brief Ice_HandleStunPacket receives a REFRESH_SUCCESS_RESPONSE and
  * it fail to generate transaction ID for next round.
  */
 void test_iceHandleStunPacket_RefreshSuccessResponse_GenerateRandomFail( void )
@@ -16921,7 +16960,7 @@ void test_iceHandleStunPacket_RefreshSuccessResponse_GenerateRandomFail( void )
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000 */
+    /* Set CRC32 function to testCrc32Fxn_Fixed to make fingerprint always 0x00000000. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     /* Set CRC32 function to testHmacFxn_FixedFF to make integrity always 0xFF. */
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
@@ -17122,7 +17161,7 @@ void test_iceGetCandidatePairCount( void )
 void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
 {
     IceContext_t context = { 0 };
-    IceCandidatePair_t candidatePair;
+    IceCandidatePair_t candidatePair = { 0 };
     IceResult_t result;
     uint8_t turnPayloadBuffer[ 16 ];
     size_t turnPayloadBufferLength = sizeof( turnPayloadBuffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
@@ -17132,7 +17171,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
                                                &( candidatePair ),
                                                turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                turnPayloadBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -17141,7 +17180,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
                                                NULL,
                                                turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                turnPayloadBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -17150,7 +17189,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
                                                &( candidatePair ),
                                                NULL,
                                                turnPayloadBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
@@ -17187,14 +17226,14 @@ void test_Ice_CreateTurnChannelDataMessage_BufferTooSmall( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    candidatePair.pLocalCandidate = &localCandidate;
-    candidatePair.pRemoteCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
+    candidatePair.pRemoteCandidate = &( localCandidate );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                turnPayloadBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OUT_OF_MEMORY,
                        result );
@@ -17221,13 +17260,13 @@ void test_Ice_CreateTurnChannelDataMessage_StateNoNeedTurnChannelHeader( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    memset( &( candidatePair ), 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_INVALID;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                turnPayloadBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_TURN_CHANNEL_DATA_HEADER_NOT_REQUIRED,
                        result );
@@ -17245,16 +17284,18 @@ void test_Ice_CreateTurnChannelDataMessage_StateWaiting_Success( void )
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
     IceResult_t result;
-    uint8_t buffer[ 16 ] = {
+    uint8_t buffer[ 16 ] =
+    {
         /* Reserve first 4 bytes for channel header. */
         0x00, 0x00, 0x00, 0x00,
         0x12, 0x34, 0x56, 0x78,
         0x9A, 0xBC, 0xDE, 0xF0,
         0x12, 0x34, 0x56, 0x78
     };
-    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; // Reserve 4 bytes for channel header.
+    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; /* Reserve 4 bytes for channel header. */
     size_t totalBufferLength = sizeof( buffer );
-    uint8_t expectedBuffer[ 16 ] = {
+    uint8_t expectedBuffer[ 16 ] =
+    {
         /* Channel header + length. */
         0x40, 0x00, 0x00, 0x0C,
         0x12, 0x34, 0x56, 0x78,
@@ -17269,14 +17310,14 @@ void test_Ice_CreateTurnChannelDataMessage_StateWaiting_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    memset( &( candidatePair ), 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                inputBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -17299,16 +17340,18 @@ void test_Ice_CreateTurnChannelDataMessage_StateValid_Success( void )
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
     IceResult_t result;
-    uint8_t buffer[ 16 ] = {
+    uint8_t buffer[ 16 ] =
+    {
         /* Reserve first 4 bytes for channel header. */
         0x00, 0x00, 0x00, 0x00,
         0x12, 0x34, 0x56, 0x78,
         0x9A, 0xBC, 0xDE, 0xF0,
         0x12, 0x34, 0x56, 0x78
     };
-    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; // Reserve 4 bytes for channel header.
+    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; /* Reserve 4 bytes for channel header. */
     size_t totalBufferLength = sizeof( buffer );
-    uint8_t expectedBuffer[ 16 ] = {
+    uint8_t expectedBuffer[ 16 ] =
+    {
         /* Channel header + length. */
         0x40, 0x00, 0x00, 0x0C,
         0x12, 0x34, 0x56, 0x78,
@@ -17323,14 +17366,14 @@ void test_Ice_CreateTurnChannelDataMessage_StateValid_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    memset( &( candidatePair ), 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_VALID;
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                inputBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -17353,16 +17396,18 @@ void test_Ice_CreateTurnChannelDataMessage_StateNominated_Success( void )
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
     IceResult_t result;
-    uint8_t buffer[ 16 ] = {
+    uint8_t buffer[ 16 ] =
+    {
         /* Reserve first 4 bytes for channel header. */
         0x00, 0x00, 0x00, 0x00,
         0x12, 0x34, 0x56, 0x78,
         0x9A, 0xBC, 0xDE, 0xF0,
         0x12, 0x34, 0x56, 0x78
     };
-    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; // Reserve 4 bytes for channel header.
+    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; /* Reserve 4 bytes for channel header. */
     size_t totalBufferLength = sizeof( buffer );
-    uint8_t expectedBuffer[ 16 ] = {
+    uint8_t expectedBuffer[ 16 ] =
+    {
         /* Channel header + length. */
         0x40, 0x00, 0x00, 0x0C,
         0x12, 0x34, 0x56, 0x78,
@@ -17377,14 +17422,14 @@ void test_Ice_CreateTurnChannelDataMessage_StateNominated_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    memset( &( candidatePair ), 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                inputBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
@@ -17407,16 +17452,18 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success( void )
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
     IceResult_t result;
-    uint8_t buffer[ 16 ] = {
+    uint8_t buffer[ 16 ] =
+    {
         /* Reserve first 4 bytes for channel header. */
         0x00, 0x00, 0x00, 0x00,
         0x12, 0x34, 0x56, 0x78,
         0x9A, 0xBC, 0xDE, 0xF0,
         0x12, 0x34, 0x56, 0x78
     };
-    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; // Reserve 4 bytes for channel header.
+    size_t inputBufferLength = sizeof( buffer ) - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH; /* Reserve 4 bytes for channel header. */
     size_t totalBufferLength = sizeof( buffer );
-    uint8_t expectedBuffer[ 16 ] = {
+    uint8_t expectedBuffer[ 16 ] =
+    {
         /* Channel header + length. */
         0x40, 0x00, 0x00, 0x0C,
         0x12, 0x34, 0x56, 0x78,
@@ -17431,14 +17478,14 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &candidatePair, 0, sizeof( candidatePair ) );
+    memset( &( candidatePair ), 0, sizeof( candidatePair ) );
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
                                                buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
                                                inputBufferLength,
-                                               &totalBufferLength );
+                                               &( totalBufferLength ) );
 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );

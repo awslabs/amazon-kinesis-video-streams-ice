@@ -225,7 +225,7 @@ IceResult_t testHmacFxn_Wrong( const uint8_t * pPassword,
                                uint16_t * pOutputBufferLength )
 {
     /* Assume a fixed HMAC output length of 16 bytes (128 bits). */
-    const uint16_t hmacLength = 16;                 /* This HMAC Lenght is not correct */
+    const uint16_t hmacLength = 16; /* This HMAC Length is not correct. */
     uint16_t i;
     IceResult_t result = ICE_RESULT_OK;
 
@@ -280,17 +280,19 @@ IceResult_t testMd5Fxn( const uint8_t * pBuffer,
     const uint16_t md5Length = 16U;
     uint16_t i;
 
-    if( ( pBuffer == NULL ) || ( pOutputBuffer == NULL ) || ( pOutputBufferLength == NULL ) )
+    if( ( pBuffer == NULL ) ||
+        ( pOutputBuffer == NULL ) ||
+        ( pOutputBufferLength == NULL ) )
     {
         ret = ICE_RESULT_MD5_ERROR;
     }
-    else if( *pOutputBufferLength < md5Length )
+
+    if( ret == ICE_RESULT_OK )
     {
-        ret = ICE_RESULT_MD5_ERROR;
-    }
-    else
-    {
-        /* Empty else marker. */
+        if( *pOutputBufferLength < md5Length )
+        {
+            ret = ICE_RESULT_MD5_ERROR;
+        }
     }
 
     if( ret == ICE_RESULT_OK )
@@ -477,7 +479,7 @@ void test_iceAddCandidatePair_MaxTurnChannelNumber( void )
                        result );
 
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.pTurnServer->nextAvailableTurnChannelNumber = ICE_DEFAULT_TURN_CHANNEL_NUMBER_MAX + 1;
 
@@ -698,7 +700,7 @@ void test_iceCreateRequestForConnectivityCheck_HmacError( void )
     size_t stunMessageBufferLength = 128;
     IceResult_t result;
 
-    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_Wrong;  /* We are initializing the context to a wrong HMAC Function */
+    initInfo.cryptoFunctions.hmacFxn = testHmacFxn_Wrong;  /* We are initializing the context to a wrong HMAC Function. */
 
     result = Ice_Init( &( context ),
                        &( initInfo ) );
@@ -996,9 +998,9 @@ void test_iceCreateRequestForConnectivityCheck_TurnChannelHeader( void )
     size_t expectedStunMessageLength = sizeof( expectedStunMessage );
     uint8_t expectedTurnChannelHeader[] =
     {
-        /* Channel Number */
+        /* Channel Number. */
         0x40, 0x10,
-        /* Content Length = 0x5C ( 0x48 + STUN header 20 bytes ) */
+        /* Content Length = 0x5C ( 0x48 + STUN header 20 bytes ). */
         0x00, 0x5C
     };
     size_t expectedTurnChannelHeaderLength = sizeof( expectedTurnChannelHeader );
@@ -1328,9 +1330,9 @@ void test_iceCreateRequestForNominatingCandidatePair_TurnChannelHeader( void )
     size_t expectedStunMessageLength = sizeof( expectedStunMessage );
     uint8_t expectedTurnChannelHeader[] =
     {
-        /* Channel Number */
+        /* Channel Number. */
         0x40, 0x10,
-        /* Content Length = 0x60 ( 0x4C + STUN header 20 bytes ) */
+        /* Content Length = 0x60 ( 0x4C + STUN header 20 bytes ). */
         0x00, 0x60
     };
     size_t expectedTurnChannelHeaderLength = sizeof( expectedTurnChannelHeader );
@@ -1429,9 +1431,9 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToInit( v
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1463,9 +1465,9 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddLife
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
 
     result = Ice_CreateRefreshRequest( &( context ),
                                        &( localCandidate ),
@@ -1501,14 +1503,14 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddUser
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName[0],
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ),
             pUsername,
             usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password[0],
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ),
             pPassword,
             passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
@@ -1551,22 +1553,22 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddReal
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName[0],
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ),
             pUsername,
             usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password[0],
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ),
             pPassword,
             passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm[0],
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ),
             pRealm,
             realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce[0],
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ),
             pNonce,
             nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
@@ -1609,22 +1611,22 @@ void test_iceCreateRequestForNominatingCandidatePair_StunBufferTooSmallToAddNonc
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        result );
 
-    memset( &localCandidate, 0, sizeof( IceCandidate_t ) );
+    memset( &( localCandidate ), 0, sizeof( IceCandidate_t ) );
     context.numTurnServers = 1;
-    localCandidate.pTurnServer = &context.pTurnServers[ 0 ];
-    memcpy( &localCandidate.pTurnServer->userName[0],
+    localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
+    memcpy( &( localCandidate.pTurnServer->userName[ 0 ] ),
             pUsername,
             usernameLength );
     localCandidate.pTurnServer->userNameLength = usernameLength;
-    memcpy( &localCandidate.pTurnServer->password[0],
+    memcpy( &( localCandidate.pTurnServer->password[ 0 ] ),
             pPassword,
             passwordLength );
     localCandidate.pTurnServer->passwordLength = passwordLength;
-    memcpy( &localCandidate.pTurnServer->realm[0],
+    memcpy( &( localCandidate.pTurnServer->realm[ 0 ] ),
             pRealm,
             realmLength );
     localCandidate.pTurnServer->realmLength = realmLength;
-    memcpy( &localCandidate.pTurnServer->nonce[0],
+    memcpy( &( localCandidate.pTurnServer->nonce[ 0 ] ),
             pNonce,
             nonceLength );
     localCandidate.pTurnServer->nonceLength = nonceLength;
