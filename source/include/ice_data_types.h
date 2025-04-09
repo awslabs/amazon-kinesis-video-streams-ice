@@ -19,10 +19,10 @@
 #define ICE_STUN_REQUEST_RECEIVED_FLAG      ( 1 << 2 )
 #define ICE_STUN_RESPONSE_SENT_FLAG         ( 1 << 3 )
 
-#define ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( connectivityCheckFlags )    \
-    ( ( connectivityCheckFlags ) == ( ICE_STUN_REQUEST_SENT_FLAG |          \
-                                      ICE_STUN_RESPONSE_RECEIVED_FLAG |     \
-                                      ICE_STUN_REQUEST_RECEIVED_FLAG |      \
+#define ICE_STUN_CONNECTIVITY_CHECK_SUCCESSFUL( connectivityCheckFlags ) \
+    ( ( connectivityCheckFlags ) == ( ICE_STUN_REQUEST_SENT_FLAG |       \
+                                      ICE_STUN_RESPONSE_RECEIVED_FLAG |  \
+                                      ICE_STUN_REQUEST_RECEIVED_FLAG |   \
                                       ICE_STUN_RESPONSE_SENT_FLAG ) )
 
 /* https://tools.ietf.org/html/rfc5389#section-15.3. */

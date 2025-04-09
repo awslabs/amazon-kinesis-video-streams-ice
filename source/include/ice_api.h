@@ -86,7 +86,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
  * that the caller has reserved 4 (ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH) bytes for the header.
  * - [in, out] pTotalBufferLength: On input, the total buffer length excluding the reserved 4 bytes header.
  *                                 On output, the total buffer length including the header.
- * 
+ *
  * | Reserved 4 bytes header | ------ pTurnPayload ------ | 4-byte align padding |.
  *                           |      turnPayloadLength     |
  * | --------------------------- *pTotalBufferLength --------------------------- | */

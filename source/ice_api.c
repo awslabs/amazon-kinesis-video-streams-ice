@@ -440,9 +440,9 @@ IceResult_t Ice_CloseCandidate( IceContext_t * pContext,
                 pLocalCandidate->state = ICE_CANDIDATE_STATE_RELEASING;
 
                 /* Regenerate Transaction Id to be used in the TURN request to
-                * release resources on the TURN server. */
+                 * release resources on the TURN server. */
                 ( void ) pContext->cryptoFunctions.randomFxn( &( pLocalCandidate->transactionId[ 0 ] ),
-                                                            STUN_HEADER_TRANSACTION_ID_LENGTH );
+                                                              STUN_HEADER_TRANSACTION_ID_LENGTH );
             }
         }
         else
@@ -619,7 +619,7 @@ IceResult_t Ice_HandleTurnPacket( IceContext_t * pContext,
         channelNumber = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ) );
         messageLength = ICE_READ_UINT16( &( pReceivedTurnMessage[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ) );
 
-        if( receivedTurnMessageLength < (size_t) ( messageLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) )
+        if( receivedTurnMessageLength < ( size_t ) ( messageLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH ) )
         {
             result = ICE_RESULT_TURN_INVALID_MESSAGE;
         }

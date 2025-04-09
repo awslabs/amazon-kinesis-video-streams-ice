@@ -55,9 +55,9 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     {
         longTermPasswordLength = ICE_SERVER_CONFIG_LONG_TERM_PASSWORD_LENGTH;
         result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) &( buffer[ 0 ] ),
-                                                    snprintfRetVal,
-                                                    &( pTurnServer->longTermPassword[ 0 ] ),
-                                                    &( longTermPasswordLength ) );
+                                                   snprintfRetVal,
+                                                   &( pTurnServer->longTermPassword[ 0 ] ),
+                                                   &( longTermPasswordLength ) );
     }
 
 
@@ -774,7 +774,7 @@ IceResult_t Ice_CreateAllocationRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx) ,
+        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx ),
                                                           ICE_DEFAULT_TURN_ALLOCATION_LIFETIME_SECONDS );
 
         if( stunResult != STUN_RESULT_OK )
@@ -2030,7 +2030,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
@@ -2128,7 +2128,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
@@ -2209,7 +2209,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
@@ -2275,7 +2275,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        /* 
+        /*
          * Validates the candidate pair's selection status:
          * - If already selected: Updates state to succeeded
          * - If not selected: Triggers connectivity check
@@ -2315,7 +2315,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
     IceCandidatePair_t * pIceCandidatePair = NULL;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
@@ -2394,7 +2394,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
@@ -2461,7 +2461,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
 
     if( ( pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-        ( pLocalCandidate->pTurnServer == NULL )  )
+        ( pLocalCandidate->pTurnServer == NULL ) )
     {
         handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_UNEXPECTED_RESPONSE;
     }
