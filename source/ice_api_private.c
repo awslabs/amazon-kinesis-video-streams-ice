@@ -119,22 +119,6 @@ static IceHandleStunPacketResult_t UpdateIceServerInfo( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-static void ReleaseOtherCandidates( IceContext_t * pContext,
-                                    const IceCandidatePair_t * pNominatedPair )
-{
-    size_t i;
-
-    for( i = 0; i < pContext->numLocalCandidates; i++ )
-    {
-        if( &( pContext->pLocalCandidates[ i ] ) != pNominatedPair->pLocalCandidate )
-        {
-            ( void ) Ice_CloseCandidate( pContext, &( pContext->pLocalCandidates[ i ] ) );
-        }
-    }
-}
-
-/*----------------------------------------------------------------------------*/
-
 uint8_t Ice_IsSameTransportAddress( const IceTransportAddress_t * pTransportAddress1,
                                     const IceTransportAddress_t * pTransportAddress2 )
 {
@@ -472,6 +456,15 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         ( pMessageBufferLength == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
+    }
+
+    /* If we have received binding success response, we stop sending binding request for this pair. */
+    if( result == ICE_RESULT_OK )
+    {
+        if( ( pIceCandidatePair->connectivityCheckFlags & ICE_STUN_RESPONSE_RECEIVED_FLAG ) != 0 )
+        {
+            result = ICE_RESULT_NO_NEXT_ACTION;
+        }
     }
 
     if( result == ICE_RESULT_OK )
@@ -1524,7 +1517,6 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
                     {
                         pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
                         pContext->pNominatedPair = pIceCandidatePair;
-                        ReleaseOtherCandidates( pContext, pIceCandidatePair );
                     }
                     else
                     {
@@ -1768,8 +1760,6 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
                     pContext->pSelectedPair = pIceCandidatePair;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
-
-                    ReleaseOtherCandidates( pContext, pIceCandidatePair );
                 }
                 else
                 {
@@ -1790,8 +1780,6 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
                     pContext->pSelectedPair = pIceCandidatePair;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
-
-                    ReleaseOtherCandidates( pContext, pIceCandidatePair );
                 }
                 else
                 {

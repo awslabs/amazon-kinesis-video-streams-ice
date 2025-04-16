@@ -689,6 +689,64 @@ void test_iceCreateRequestForConnectivityCheck_Controlled( void )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Validate ICE Create Stun Packet for connectivity check functionality
+ * when the binding success response has been received before calling.
+ */
+void test_iceCreateRequestForConnectivityCheck_ResponseAlreadyReceived( void )
+{
+    IceContext_t context = { 0 };
+    IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
+    uint8_t stunMessageBuffer[ 128 ];
+    size_t stunMessageBufferLength = 128;
+    IceResult_t result;
+
+    initInfo.isControlling = 0;
+    result = Ice_Init( &( context ),
+                       &( initInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    endpoint.isPointToPoint = 1;
+    endpoint.transportAddress.family = 0;
+    endpoint.transportAddress.port = 8080;
+    memcpy( ( void * ) &( endpoint.transportAddress.address[ 0 ] ),
+            ( const void * ) ipAddress,
+            sizeof( ipAddress ) );
+
+    result = Ice_AddHostCandidate( &( context ),
+                                   &( endpoint ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    remoteCandidateInfo.candidateType = ICE_CANDIDATE_TYPE_HOST;
+    remoteCandidateInfo.remoteProtocol = ICE_SOCKET_PROTOCOL_UDP;
+    remoteCandidateInfo.priority = 1000;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_OK,
+                       result );
+
+    /* Assume that this candidate pair has sent binding request and received binding success response before calling Ice_CreateRequestForConnectivityCheck. */
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags |= ICE_STUN_REQUEST_SENT_FLAG | ICE_STUN_RESPONSE_RECEIVED_FLAG;
+
+    result = Ice_CreateRequestForConnectivityCheck( &( context ),
+                                                    &( context.pCandidatePairs[ 0 ] ),
+                                                    &( stunMessageBuffer[ 0 ] ),
+                                                    &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_NO_NEXT_ACTION,
+                       result );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Validate ICE Create Stun Packet for connectivity check functionality for invalid HMAC LENGTH i.e. 20 Bytes.
  */
 void test_iceCreateRequestForConnectivityCheck_HmacError( void )
