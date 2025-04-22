@@ -23,11 +23,11 @@
 
 /*----------------------------------------------------------------------------*/
 
-static IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
-                                                              StunContext_t * pStunCtx,
-                                                              const uint8_t * pPassword,
-                                                              size_t passwordLength,
-                                                              IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
+static IceHandleStunPacketResult_t DeserializeStunPacket( IceContext_t * pContext,
+                                                          StunContext_t * pStunCtx,
+                                                          const uint8_t * pPassword,
+                                                          size_t passwordLength,
+                                                          IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
 
 /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4 to get the
  * long-term credential string. */
@@ -46,9 +46,12 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     snprintfRetVal = snprintf( &( buffer[ 0 ] ),
                                bufferLength,
                                "%.*s:%.*s:%.*s",
-                               ( int ) pTurnServer->userNameLength, &( pTurnServer->userName[ 0 ] ),
-                               ( int ) pTurnServer->realmLength, &( pTurnServer->realm[ 0 ] ),
-                               ( int ) pTurnServer->passwordLength, &( pTurnServer->password[ 0 ] ) );
+                               ( int ) pTurnServer->userNameLength,
+                               &( pTurnServer->userName[ 0 ] ),
+                               ( int ) pTurnServer->realmLength,
+                               &( pTurnServer->realm[ 0 ] ),
+                               ( int ) pTurnServer->passwordLength,
+                               &( pTurnServer->password[ 0 ] ) );
 
     /* LCOV_EXCL_START */
     if( snprintfRetVal < 0 )
@@ -896,7 +899,8 @@ IceResult_t Ice_CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx ), lifetime );
+        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx ),
+                                                          lifetime );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -1200,12 +1204,12 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-/* Ice_DeserializeStunPacket - This API deserializes a received STUN packet. */
-static IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
-                                                              StunContext_t * pStunCtx,
-                                                              const uint8_t * pPassword,
-                                                              size_t passwordLength,
-                                                              IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
+/* DeserializeStunPacket - This API deserializes a received STUN packet. */
+static IceHandleStunPacketResult_t DeserializeStunPacket( IceContext_t * pContext,
+                                                          StunContext_t * pStunCtx,
+                                                          const uint8_t * pPassword,
+                                                          size_t passwordLength,
+                                                          IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
 {
     IceHandleStunPacketResult_t result = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
@@ -1387,11 +1391,11 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     size_t i;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        pContext->creds.pLocalPassword,
-                                                        pContext->creds.localPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    pContext->creds.pLocalPassword,
+                                                    pContext->creds.localPasswordLength,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1583,11 +1587,11 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        NULL,
-                                                        0,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    NULL,
+                                                    0,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1661,11 +1665,11 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
     IceResult_t result = ICE_RESULT_OK;
     size_t i;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        pContext->creds.pRemotePassword,
-                                                        pContext->creds.remotePasswordLength,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    pContext->creds.pRemotePassword,
+                                                    pContext->creds.remotePasswordLength,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1840,11 +1844,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1920,11 +1924,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1996,11 +2000,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2094,11 +2098,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2175,11 +2179,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2279,11 +2283,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2368,11 +2372,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2435,11 +2439,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
