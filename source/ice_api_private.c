@@ -1697,7 +1697,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
         }
         else
         {
-            pIceCandidatePair = *ppIceCandidatePair;                // Confused here
+            pIceCandidatePair = *ppIceCandidatePair;
         }
     }
 

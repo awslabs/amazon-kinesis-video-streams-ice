@@ -2328,14 +2328,14 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_RandomFail_TransactionId
         0x31, 0x32, 0x33, 0x34,  /* "1234" */
         /* MESSAGE-INTEGRITY attribute */
         0x00, 0x08, 0x00, 0x14,  /* Type = MESSAGE-INTEGRITY, Length = 20 */
-        0xFF, 0xFF, 0xFF, 0xFF,  /* HMAC-SHA1 value (20 bytes) */
+        0xFF, 0xFF, 0xFF, 0xFF,  /* HMAC-SHA1 value (20 bytes) generated using testHmacFxn_FixedFF */
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         /* FINGERPRINT attribute */
         0x80, 0x28, 0x00, 0x04,  /* Type = FINGERPRINT, Length = 4 */
-        0x00, 0x00, 0x00, 0x00   /* CRC32 value */
+        0x00, 0x00, 0x00, 0x00   /* CRC32 value generated using testCrc32Fxn_Fixed */
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
@@ -2379,6 +2379,10 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_RandomFail_TransactionId
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Test Ice_HandleStunPacket when connectivity check response is received
+ * for controlled agent and 4-way handshake is completed.
+ */
 void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominated( void )
 {
     IceContext_t context = { 0 };
@@ -2480,7 +2484,11 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
 
 /*-----------------------------------------------------------*/
 
-void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_IncompleteConnectivityCheck( void )
+/**
+ * @brief Test Ice_HandleStunPacket when connectivity check response is received
+ * for controlled agent and 4-way handshake is incomplete with local candidate as host.
+ */
+void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_IncompleteConnectivityCheck_HostLocal( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -2555,9 +2563,8 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* Set connectivity check flags for successful 4-way handshake */
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
-                                                        ICE_STUN_RESPONSE_SENT_FLAG;
+    /* We have sent the binding request and receive a response for it, But haven't received a binding request yet. */
+    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
     context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
 
@@ -2578,11 +2585,12 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
 }
 
 /*-----------------------------------------------------------*/
+
 /**
  * @brief Test Ice_HandleStunPacket when connectivity check response is received
- * and transaction ID is not found in the candidate pair.
+ * for controlled agent and 4-way handshake is incomplete with local candidate as srflx.
  */
-void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_IncompleteConnectivityCheck2( void )
+void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_IncompleteConnectivityCheck_SrflxLocal( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -2660,8 +2668,8 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
-                                                        ICE_STUN_RESPONSE_SENT_FLAG;
+    /* We have sent the binding request and receive a response for it, But haven't received a binding request yet. */
+    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
     context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
 
@@ -8440,7 +8448,7 @@ void test_iceHandleStunPacket_BindingRequest_ForRemoteRequest( void )
 /**
  * @brief Validate ICE Handle Stun Packet functionality for Binding Request Type for not Nomination.
  */
-void test_iceHandleStunPacket_BindingRequest_ForNotNomination( void )
+void test_iceHandleStunPacket_BindingRequest_NonNomination( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -8508,7 +8516,8 @@ void test_iceHandleStunPacket_BindingRequest_ForNotNomination( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_RECEIVED_FLAG;
+    /* We have Received a binding request and sent corresponding response so far. */
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_RECEIVED_FLAG | ICE_STUN_RESPONSE_SENT_FLAG;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -8599,15 +8608,13 @@ void test_iceHandleStunPacket_BindingRequest_ForBindingRequestAlreadySent( void 
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* We have Received a request and so far we have also sent a request */
-    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    /* 4-way handshake is completed still we received a binding request.
+       We send a reponse for it and keep the state to Valid. */
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
                                                           ICE_STUN_RESPONSE_RECEIVED_FLAG |
                                                           ICE_STUN_REQUEST_RECEIVED_FLAG |
                                                           ICE_STUN_RESPONSE_SENT_FLAG;
 
-    /* The tests covers that all 4 steps are done and for the
-     * chosen candidate Pair the state has been modified to Nominated. */
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
                                    stunMessageLength,
@@ -8630,7 +8637,8 @@ void test_iceHandleStunPacket_BindingRequest_ForBindingRequestAlreadySent( void 
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Handle Stun Packet functionality for Binding Request when 4-way handshake is not completed.
+ * @brief Validate ICE Handle Stun Packet functionality for Binding Request when 4-way handshake is not completed
+ * and we are waiting for Binding Response for the request we sent.
  */
 void test_iceHandleStunPacket_BindingRequest_ForResponseNotReceived( void )
 {
@@ -8701,9 +8709,7 @@ void test_iceHandleStunPacket_BindingRequest_ForResponseNotReceived( void )
 
     /* We have Received a request and so far we have also sent a request */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
-    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
-                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
-                                                          ICE_STUN_RESPONSE_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
     /* The tests covers that we haven't received the response for our Request but received a Request in meantime. */
     result = Ice_HandleStunPacket( &( context ),
@@ -8934,9 +8940,6 @@ void test_iceHandleStunPacket_BindingRequest_RandomError( void )
                                                           ICE_STUN_RESPONSE_RECEIVED_FLAG |
                                                           ICE_STUN_REQUEST_RECEIVED_FLAG |
                                                           ICE_STUN_RESPONSE_SENT_FLAG;
-
-    /* The tests covers that all 4 steps are done and for the
-     * chosen candidate Pair the state has been modified to Nominated. */
 
     context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;     /* Manually injecting wrong Random Rxn */
 
@@ -9267,7 +9270,8 @@ void test_iceHandleStunPacket_BindingRequest_DeserializationError( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Handle Stun Packet functionality.
+ * @brief Validate ICE Handle Stun Packet functionality for Binding Request Type
+ * while getting integrity mismatch.
  */
 void test_iceHandleStunPacket_IntegrityMismatch( void )
 {
@@ -9338,7 +9342,8 @@ void test_iceHandleStunPacket_IntegrityMismatch( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Handle Stun Packet functionality.
+ * @brief Validate ICE Handle Stun Packet functionality for Binding Request Type
+ * while getting integrity error.
  */
 void test_iceHandleStunPacket_IntegrityFxnError( void )
 {
@@ -9480,7 +9485,8 @@ void test_iceHandleStunPacket_FingerPrintMismatch( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Handle Stun Packet functionality.
+ * @brief Validate ICE Handle Stun Packet functionality for Binding Request Type
+ * while getting fingerprint error.
  */
 void test_iceHandleStunPacket_FingerPrintError( void )
 {
@@ -10755,7 +10761,8 @@ void test_iceHandleStunPacket_ErrorCode( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Handle Stun Packet functionality.
+ * @brief Validate ICE Handle Stun Packet functionality for Binding Successful
+ * Response for Server Reflexive Response with non-zero error code.
  */
 void test_iceHandleStunPacket_ErrorCode_ServerReflexiveResponse( void )
 {
@@ -11025,7 +11032,6 @@ void test_iceHandleStunPacket_ServerReflexiveResponse_UnknownAddressFamily( void
             transactionID,
             STUN_HEADER_TRANSACTION_ID_LENGTH );
 
-    /* We are simulating receiving a STUN message with non-zero error code. */
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessageReceived[ 0 ] ),
                                    stunMessageReceivedLength,
@@ -11235,7 +11241,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore( void )
 
 /**
  * @brief Validate ICE Handle Stun Packet functionality for Binding Successful
- * Response when Transaction ID is in the Store.
+ * Response when Transaction ID is in the Store and Random function gives error while updating the Transaction ID.
  */
 void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore_RandomError( void )
 {
@@ -11312,7 +11318,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore_RandomEr
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong; /* Manually injecting wrong Random Fxn*/
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -11559,9 +11565,9 @@ void test_iceHandleStunPacket_BindingRequest_ErrorInBindingRequest( void )
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Receiving binding request on TURN connection but max candidate limit reached
+ * @brief Receiving binding request on TURN connection but max remote candidate limit reached
  */
-void test_iceHandleStunPacket_BindingResponseSuccess_MaxCandidatePairs( void )
+void test_iceHandleStunPacket_BindingResponseSuccess_MaxRemoteCandidates( void )
 {
     IceContext_t context = { 0 };
     uint8_t * pTransactionId;
@@ -11644,6 +11650,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_MaxCandidatePairs( void )
 
     context.numCandidatePairs = 1;
     context.maxRemoteCandidates = 1; /* Manually declaring max limit reached */
+
     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
@@ -12318,7 +12325,7 @@ void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_UpdateServerInf
 
 /**
  * @brief Validate Ice_HandleStunPacket update realm, nonce, and long term key
- * in the local candidate.
+ * in the local candidate calculation error.
  */
 void test_iceHandleStunPacket_AllocateErrorResponse_Unauthorized_UpdateServerInfo_MD5FxError( void )
 {
