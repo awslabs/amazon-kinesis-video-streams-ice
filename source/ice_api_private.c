@@ -23,6 +23,12 @@
 
 /*----------------------------------------------------------------------------*/
 
+static IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
+                                                              StunContext_t * pStunCtx,
+                                                              const uint8_t * pPassword,
+                                                              size_t passwordLength,
+                                                              IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
+
 /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4 to get the
  * long-term credential string. */
 static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
@@ -49,10 +55,11 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     {
         result = ICE_RESULT_SNPRINTF_ERROR;
     }
-    /* LCOV_EXCL_STOP  */
 
     if( result == ICE_RESULT_OK )
     {
+        /* LCOV_EXCL_STOP  */
+
         longTermPasswordLength = ICE_SERVER_CONFIG_LONG_TERM_PASSWORD_LENGTH;
         result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) &( buffer[ 0 ] ),
                                                    snprintfRetVal,
@@ -402,18 +409,15 @@ IceResult_t Ice_FinalizeStunPacket( IceContext_t * pContext,
                                                           &( pFingerprintCalculationData ),
                                                           &( fingerprintCalculationDataLength ) );
 
-        if( stunResult == STUN_RESULT_OK )
-        {
-            iceResult = pContext->cryptoFunctions.crc32Fxn( 0,
-                                                            pFingerprintCalculationData,
-                                                            ( size_t ) fingerprintCalculationDataLength,
-                                                            &( messageFingerprint ) );
+        iceResult = pContext->cryptoFunctions.crc32Fxn( 0,
+                                                        pFingerprintCalculationData,
+                                                        ( size_t ) fingerprintCalculationDataLength,
+                                                        &( messageFingerprint ) );
 
-            if( iceResult == ICE_RESULT_OK )
-            {
-                stunResult = StunSerializer_AddAttributeFingerprint( pStunCtx,
-                                                                     messageFingerprint );
-            }
+        if( iceResult == ICE_RESULT_OK )
+        {
+            stunResult = StunSerializer_AddAttributeFingerprint( pStunCtx,
+                                                                 messageFingerprint );
         }
     }
 
@@ -984,19 +988,10 @@ IceResult_t Ice_CreatePermissionRequest( IceContext_t * pContext,
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
 
-    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
-        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+        ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
     {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
-        {
-            result = ICE_RESULT_INVALID_CANDIDATE;
-        }
+        result = ICE_RESULT_INVALID_CANDIDATE;
     }
 
     if( result == ICE_RESULT_OK )
@@ -1100,19 +1095,10 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
 
-    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
-        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+        ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
     {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
-        {
-            result = ICE_RESULT_INVALID_CANDIDATE;
-        }
+        result = ICE_RESULT_INVALID_CANDIDATE;
     }
 
     if( result == ICE_RESULT_OK )
@@ -1215,11 +1201,11 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
 /*----------------------------------------------------------------------------*/
 
 /* Ice_DeserializeStunPacket - This API deserializes a received STUN packet. */
-IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
-                                                       StunContext_t * pStunCtx,
-                                                       const uint8_t * pPassword,
-                                                       size_t passwordLength,
-                                                       IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
+static IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
+                                                              StunContext_t * pStunCtx,
+                                                              const uint8_t * pPassword,
+                                                              size_t passwordLength,
+                                                              IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
 {
     IceHandleStunPacketResult_t result = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     StunResult_t stunResult = STUN_RESULT_OK;
@@ -1306,8 +1292,6 @@ IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
                                                                            &( messageIntegrityLength ) );
 
                             if( ( iceResult != ICE_RESULT_OK ) ||
-                                ( messageIntegrityLength != STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ) ||
-                                ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
                                 ( memcmp( &( messageIntegrity[ 0 ] ),
                                           stunAttribute.pAttributeValue,
                                           stunAttribute.attributeValueLength ) != 0 ) )
@@ -1671,7 +1655,6 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair )
 {
-    IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
@@ -1710,7 +1693,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
         }
         else
         {
-            pIceCandidatePair = *ppIceCandidatePair;
+            pIceCandidatePair = *ppIceCandidatePair;                // Confused here
         }
     }
 
@@ -1785,19 +1768,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 {
                     pContext->pNominatedPair = pIceCandidatePair;
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-
-                    /* Generate the Transaction ID to be used in the
-                     * nomination process. */
-                    iceResult = pContext->cryptoFunctions.randomFxn( &( pIceCandidatePair->transactionId[ 0 ] ),
-                                                                     STUN_HEADER_TRANSACTION_ID_LENGTH );
-                    if( iceResult != ICE_RESULT_OK )
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
-                    }
-                    else
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
-                    }
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
                 }
             }
         }

@@ -69,11 +69,6 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
                                           uint8_t * pStunMessageBuffer,
                                           size_t * pStunMessageBufferLength );
 
-IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
-                                                       StunContext_t * pStunCtx,
-                                                       const uint8_t * pPassword,
-                                                       size_t passwordLength,
-                                                       IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
 
 IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContext,
                                                           StunContext_t * pStunCtx,
