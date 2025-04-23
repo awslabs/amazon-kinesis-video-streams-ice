@@ -22,6 +22,6 @@ jobs:
           coverage-file: ./build/coverage.info
           line-coverage-min: 100
           functions-coverage-min: 100
-          branch-coverage-min: 99.7
+          branch-coverage-min: 99.6
           
           

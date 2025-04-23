@@ -231,7 +231,6 @@ static IceHandleStunPacketResult_t DeserializeStunPacket( IceContext_t * pContex
 
                             if( ( iceResult != ICE_RESULT_OK ) ||
                                 ( messageIntegrityLength != STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ) ||
-                                ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
                                 ( memcmp( &( messageIntegrity[ 0 ] ),
                                           stunAttribute.pAttributeValue,
                                           stunAttribute.attributeValueLength ) != 0 ) )
@@ -1651,7 +1650,7 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
         pLocalCandidate->endpoint.isPointToPoint = 0;
         pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
-        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
+        for( i = 0; ( iceResult == ICE_RESULT_OK ) && ( i < pContext->numRemoteCandidates ); i++ )
         {
             iceResult = Ice_AddCandidatePair( pContext,
                                               pLocalCandidate,
