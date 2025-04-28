@@ -1758,7 +1758,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-                    pContext->pSelectedPair = pIceCandidatePair;
+                    pIceCandidatePair->succeeded = 1U;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
                 }
                 else
@@ -1778,7 +1778,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 if( pIceCandidatePair->state == ICE_CANDIDATE_PAIR_STATE_NOMINATED )
                 {
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
-                    pContext->pSelectedPair = pIceCandidatePair;
+                    pIceCandidatePair->succeeded = 1U;
                     handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY;
                 }
                 else
@@ -2254,7 +2254,7 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
         /* If the candidate pair is already selected, the application need not
          * take any action. Otherwise, the application need to initiate
          * connectivity check. */
-        if( pContext->pSelectedPair == pIceCandidatePair )
+        if( pIceCandidatePair->succeeded != 0U )
         {
             pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_SUCCEEDED;
             handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_FRESH_CHANNEL_BIND_COMPLETE;

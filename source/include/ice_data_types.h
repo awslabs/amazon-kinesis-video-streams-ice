@@ -266,6 +266,7 @@ typedef struct IceCandidatePair
     IceCandidate_t * pRemoteCandidate;
     uint64_t priority;
     IceCandidatePairState_t state;
+    uint8_t succeeded;
     uint32_t connectivityCheckFlags;
     uint8_t transactionId[ STUN_HEADER_TRANSACTION_ID_LENGTH ];
 
@@ -312,7 +313,6 @@ typedef struct IceContext
     size_t maxTurnServers;
     size_t numTurnServers;
     IceCandidatePair_t * pNominatedPair;
-    IceCandidatePair_t * pSelectedPair;
     uint64_t tieBreaker;
     uint8_t isControlling;
     TransactionIdStore_t * pStunBindingRequestTransactionIdStore;
