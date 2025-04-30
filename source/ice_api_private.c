@@ -23,6 +23,21 @@
 
 /*----------------------------------------------------------------------------*/
 
+static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
+                                                IceTurnServer_t * pTurnServer );
+
+static IceHandleStunPacketResult_t UpdateIceServerInfo( IceContext_t * pContext,
+                                                        IceCandidate_t * pLocalCandidate,
+                                                        IceStunDeserializedPacketInfo_t * pDeserializePacketInfo );
+
+static IceHandleStunPacketResult_t DeserializeStunPacket( IceContext_t * pContext,
+                                                          StunContext_t * pStunCtx,
+                                                          const uint8_t * pPassword,
+                                                          size_t passwordLength,
+                                                          IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo );
+
+/*----------------------------------------------------------------------------*/
+
 /* Follow https://datatracker.ietf.org/doc/html/rfc5389#section-15.4 to get the
  * long-term credential string. */
 static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
@@ -40,19 +55,23 @@ static IceResult_t CalculateLongTermCredential( IceContext_t * pContext,
     snprintfRetVal = snprintf( &( buffer[ 0 ] ),
                                bufferLength,
                                "%.*s:%.*s:%.*s",
-                               ( int ) pTurnServer->userNameLength, &( pTurnServer->userName[ 0 ] ),
-                               ( int ) pTurnServer->realmLength, &( pTurnServer->realm[ 0 ] ),
-                               ( int ) pTurnServer->passwordLength, &( pTurnServer->password[ 0 ] ) );
+                               ( int ) pTurnServer->userNameLength,
+                               &( pTurnServer->userName[ 0 ] ),
+                               ( int ) pTurnServer->realmLength,
+                               &( pTurnServer->realm[ 0 ] ),
+                               ( int ) pTurnServer->passwordLength,
+                               &( pTurnServer->password[ 0 ] ) );
 
     /* LCOV_EXCL_START */
     if( snprintfRetVal < 0 )
     {
         result = ICE_RESULT_SNPRINTF_ERROR;
     }
-    /* LCOV_EXCL_STOP  */
 
     if( result == ICE_RESULT_OK )
     {
+        /* LCOV_EXCL_STOP  */
+
         longTermPasswordLength = ICE_SERVER_CONFIG_LONG_TERM_PASSWORD_LENGTH;
         result = pContext->cryptoFunctions.md5Fxn( ( const uint8_t * ) &( buffer[ 0 ] ),
                                                    snprintfRetVal,
@@ -115,6 +134,181 @@ static IceHandleStunPacketResult_t UpdateIceServerInfo( IceContext_t * pContext,
     }
 
     return handleStunPacketResult;
+}
+
+/*----------------------------------------------------------------------------*/
+
+/* DeserializeStunPacket - This API deserializes a received STUN packet. */
+static IceHandleStunPacketResult_t DeserializeStunPacket( IceContext_t * pContext,
+                                                          StunContext_t * pStunCtx,
+                                                          const uint8_t * pPassword,
+                                                          size_t passwordLength,
+                                                          IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
+{
+    IceHandleStunPacketResult_t result = ICE_HANDLE_STUN_PACKET_RESULT_OK;
+    StunResult_t stunResult = STUN_RESULT_OK;
+    IceResult_t iceResult = ICE_RESULT_OK;
+    StunAttribute_t stunAttribute;
+    uint8_t * pErrorPhase = NULL;
+    uint16_t errorPhaseLength = 0;
+    uint8_t * pIntegrityCalculationData = NULL;
+    uint16_t integrityCalculationDataLength = 0;
+    uint8_t messageIntegrity[ STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ];
+    uint16_t messageIntegrityLength = STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH;
+    uint8_t * pFingerprintCalculationData = NULL;
+    uint16_t fingerprintCalculationDataLength = 0;
+    uint32_t fingerprint;
+    uint32_t computedFingerprint;
+
+    memset( pDeserializedPacketInfo,
+            0,
+            sizeof( IceStunDeserializedPacketInfo_t ) );
+
+    while( ( stunResult == STUN_RESULT_OK ) && ( result == ICE_HANDLE_STUN_PACKET_RESULT_OK ) )
+    {
+        stunResult = StunDeserializer_GetNextAttribute( pStunCtx,
+                                                        &( stunAttribute ) );
+
+        if( stunResult == STUN_RESULT_OK )
+        {
+            switch( stunAttribute.attributeType )
+            {
+                case STUN_ATTRIBUTE_TYPE_ERROR_CODE:
+                {
+                    stunResult = StunDeserializer_ParseAttributeErrorCode( &( stunAttribute ),
+                                                                           &( pDeserializedPacketInfo->errorCode ),
+                                                                           &( pErrorPhase ),
+                                                                           &( errorPhaseLength ) );
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_XOR_RELAYED_ADDRESS:
+                {
+                    stunResult = StunDeserializer_ParseAttributeAddress( pStunCtx,
+                                                                         &( stunAttribute ),
+                                                                         &( pDeserializedPacketInfo->relayTransportAddress ) );
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_XOR_MAPPED_ADDRESS:
+                {
+                    stunResult = StunDeserializer_ParseAttributeAddress( pStunCtx,
+                                                                         &( stunAttribute ),
+                                                                         &( pDeserializedPacketInfo->peerTransportAddress ) );
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_USE_CANDIDATE:
+                {
+                    pDeserializedPacketInfo->useCandidateFlag = 1;
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_PRIORITY:
+                {
+                    stunResult = StunDeserializer_ParseAttributePriority( pStunCtx,
+                                                                          &( stunAttribute ),
+                                                                          &( pDeserializedPacketInfo->priority ) );
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_MESSAGE_INTEGRITY:
+                {
+                    if( ( pPassword != NULL ) && ( passwordLength != 0 ) )
+                    {
+                        stunResult = StunDeserializer_GetIntegrityBuffer( pStunCtx,
+                                                                          &( pIntegrityCalculationData ),
+                                                                          &( integrityCalculationDataLength ) );
+
+                        if( stunResult == STUN_RESULT_OK )
+                        {
+                            iceResult = pContext->cryptoFunctions.hmacFxn( pPassword,
+                                                                           passwordLength,
+                                                                           pIntegrityCalculationData,
+                                                                           ( size_t ) integrityCalculationDataLength,
+                                                                           &( messageIntegrity[ 0 ] ),
+                                                                           &( messageIntegrityLength ) );
+
+                            if( ( iceResult != ICE_RESULT_OK ) ||
+                                ( messageIntegrityLength != STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ) ||
+                                ( memcmp( &( messageIntegrity[ 0 ] ),
+                                          stunAttribute.pAttributeValue,
+                                          stunAttribute.attributeValueLength ) != 0 ) )
+                            {
+                                result = ICE_HANDLE_STUN_PACKET_RESULT_INTEGRITY_MISMATCH;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
+                    }
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_FINGERPRINT:
+                {
+                    stunResult = StunDeserializer_ParseAttributeFingerprint( pStunCtx,
+                                                                             &( stunAttribute ),
+                                                                             &( fingerprint ) );
+
+                    if( stunResult == STUN_RESULT_OK )
+                    {
+                        stunResult = StunDeserializer_GetFingerprintBuffer( pStunCtx,
+                                                                            &( pFingerprintCalculationData ),
+                                                                            &( fingerprintCalculationDataLength ) );
+                    }
+
+                    if( stunResult == STUN_RESULT_OK )
+                    {
+                        iceResult = pContext->cryptoFunctions.crc32Fxn( 0,
+                                                                        pFingerprintCalculationData,
+                                                                        ( size_t ) fingerprintCalculationDataLength,
+                                                                        &( computedFingerprint ) );
+
+                        if( ( iceResult != ICE_RESULT_OK ) ||
+                            ( fingerprint != computedFingerprint ) )
+                        {
+                            result = ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH;
+                        }
+                    }
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_NONCE:
+                {
+                    pDeserializedPacketInfo->nonceLength = stunAttribute.attributeValueLength;
+                    pDeserializedPacketInfo->pNonce = stunAttribute.pAttributeValue;
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_REALM:
+                {
+                    pDeserializedPacketInfo->realmLength = stunAttribute.attributeValueLength;
+                    pDeserializedPacketInfo->pRealm = stunAttribute.pAttributeValue;
+                }
+                break;
+
+                case STUN_ATTRIBUTE_TYPE_LIFETIME:
+                {
+                    stunResult = StunDeserializer_ParseAttributeLifetime( pStunCtx,
+                                                                          &( stunAttribute ),
+                                                                          &( pDeserializedPacketInfo->lifetimeSeconds ) );
+                }
+                break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    if( ( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND ) && ( result == ICE_HANDLE_STUN_PACKET_RESULT_OK ) )
+    {
+        result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
+    }
+
+    return result;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -892,7 +1086,8 @@ IceResult_t Ice_CreateRefreshRequest( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx ), lifetime );
+        stunResult = StunSerializer_AddAttributeLifetime( &( stunCtx ),
+                                                          lifetime );
 
         if( stunResult != STUN_RESULT_OK )
         {
@@ -984,19 +1179,10 @@ IceResult_t Ice_CreatePermissionRequest( IceContext_t * pContext,
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
 
-    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
-        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+        ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
     {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
-        {
-            result = ICE_RESULT_INVALID_CANDIDATE;
-        }
+        result = ICE_RESULT_INVALID_CANDIDATE;
     }
 
     if( result == ICE_RESULT_OK )
@@ -1100,19 +1286,10 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
     StunHeader_t stunHeader;
     StunResult_t stunResult = STUN_RESULT_OK;
 
-    if( ( pIceCandidatePair->pLocalCandidate == NULL ) ||
-        ( pIceCandidatePair->pRemoteCandidate == NULL ) )
+    if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
+        ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
     {
-        result = ICE_RESULT_BAD_PARAM;
-    }
-
-    if( result == ICE_RESULT_OK )
-    {
-        if( ( pIceCandidatePair->pLocalCandidate->candidateType != ICE_CANDIDATE_TYPE_RELAY ) ||
-            ( pIceCandidatePair->pLocalCandidate->pTurnServer == NULL ) )
-        {
-            result = ICE_RESULT_INVALID_CANDIDATE;
-        }
+        result = ICE_RESULT_INVALID_CANDIDATE;
     }
 
     if( result == ICE_RESULT_OK )
@@ -1214,182 +1391,6 @@ IceResult_t Ice_CreateChannelBindRequest( IceContext_t * pContext,
 
 /*----------------------------------------------------------------------------*/
 
-/* Ice_DeserializeStunPacket - This API deserializes a received STUN packet. */
-IceHandleStunPacketResult_t Ice_DeserializeStunPacket( IceContext_t * pContext,
-                                                       StunContext_t * pStunCtx,
-                                                       const uint8_t * pPassword,
-                                                       size_t passwordLength,
-                                                       IceStunDeserializedPacketInfo_t * pDeserializedPacketInfo )
-{
-    IceHandleStunPacketResult_t result = ICE_HANDLE_STUN_PACKET_RESULT_OK;
-    StunResult_t stunResult = STUN_RESULT_OK;
-    IceResult_t iceResult = ICE_RESULT_OK;
-    StunAttribute_t stunAttribute;
-    uint8_t * pErrorPhase = NULL;
-    uint16_t errorPhaseLength = 0;
-    uint8_t * pIntegrityCalculationData = NULL;
-    uint16_t integrityCalculationDataLength = 0;
-    uint8_t messageIntegrity[ STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ];
-    uint16_t messageIntegrityLength = STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH;
-    uint8_t * pFingerprintCalculationData = NULL;
-    uint16_t fingerprintCalculationDataLength = 0;
-    uint32_t fingerprint;
-    uint32_t computedFingerprint;
-
-    memset( pDeserializedPacketInfo,
-            0,
-            sizeof( IceStunDeserializedPacketInfo_t ) );
-
-    while( ( stunResult == STUN_RESULT_OK ) && ( result == ICE_HANDLE_STUN_PACKET_RESULT_OK ) )
-    {
-        stunResult = StunDeserializer_GetNextAttribute( pStunCtx,
-                                                        &( stunAttribute ) );
-
-        if( stunResult == STUN_RESULT_OK )
-        {
-            switch( stunAttribute.attributeType )
-            {
-                case STUN_ATTRIBUTE_TYPE_ERROR_CODE:
-                {
-                    stunResult = StunDeserializer_ParseAttributeErrorCode( &( stunAttribute ),
-                                                                           &( pDeserializedPacketInfo->errorCode ),
-                                                                           &( pErrorPhase ),
-                                                                           &( errorPhaseLength ) );
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_XOR_RELAYED_ADDRESS:
-                {
-                    stunResult = StunDeserializer_ParseAttributeAddress( pStunCtx,
-                                                                         &( stunAttribute ),
-                                                                         &( pDeserializedPacketInfo->relayTransportAddress ) );
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_XOR_MAPPED_ADDRESS:
-                {
-                    stunResult = StunDeserializer_ParseAttributeAddress( pStunCtx,
-                                                                         &( stunAttribute ),
-                                                                         &( pDeserializedPacketInfo->peerTransportAddress ) );
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_USE_CANDIDATE:
-                {
-                    pDeserializedPacketInfo->useCandidateFlag = 1;
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_PRIORITY:
-                {
-                    stunResult = StunDeserializer_ParseAttributePriority( pStunCtx,
-                                                                          &( stunAttribute ),
-                                                                          &( pDeserializedPacketInfo->priority ) );
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_MESSAGE_INTEGRITY:
-                {
-                    if( ( pPassword != NULL ) && ( passwordLength != 0 ) )
-                    {
-                        stunResult = StunDeserializer_GetIntegrityBuffer( pStunCtx,
-                                                                          &( pIntegrityCalculationData ),
-                                                                          &( integrityCalculationDataLength ) );
-
-                        if( stunResult == STUN_RESULT_OK )
-                        {
-                            iceResult = pContext->cryptoFunctions.hmacFxn( pPassword,
-                                                                           passwordLength,
-                                                                           pIntegrityCalculationData,
-                                                                           ( size_t ) integrityCalculationDataLength,
-                                                                           &( messageIntegrity[ 0 ] ),
-                                                                           &( messageIntegrityLength ) );
-
-                            if( ( iceResult != ICE_RESULT_OK ) ||
-                                ( messageIntegrityLength != STUN_ATTRIBUTE_INTEGRITY_VALUE_LENGTH ) ||
-                                ( messageIntegrityLength != stunAttribute.attributeValueLength ) ||
-                                ( memcmp( &( messageIntegrity[ 0 ] ),
-                                          stunAttribute.pAttributeValue,
-                                          stunAttribute.attributeValueLength ) != 0 ) )
-                            {
-                                result = ICE_HANDLE_STUN_PACKET_RESULT_INTEGRITY_MISMATCH;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
-                    }
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_FINGERPRINT:
-                {
-                    stunResult = StunDeserializer_ParseAttributeFingerprint( pStunCtx,
-                                                                             &( stunAttribute ),
-                                                                             &( fingerprint ) );
-
-                    if( stunResult == STUN_RESULT_OK )
-                    {
-                        stunResult = StunDeserializer_GetFingerprintBuffer( pStunCtx,
-                                                                            &( pFingerprintCalculationData ),
-                                                                            &( fingerprintCalculationDataLength ) );
-                    }
-
-                    if( stunResult == STUN_RESULT_OK )
-                    {
-                        iceResult = pContext->cryptoFunctions.crc32Fxn( 0,
-                                                                        pFingerprintCalculationData,
-                                                                        ( size_t ) fingerprintCalculationDataLength,
-                                                                        &( computedFingerprint ) );
-
-                        if( ( iceResult != ICE_RESULT_OK ) ||
-                            ( fingerprint != computedFingerprint ) )
-                        {
-                            result = ICE_HANDLE_STUN_PACKET_RESULT_FINGERPRINT_MISMATCH;
-                        }
-                    }
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_NONCE:
-                {
-                    pDeserializedPacketInfo->nonceLength = stunAttribute.attributeValueLength;
-                    pDeserializedPacketInfo->pNonce = stunAttribute.pAttributeValue;
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_REALM:
-                {
-                    pDeserializedPacketInfo->realmLength = stunAttribute.attributeValueLength;
-                    pDeserializedPacketInfo->pRealm = stunAttribute.pAttributeValue;
-                }
-                break;
-
-                case STUN_ATTRIBUTE_TYPE_LIFETIME:
-                {
-                    stunResult = StunDeserializer_ParseAttributeLifetime( pStunCtx,
-                                                                          &( stunAttribute ),
-                                                                          &( pDeserializedPacketInfo->lifetimeSeconds ) );
-                }
-                break;
-
-                default:
-                    break;
-            }
-        }
-    }
-
-    if( ( stunResult != STUN_RESULT_NO_MORE_ATTRIBUTE_FOUND ) && ( result == ICE_HANDLE_STUN_PACKET_RESULT_OK ) )
-    {
-        result = ICE_HANDLE_STUN_PACKET_RESULT_DESERIALIZE_ERROR;
-    }
-
-    return result;
-}
-
-/*----------------------------------------------------------------------------*/
-
 IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContext,
                                                           StunContext_t * pStunCtx,
                                                           const IceCandidate_t * pLocalCandidate,
@@ -1403,11 +1404,11 @@ IceHandleStunPacketResult_t Ice_HandleStunBindingRequest( IceContext_t * pContex
     IceRemoteCandidateInfo_t remoteCandidateInfo;
     size_t i;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        pContext->creds.pLocalPassword,
-                                                        pContext->creds.localPasswordLength,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    pContext->creds.pLocalPassword,
+                                                    pContext->creds.localPasswordLength,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1599,11 +1600,11 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        NULL,
-                                                        0,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    NULL,
+                                                    0,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1649,7 +1650,7 @@ IceHandleStunPacketResult_t Ice_HandleServerReflexiveResponse( IceContext_t * pC
         pLocalCandidate->endpoint.isPointToPoint = 0;
         pLocalCandidate->state = ICE_CANDIDATE_STATE_VALID;
 
-        for( i = 0; ( i < pContext->numRemoteCandidates ) && ( iceResult == ICE_RESULT_OK ); i++ )
+        for( i = 0; ( iceResult == ICE_RESULT_OK ) && ( i < pContext->numRemoteCandidates ); i++ )
         {
             iceResult = Ice_AddCandidatePair( pContext,
                                               pLocalCandidate,
@@ -1671,18 +1672,17 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                                                                  const IceEndpoint_t * pRemoteCandidateEndpoint,
                                                                  IceCandidatePair_t ** ppIceCandidatePair )
 {
-    IceResult_t iceResult = ICE_RESULT_OK;
     IceHandleStunPacketResult_t handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_OK;
     IceStunDeserializedPacketInfo_t deserializePacketInfo;
     IceCandidatePair_t * pIceCandidatePair = NULL;
     IceResult_t result = ICE_RESULT_OK;
     size_t i;
 
-    handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                        pStunCtx,
-                                                        pContext->creds.pRemotePassword,
-                                                        pContext->creds.remotePasswordLength,
-                                                        &( deserializePacketInfo ) );
+    handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                    pStunCtx,
+                                                    pContext->creds.pRemotePassword,
+                                                    pContext->creds.remotePasswordLength,
+                                                    &( deserializePacketInfo ) );
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
@@ -1785,19 +1785,7 @@ IceHandleStunPacketResult_t Ice_HandleConnectivityCheckResponse( IceContext_t * 
                 {
                     pContext->pNominatedPair = pIceCandidatePair;
                     pIceCandidatePair->state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
-
-                    /* Generate the Transaction ID to be used in the
-                     * nomination process. */
-                    iceResult = pContext->cryptoFunctions.randomFxn( &( pIceCandidatePair->transactionId[ 0 ] ),
-                                                                     STUN_HEADER_TRANSACTION_ID_LENGTH );
-                    if( iceResult != ICE_RESULT_OK )
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_RANDOM_ERROR_CODE;
-                    }
-                    else
-                    {
-                        handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
-                    }
+                    handleStunPacketResult = ICE_HANDLE_STUN_PACKET_RESULT_START_NOMINATION;
                 }
             }
         }
@@ -1869,11 +1857,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateSuccessResponse( IceContext_t 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -1949,11 +1937,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnAllocateErrorResponse( IceContext_t * 
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2025,11 +2013,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionSuccessResponse( IceCo
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2123,11 +2111,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnCreatePermissionErrorResponse( IceCont
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2204,11 +2192,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindSuccessResponse( IceContext
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2308,11 +2296,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnChannelBindErrorResponse( IceContext_t
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2397,11 +2385,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshSuccessResponse( IceContext_t *
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
@@ -2464,11 +2452,11 @@ IceHandleStunPacketResult_t Ice_HandleTurnRefreshErrorResponse( IceContext_t * p
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
     {
-        handleStunPacketResult = Ice_DeserializeStunPacket( pContext,
-                                                            pStunCtx,
-                                                            &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
-                                                            pLocalCandidate->pTurnServer->longTermPasswordLength,
-                                                            &( deserializePacketInfo ) );
+        handleStunPacketResult = DeserializeStunPacket( pContext,
+                                                        pStunCtx,
+                                                        &( pLocalCandidate->pTurnServer->longTermPassword[ 0 ] ),
+                                                        pLocalCandidate->pTurnServer->longTermPasswordLength,
+                                                        &( deserializePacketInfo ) );
     }
 
     if( handleStunPacketResult == ICE_HANDLE_STUN_PACKET_RESULT_OK )
