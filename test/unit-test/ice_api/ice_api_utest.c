@@ -207,7 +207,6 @@ IceResult_t testHmacFxn_FixedFF( const uint8_t * pPassword,
 
     if( result == ICE_RESULT_OK )
     {
-        /* Calculate the HMAC using a simple algorithm. */
         for( i = 0; i < hmacLength; i++ )
         {
             pOutputBuffer[ i ] = 0xFF;
@@ -1896,7 +1895,7 @@ void test_iceCreateResponseForRequest_BadParams( void )
                        result );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-    candidatePair.pLocalCandidate = &localCandidate;
+    candidatePair.pLocalCandidate = &( localCandidate );
     stunMessageBufferLength = ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH - 1;
 
     result = Ice_CreateResponseForRequest( &( context ),
@@ -2310,36 +2309,36 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_RandomFail_TransactionId
     };
     uint8_t stunMessage[] =
     {
-        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 60 */
+        /* STUN header: Message Type = BINDING_SUCCESS_RESPONSE (0x0101), Length = 60. */
         0x01, 0x01, 0x00, 0x3C,
-        /* Magic Cookie */
+        /* Magic Cookie. */
         0x21, 0x12, 0xA4, 0x42,
-        /* Transaction ID */
+        /* Transaction ID. */
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-        /* XOR-MAPPED-ADDRESS attribute */
-        0x00, 0x20, 0x00, 0x08,  /* Type = XOR-MAPPED-ADDRESS, Length = 8 */
-        0x00, 0x01,              /* Reserved = 0, Family = IPv4 */
-        0x04, 0xD2,              /* Port = 1234 (XOR'd with magic cookie) */
-        0xC0, 0xA8, 0x01, 0x02,  /* IPv4 address (XOR'd with magic cookie) */
-        /* USERNAME attribute */
-        0x00, 0x06, 0x00, 0x0C,  /* Type = USERNAME, Length = 12 */
-        0x75, 0x73, 0x65, 0x72,  /* "user" */
-        0x6E, 0x61, 0x6D, 0x65,  /* "name" */
-        0x31, 0x32, 0x33, 0x34,  /* "1234" */
-        /* MESSAGE-INTEGRITY attribute */
-        0x00, 0x08, 0x00, 0x14,  /* Type = MESSAGE-INTEGRITY, Length = 20 */
-        0xFF, 0xFF, 0xFF, 0xFF,  /* HMAC-SHA1 value (20 bytes) generated using testHmacFxn_FixedFF */
+        /* XOR-MAPPED-ADDRESS attribute. */
+        0x00, 0x20, 0x00, 0x08,  /* Type = XOR-MAPPED-ADDRESS, Length = 8. */
+        0x00, 0x01,              /* Reserved = 0, Family = IPv4. */
+        0x04, 0xD2,              /* Port = 1234 (XOR'd with magic cookie). */
+        0xC0, 0xA8, 0x01, 0x02,  /* IPv4 address (XOR'd with magic cookie). */
+        /* USERNAME attribute. */
+        0x00, 0x06, 0x00, 0x0C,  /* Type = USERNAME, Length = 12. */
+        0x75, 0x73, 0x65, 0x72,  /* "user". */
+        0x6E, 0x61, 0x6D, 0x65,  /* "name". */
+        0x31, 0x32, 0x33, 0x34,  /* "1234". */
+        /* MESSAGE-INTEGRITY attribute. */
+        0x00, 0x08, 0x00, 0x14,  /* Type = MESSAGE-INTEGRITY, Length = 20. */
+        0xFF, 0xFF, 0xFF, 0xFF,  /* HMAC-SHA1 value (20 bytes) generated using testHmacFxn_FixedFF. */
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
-        /* FINGERPRINT attribute */
-        0x80, 0x28, 0x00, 0x04,  /* Type = FINGERPRINT, Length = 4 */
-        0x00, 0x00, 0x00, 0x00   /* CRC32 value generated using testCrc32Fxn_Fixed */
+        /* FINGERPRINT attribute. */
+        0x80, 0x28, 0x00, 0x04,  /* Type = FINGERPRINT, Length = 4. */
+        0x00, 0x00, 0x00, 0x00   /* CRC32 value generated using testCrc32Fxn_Fixed. */
     };
     size_t stunMessageLength = sizeof( stunMessage );
 
-    /* Set up crypto functions with failing random function */
+    /* Set up crypto functions with failing random function. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
 
@@ -2351,7 +2350,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_RandomFail_TransactionId
     /* Ice uses random to generate tie breaker. So we overwrite it after init. */
     context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
 
-    /* Set up local candidate */
+    /* Set up local candidate. */
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_HOST;
     localCandidate.endpoint.transportAddress.family = 0x01;
     localCandidate.endpoint.transportAddress.port = 8080;
@@ -2361,10 +2360,10 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_RandomFail_TransactionId
 
     remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
 
-    /* Set up candidate pairs */
+    /* Set up candidate pairs. */
     context.numCandidatePairs = 1;
-    context.pCandidatePairs[ 0 ].pLocalCandidate = &localCandidate;
-    context.pCandidatePairs[ 0 ].pRemoteCandidate = &localCandidate;
+    context.pCandidatePairs[ 0 ].pLocalCandidate = &( localCandidate );
+    context.pCandidatePairs[ 0 ].pRemoteCandidate = &( localCandidate );
     memcpy( context.pCandidatePairs[ 0 ].transactionId,
             transactionID,
             STUN_HEADER_TRANSACTION_ID_LENGTH );
@@ -2465,13 +2464,13 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* Set connectivity check flags for successful 4-way handshake */
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
-                                                        ICE_STUN_RESPONSE_RECEIVED_FLAG |
-                                                        ICE_STUN_REQUEST_RECEIVED_FLAG |
-                                                        ICE_STUN_RESPONSE_SENT_FLAG;
+    /* Set connectivity check flags for successful 4-way handshake. */
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
-    context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -2482,7 +2481,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
                                    &( pTransactionId ),
                                    &( pCandidatePair ) );
 
-    /* Verify results */
+    /* Verify results. */
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_READY,
                        result );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_SUCCEEDED,
@@ -2571,9 +2570,9 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
                        iceResult );
 
     /* We have sent the binding request and receive a response for it, But haven't received a binding request yet. */
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
-    context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -2584,7 +2583,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
                                    &( pTransactionId ),
                                    &( pCandidatePair ) );
 
-    /* Verify results */
+    /* Verify results. */
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_WAITING,
@@ -2676,9 +2675,9 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
                        iceResult );
 
     /* We have sent the binding request and receive a response for it, But haven't received a binding request yet. */
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
-    context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -2689,7 +2688,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Incomple
                                    &( pTransactionId ),
                                    &( pCandidatePair ) );
 
-    /* Verify results */
+    /* Verify results. */
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_OK,
                        result );
     TEST_ASSERT_EQUAL( ICE_CANDIDATE_PAIR_STATE_WAITING,
@@ -2777,13 +2776,13 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* Set connectivity check flags for successful 4-way handshake */
-    context.pCandidatePairs[0].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
-                                                        ICE_STUN_RESPONSE_RECEIVED_FLAG |
-                                                        ICE_STUN_REQUEST_RECEIVED_FLAG |
-                                                        ICE_STUN_RESPONSE_SENT_FLAG;
+    /* Set connectivity check flags for successful 4-way handshake. */
+    context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
+                                                          ICE_STUN_RESPONSE_RECEIVED_FLAG |
+                                                          ICE_STUN_REQUEST_RECEIVED_FLAG |
+                                                          ICE_STUN_RESPONSE_SENT_FLAG;
 
-    context.pCandidatePairs[0].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
+    context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_NOMINATED;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -2794,7 +2793,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
                                    &( pTransactionId ),
                                    &( pCandidatePair ) );
 
-    /* Verify results */
+    /* Verify results. */
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_CANDIDATE_PAIR_NOT_FOUND,
                        result );
 }
@@ -2802,7 +2801,7 @@ void test_iceHandleStunPacket_ConnectivityCheckResponse_ControlledAgent_Nominate
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Validate ICE Create Next Candidate Reuqest functionality for Bad Parameters.
+ * @brief Validate ICE Create Next Candidate Request functionality for Bad Parameters.
  */
 void test_iceCreateNextCandidateRequest_BadParams( void )
 {
@@ -3766,7 +3765,7 @@ void test_iceCreateNextCandidateRequest_RelayCandidateAllocating_ReuseTransactio
 /**
  * @brief Tests that Ice_CreateNextCandidateRequest returns
  * REFRESH_REQUEST when it's a relay candidate asking for
- * relesing. Note that username, realm, nonce are all set
+ * releasing. Note that username, realm, nonce are all set
  * in the candidate.
  */
 void test_iceCreateNextCandidateRequest_RelayCandidateReleasing_WithAllInfo_Success( void )
@@ -7318,7 +7317,7 @@ void test_iceCloseCandidate_RelayReleasedSuccess( void )
 /**
  * @brief Validate ICE Handle TURN Packet fail functionality for Bad Parameters.
  */
-void test_iceHandlTurnPacket_BadParams( void )
+void test_iceHandleTurnPacket_BadParams( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7401,7 +7400,7 @@ void test_iceHandlTurnPacket_BadParams( void )
 /**
  * @brief Validate ICE Handle TURN Packet fail functionality for less data.
  */
-void test_iceHandlTurnPacket_ReceivedLessData( void )
+void test_iceHandleTurnPacket_ReceivedLessData( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7430,7 +7429,7 @@ void test_iceHandlTurnPacket_ReceivedLessData( void )
  * @brief Validate ICE Handle TURN Packet fail functionality for
  * not relay candidate.
  */
-void test_iceHandlTurnPacket_NotRelayCandidate( void )
+void test_iceHandleTurnPacket_NotRelayCandidate( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7463,7 +7462,7 @@ void test_iceHandlTurnPacket_NotRelayCandidate( void )
  * @brief Validates the failure handling of TURN packets for
  * a relay candidate that is not ready.
  */
-void test_iceHandlTurnPacket_CandidateNotReady( void )
+void test_iceHandleTurnPacket_CandidateNotReady( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7496,7 +7495,7 @@ void test_iceHandlTurnPacket_CandidateNotReady( void )
 /**
  * @brief Validates the failure handling of non TURN packets.
  */
-void test_iceHandlTurnPacket_NoTurnChannelHeader( void )
+void test_iceHandleTurnPacket_NoTurnChannelHeader( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7535,7 +7534,7 @@ void test_iceHandlTurnPacket_NoTurnChannelHeader( void )
  * @brief Validates the handling of TURN packet failures when the
  * data channel length is larger than the actual packet size.
  */
-void test_iceHandlTurnPacket_LargeTurnHeaderLength( void )
+void test_iceHandleTurnPacket_LargeTurnHeaderLength( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate = { 0 };
@@ -7581,7 +7580,7 @@ void test_iceHandlTurnPacket_LargeTurnHeaderLength( void )
  * @brief Validates the handling of TURN packet failures when the
  * transport address doesn't match any candidate pair.
  */
-void test_iceHandlTurnPacket_NoMatchTransportAddress( void )
+void test_iceHandleTurnPacket_NoMatchTransportAddress( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate1 = { 0 };
@@ -7658,7 +7657,7 @@ void test_iceHandlTurnPacket_NoMatchTransportAddress( void )
  * @brief Validates the handling of TURN packet failures when the
  * TURN channel number doesn't match any candidate pair.
  */
-void test_iceHandlTurnPacket_NoMatchTurnChannelNumber( void )
+void test_iceHandleTurnPacket_NoMatchTurnChannelNumber( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate1 = { 0 };
@@ -7719,7 +7718,7 @@ void test_iceHandlTurnPacket_NoMatchTurnChannelNumber( void )
  * @brief Validates TURN packet handling when a matching candidate
  * pair is found.
  */
-void test_iceHandlTurnPacket_Success( void )
+void test_iceHandleTurnPacket_Success( void )
 {
     IceContext_t context = { 0 };
     IceCandidate_t localCandidate1 = { 0 };
@@ -8620,7 +8619,7 @@ void test_iceHandleStunPacket_BindingRequest_ForBindingRequestAlreadySent( void 
                        iceResult );
 
     /* 4-way handshake is completed still we received a binding request.
-       We send a reponse for it and keep the state to Valid. */
+       We send a response for it and keep the state to Valid. */
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG |
                                                           ICE_STUN_RESPONSE_RECEIVED_FLAG |
                                                           ICE_STUN_REQUEST_RECEIVED_FLAG |
@@ -8718,7 +8717,7 @@ void test_iceHandleStunPacket_BindingRequest_ForResponseNotReceived( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* We have Received a request and so far we have also sent a request */
+    /* We have Received a request and so far we have also sent a request. */
     context.pCandidatePairs[ 0 ].state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     context.pCandidatePairs[ 0 ].connectivityCheckFlags = ICE_STUN_REQUEST_SENT_FLAG;
 
@@ -8952,7 +8951,7 @@ void test_iceHandleStunPacket_BindingRequest_RandomError( void )
                                                           ICE_STUN_REQUEST_RECEIVED_FLAG |
                                                           ICE_STUN_RESPONSE_SENT_FLAG;
 
-    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;     /* Manually injecting wrong Random Rxn */
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong; /* Manually injecting wrong Random Fxn. */
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -9404,7 +9403,7 @@ void test_iceHandleStunPacket_WrongHmacLength( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.cryptoFunctions.hmacFxn = testHmacFxn_Wrong; /* Manually Injecting wrong HMAC Fxn*/
+    context.cryptoFunctions.hmacFxn = testHmacFxn_Wrong; /* Manually Injecting wrong HMAC Fxn. */
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     result = Ice_HandleStunPacket( &( context ),
@@ -9474,7 +9473,7 @@ void test_iceHandleStunPacket_IntegrityFxnError( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.cryptoFunctions.hmacFxn = testHmacFxn_ReturnError; /* Manually Injecting wrong HMAC Fxn*/
+    context.cryptoFunctions.hmacFxn = testHmacFxn_ReturnError; /* Manually Injecting wrong HMAC Fxn. */
     context.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
 
     result = Ice_HandleStunPacket( &( context ),
@@ -10257,7 +10256,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_FoundPeerReflexiveCandidate
 
 /**
  * @brief Validate ICE Handle Stun Packet functionality when
- * the message has message-integrity unexpectly.
+ * the message has unexpected message-integrity.
  */
 void test_iceHandleStunPacket_BindingResponseSuccess_HaveUnexpectedIntegrity( void )
 {
@@ -10864,13 +10863,13 @@ void test_iceHandleStunPacket_ErrorCode_ServerReflexiveResponse( void )
         0x01, 0x01, 0x00, 0x20,
         /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
-        /* 12 bytes (96 bits) transaction ID - must match transactionID above */
+        /* 12 bytes (96 bits) transaction ID - must match transactionID above. */
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         /* Attribute type = XOR Mapped Address (0x0020), Length = 8 bytes. */
         0x00, 0x20, 0x00, 0x08,
         /* Address family = IPv4, Port = 0x3E82, IP Address = 0xC0A80164 (192.168.1.100). */
         0x00, 0x01, 0x3E, 0x82, 0xE1, 0xBA, 0xA5, 0x26,
-        /* Attribute Type = Error Code (0x0009), Attribute Length = 16 */
+        /* Attribute Type = Error Code (0x0009), Attribute Length = 16. */
         0x00, 0x09, 0x00, 0x10,
         /* Reserved = 0x0000, Error Class = 6, Error Number = 0 (Error Code = 600). */
         0x00, 0x00, 0x06, 0x00,
@@ -10991,7 +10990,7 @@ void test_iceHandleStunPacket_ServerReflexiveResponse_IPV6( void )
             sizeof( ipAddress ) );
 
     memcpy( localCandidate.transactionId,
-            &stunMessageReceived[8],
+            &( stunMessageReceived[ 8 ] ),
             STUN_HEADER_TRANSACTION_ID_LENGTH );
 
     remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
@@ -11027,7 +11026,7 @@ void test_iceHandleStunPacket_ServerReflexiveResponse_IPV6( void )
                                    &( pTransactionId ),
                                    &( pCandidatePair ) );
     /* We are simulating receiving a Binding Success response. This should
-     * transition the server reflexive candidate to "Valid" state  */
+     * transition the server reflexive candidate to "Valid" state. */
     TEST_ASSERT_EQUAL( ICE_HANDLE_STUN_PACKET_RESULT_UPDATED_SERVER_REFLEXIVE_CANDIDATE_ADDRESS,
                        result );
     TEST_ASSERT_EQUAL_PTR( &( stunMessageReceived[ 8 ] ),
@@ -11085,7 +11084,7 @@ void test_iceHandleStunPacket_ServerReflexiveResponse_UnknownAddressFamily( void
             sizeof( ipAddress ) );
 
     memcpy( localCandidate.transactionId,
-            &stunMessageReceived[8],
+            &( stunMessageReceived[ 8 ] ),
             STUN_HEADER_TRANSACTION_ID_LENGTH );
 
     remoteEndpoint = localCandidate.endpoint; /* For simplicity, use the same endpoint for remote. */
@@ -11308,7 +11307,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_MaxCandidatePairs( void )
 
     /* We are simulating receiving a Binding Success response. When we
      * try to create Candidate Pairs, we hit the max candidate Pairs.
-     * Eventually adding only the required candidate pairs.  */
+     * Eventually adding only the required candidate pairs. */
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
                                    stunMessageLength,
@@ -11518,7 +11517,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_TransactionIDStore_RandomEr
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong; /* Manually injecting wrong Random Fxn*/
+    context.cryptoFunctions.randomFxn = testRandomFxn_Wrong; /* Manually injecting wrong Random Fxn. */
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
@@ -11849,7 +11848,7 @@ void test_iceHandleStunPacket_BindingResponseSuccess_MaxRemoteCandidates( void )
     iceEndPoint.transportAddress.port = 7000;
 
     context.numCandidatePairs = 1;
-    context.maxRemoteCandidates = 1; /* Manually declaring max limit reached */
+    context.maxRemoteCandidates = 1; /* Manually declaring max limit reached. */
 
     context.pCandidatePairs[ 0 ].pLocalCandidate = &( context.pLocalCandidates[ 0 ] );
     context.pCandidatePairs[ 0 ].pRemoteCandidate = &( context.pRemoteCandidates[ 0 ] );
@@ -14753,38 +14752,38 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_RandomErrorCode( voi
     };
     uint8_t stunMessage[] =
     {
-        /* STUN header: Message Type = CREATE_PERMISSION_ERROR_RESPONSE (0x0118), Length = 52 bytes */
+        /* STUN header: Message Type = CREATE_PERMISSION_ERROR_RESPONSE (0x0118), Length = 52 bytes. */
         0x01, 0x18, 0x00, 0x34,
-        /* Magic Cookie (0x2112A442) */
+        /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
-        /* 12 bytes transaction ID */
+        /* 12 bytes transaction ID. */
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
-        /* Attribute Type = Error Code (0x0009), Length = 16 */
+        /* Attribute Type = Error Code (0x0009), Length = 16. */
         0x00, 0x09, 0x00, 0x10,
-        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (401 Unauthorized) */
+        /* Reserved = 0x0000, Error Class = 4, Error Number = 01 (401 Unauthorized). */
         0x00, 0x00, 0x04, 0x01,
-        /* Error Phrase = "Error Phrase" */
+        /* Error Phrase = "Error Phrase". */
         0x45, 0x72, 0x72, 0x6F,
         0x72, 0x20, 0x50, 0x68,
         0x72, 0x61, 0x73, 0x65,
-        /* MESSAGE-INTEGRITY attribute */
+        /* MESSAGE-INTEGRITY attribute. */
         0x00, 0x08, 0x00, 0x14,
-        /* HMAC value (fixed to 0xFF) */
+        /* HMAC value (fixed to 0xFF). */
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
-        /* FINGERPRINT attribute */
+        /* FINGERPRINT attribute. */
         0x80, 0x28, 0x00, 0x04,
-        /* CRC32 value (fixed to 0x00) */
+        /* CRC32 value (fixed to 0x00). */
         0x00, 0x00, 0x00, 0x00
     };
     size_t stunMessageLength = sizeof( stunMessage );
     char longTermPassword[] = "LongTermPassword";
     size_t longTermPasswordLength = strlen( longTermPassword );
 
-    /* Set up crypto functions */
+    /* Set up crypto functions. */
     initInfo.cryptoFunctions.crc32Fxn = testCrc32Fxn_Fixed;
     initInfo.cryptoFunctions.hmacFxn = testHmacFxn_FixedFF;
 
@@ -14796,14 +14795,14 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_RandomErrorCode( voi
     /* Ice uses random to generate tie breaker. So we overwrite it after init. */
     context.cryptoFunctions.randomFxn = testRandomFxn_Wrong;
 
-    /* Set up local candidate */
+    /* Set up local candidate. */
     memset( &( localCandidate ),
             0,
             sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
 
-    /* Set up TURN server */
+    /* Set up TURN server. */
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     memcpy( localCandidate.pTurnServer->longTermPassword,
@@ -14811,7 +14810,7 @@ void test_iceHandleStunPacket_CreatePermissionErrorResponse_RandomErrorCode( voi
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
 
-    /* Set up candidate pairs */
+    /* Set up candidate pairs. */
     context.numCandidatePairs = 2;
     memset( context.pCandidatePairs[ 0 ].transactionId,
             0,
@@ -17006,19 +17005,19 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
     {
         /* STUN header: Message Type = CHANNEL_BIND_SUCCESS_RESPONSE (0x0109), Length = 52 bytes (excluding 20 bytes header). */
         0x01, 0x09, 0x00, 0x34,
-        /* Magic Cookie (0x2112A442) */
+        /* Magic Cookie (0x2112A442). */
         0x21, 0x12, 0xA4, 0x42,
         /* 12 bytes (96 bits) transaction ID which is same as transactionID above. */
         0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         /* Attribute Type = Error Code (0x0009), Attribute Length = 16 (2 reserved bytes, 2 byte error code and 12 byte error phrase). */
         0x00, 0x09, 0x00, 0x10,
-        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Success) */
+        /* Reserved = 0x0000, Error Class = 0, Error Number = 00 (Success). */
         0x00, 0x00, 0x00, 0x00,
-        /* Error Phrase = "Error Phrase" */
+        /* Error Phrase = "Error Phrase". */
         0x45, 0x72, 0x72, 0x6F,
         0x72, 0x20, 0x50, 0x68,
         0x72, 0x61, 0x73, 0x65,
-        /* MESSAGE-INTEGRITY attribute */
+        /* MESSAGE-INTEGRITY attribute. */
         0x00, 0x08, 0x00, 0x14,
         /* Attribute Value = HMAC value as computed by testHmacFxn_FixedFF. */
         0xFF, 0xFF, 0xFF, 0xFF,
@@ -17026,7 +17025,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFF, 0xFF,
-        /* FINGERPRINT attribute */
+        /* FINGERPRINT attribute. */
         0x80, 0x28, 0x00, 0x04,
         /* Attribute Value: 0x00000000 as calculated by testCrc32Fxn_Fixed. */
         0x00, 0x00, 0x00, 0x00
@@ -17045,14 +17044,14 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
     TEST_ASSERT_EQUAL( ICE_RESULT_OK,
                        iceResult );
 
-    /* Set up local candidate */
+    /* Set up local candidate. */
     memset( &( localCandidate ),
             0,
             sizeof( IceCandidate_t ) );
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
     localCandidate.state = ICE_CANDIDATE_STATE_VALID;
 
-    /* Set up TURN server */
+    /* Set up TURN server. */
     context.numTurnServers = 1;
     localCandidate.pTurnServer = &( context.pTurnServers[ 0 ] );
     memcpy( localCandidate.pTurnServer->longTermPassword,
@@ -17060,7 +17059,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
             longTermPasswordLength );
     localCandidate.pTurnServer->longTermPasswordLength = longTermPasswordLength;
 
-    /* Set up candidate pairs */
+    /* Set up candidate pairs. */
     context.numCandidatePairs = 2;
     memset( context.pCandidatePairs[ 0 ].transactionId,
             0,
@@ -17070,7 +17069,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
             sizeof( transactionID ) );
     context.pCandidatePairs[ 1 ].state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
 
-    /* Set the candidate pair as selected */
+    /* Set the candidate pair as selected. */
     context.pSelectedPair = &( context.pCandidatePairs[ 1 ] );
 
     result = Ice_HandleStunPacket( &( context ),
@@ -20259,22 +20258,22 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success_WithPadding( v
     IceContext_t context = { 0 };
     IceCandidatePair_t candidatePair;
     IceResult_t result;
-    /* 11-byte payload (not multiple of 4) => 1 byte padding required */
+    /* 11-byte payload (not multiple of 4) => 1 byte padding required. */
     uint8_t buffer[ 16 ] =
     {
-        0x00, 0x00, 0x00, 0x00, /* header (will be overwritten) */
+        0x00, 0x00, 0x00, 0x00, /* header (will be overwritten). */
         0xDE, 0xAD, 0xBE, 0xEF,
         0xAA, 0xBB, 0xCC, 0xDD,
-        0x11, 0x22, 0x33        /* 11 bytes */
+        0x11, 0x22, 0x33
     };
-    size_t inputBufferLength = 11; /* Trigger Padding */
+    size_t inputBufferLength = 11; /* Trigger Padding. */
     size_t totalBufferLength = sizeof( buffer );
     uint8_t expectedBuffer[ 16 ] = {
         0x40, 0x00, 0x00, 0x0B,
         0xDE, 0xAD, 0xBE, 0xEF,
         0xAA, 0xBB, 0xCC, 0xDD,
         0x11, 0x22, 0x33,
-        0x00                    /* 1 byte padding */
+        0x00 /* 1 byte padding. */
     };
     size_t expectedBufferLength = sizeof( expectedBuffer );
 
