@@ -17070,7 +17070,7 @@ void test_iceHandleStunPacket_ChannelBindSuccessResponse_SelectedPair( void )
     context.pCandidatePairs[ 1 ].state = ICE_CANDIDATE_PAIR_STATE_CHANNEL_BIND;
 
     /* Set the candidate pair as selected. */
-    context.pSelectedPair = &( context.pCandidatePairs[ 1 ] );
+    context.pCandidatePairs[ 1 ].succeeded = 1;
 
     result = Ice_HandleStunPacket( &( context ),
                                    &( stunMessage[ 0 ] ),
