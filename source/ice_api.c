@@ -57,18 +57,30 @@ IceResult_t Ice_Init( IceContext_t * pContext,
 
         pContext->pLocalCandidates = pInitInfo->pLocalCandidatesArray;
         pContext->maxLocalCandidates = pInitInfo->localCandidatesArrayLength;
+        memset( pContext->pLocalCandidates,
+                0,
+                pContext->maxLocalCandidates * sizeof( IceCandidate_t ) );
         pContext->numLocalCandidates = 0;
 
         pContext->pRemoteCandidates = pInitInfo->pRemoteCandidatesArray;
         pContext->maxRemoteCandidates = pInitInfo->remoteCandidatesArrayLength;
+        memset( pContext->pRemoteCandidates,
+                0,
+                pContext->maxRemoteCandidates * sizeof( IceCandidate_t ) );
         pContext->numRemoteCandidates = 0;
 
         pContext->pCandidatePairs = pInitInfo->pCandidatePairsArray;
         pContext->maxCandidatePairs = pInitInfo->candidatePairsArrayLength;
+        memset( pContext->pCandidatePairs,
+                0,
+                pContext->maxCandidatePairs * sizeof( IceCandidatePair_t ) );
         pContext->numCandidatePairs = 0;
 
         pContext->pTurnServers = pInitInfo->pTurnServerArray;
         pContext->maxTurnServers = pInitInfo->turnServerArrayLength;
+        memset( pContext->pTurnServers,
+                0,
+                pContext->maxTurnServers * sizeof( IceTurnServer_t ) );
         pContext->numTurnServers = 0;
 
         pContext->isControlling = pInitInfo->isControlling;
