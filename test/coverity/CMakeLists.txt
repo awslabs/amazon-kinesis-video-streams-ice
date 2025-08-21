@@ -72,7 +72,7 @@ if( COV_ANALYSIS )
         add_library( coverity_analysis
                      ${ICE_SOURCES} )
 
-        # SDP public include path.
+        # ICE public include path.
         target_include_directories( coverity_analysis PUBLIC
                                     ${ICE_INCLUDE_PUBLIC_DIRS} )
 
