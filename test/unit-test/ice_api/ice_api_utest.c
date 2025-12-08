@@ -1159,6 +1159,12 @@ void test_iceAddRemoteCandidate_BadParams( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
+
+    result = Ice_AddRemoteCandidate( &( context ),
+                                     &( remoteCandidateInfo ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 }
 
 /*-----------------------------------------------------------*/
@@ -1170,6 +1176,7 @@ void test_iceAddRemoteCandidate_MaxCandidateThreshold( void )
 {
     IceContext_t context = { 0 };
     IceRemoteCandidateInfo_t remoteCandidateInfo = { 0 };
+    IceEndpoint_t endpoint = { 0 };
     IceResult_t result;
 
     result = Ice_Init( &( context ),
@@ -1180,6 +1187,7 @@ void test_iceAddRemoteCandidate_MaxCandidateThreshold( void )
 
     /* Mark the remote candidate array as full. */
     context.numRemoteCandidates = REMOTE_CANDIDATE_ARRAY_SIZE;
+    remoteCandidateInfo.pEndpoint = &( endpoint );
 
     result = Ice_AddRemoteCandidate( &( context ),
                                      &( remoteCandidateInfo ) );
@@ -1869,6 +1877,26 @@ void test_iceCreateResponseForRequest_BadParams( void )
 
     result = Ice_CreateResponseForRequest( &( context ),
                                            &( candidatePair ),
+                                           &( transactionId[ 0 ] ),
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    candidatePair.pLocalCandidate = &( localCandidate );
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           &( candidatePair ),
+                                           &( transactionId[ 0 ] ),
+                                           &( stunMessageBuffer[ 0 ] ),
+                                           &( stunMessageBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
+
+    candidatePair.pRemoteCandidate = &( localCandidate );
+    result = Ice_CreateResponseForRequest( &( context ),
+                                           &( candidatePair ),
                                            NULL,
                                            &( stunMessageBuffer[ 0 ] ),
                                            &( stunMessageBufferLength ) );
@@ -1895,7 +1923,6 @@ void test_iceCreateResponseForRequest_BadParams( void )
                        result );
 
     localCandidate.candidateType = ICE_CANDIDATE_TYPE_RELAY;
-    candidatePair.pLocalCandidate = &( localCandidate );
     stunMessageBufferLength = ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH - 1;
 
     result = Ice_CreateResponseForRequest( &( context ),

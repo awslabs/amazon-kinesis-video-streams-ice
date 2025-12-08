@@ -311,7 +311,8 @@ IceResult_t Ice_AddRemoteCandidate( IceContext_t * pContext,
     IceCandidate_t * pRemoteCandidate = NULL;
 
     if( ( pContext == NULL ) ||
-        ( pRemoteCandidateInfo == NULL ) )
+        ( pRemoteCandidateInfo == NULL ) ||
+        ( pRemoteCandidateInfo->pEndpoint == NULL ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
@@ -487,6 +488,8 @@ IceResult_t Ice_CreateResponseForRequest( IceContext_t * pContext,
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
+        ( pIceCandidatePair->pLocalCandidate == NULL ) ||
+        ( pIceCandidatePair->pRemoteCandidate == NULL ) ||
         ( pTransactionId == NULL ) ||
         ( pMessageBuffer == NULL ) ||
         ( pMessageBufferLength == NULL ) ||
