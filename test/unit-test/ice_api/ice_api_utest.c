@@ -19934,6 +19934,15 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
 
     TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
                        result );
+
+    result = Ice_CreateTurnChannelDataMessage( &( context ),
+                                               &( candidatePair ),
+                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               UINT16_MAX+1,
+                                               &( totalBufferLength ) );
+
+    TEST_ASSERT_EQUAL( ICE_RESULT_BAD_PARAM,
+                       result );
 }
 
 /*-----------------------------------------------------------*/

@@ -1134,7 +1134,8 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
         ( pTurnPayload == NULL ) ||
-        ( pTotalBufferLength == NULL ) )
+        ( pTotalBufferLength == NULL ) ||
+        ( turnPayloadLength > UINT16_MAX ) )
     {
         result = ICE_RESULT_BAD_PARAM;
     }
