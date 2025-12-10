@@ -19901,7 +19901,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
 
     result = Ice_CreateTurnChannelDataMessage( NULL,
                                                &( candidatePair ),
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                &( totalBufferLength ) );
 
@@ -19910,7 +19910,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
 
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                NULL,
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                &( totalBufferLength ) );
 
@@ -19928,7 +19928,7 @@ void test_Ice_CreateTurnChannelDataMessage_BadParams( void )
 
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                NULL );
 
@@ -19972,7 +19972,7 @@ void test_Ice_CreateTurnChannelDataMessage_BufferTooSmall( void )
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_WAITING;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20007,7 +20007,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateNoNeedTurnChannelHeader_StateInv
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_INVALID;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20042,7 +20042,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateNoNeedTurnChannelHeader_StateFro
     candidatePair.state = ICE_CANDIDATE_PAIR_STATE_FROZEN;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               turnPayloadBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               turnPayloadBuffer,
                                                turnPayloadBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20095,7 +20095,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateWaiting_Success( void )
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               buffer,
                                                inputBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20153,7 +20153,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateValid_Success( void )
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               buffer,
                                                inputBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20211,7 +20211,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateNominated_Success( void )
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               buffer,
                                                inputBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20269,7 +20269,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success( void )
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               buffer,
                                                inputBufferLength,
                                                &( totalBufferLength ) );
 
@@ -20326,7 +20326,7 @@ void test_Ice_CreateTurnChannelDataMessage_StateSucceeded_Success_WithPadding( v
     candidatePair.turnChannelNumber = 0x4000U;
     result = Ice_CreateTurnChannelDataMessage( &( context ),
                                                &( candidatePair ),
-                                               buffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH,
+                                               buffer,
                                                inputBufferLength,
                                                &( totalBufferLength ) );
 

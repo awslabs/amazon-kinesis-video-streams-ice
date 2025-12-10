@@ -1123,17 +1123,17 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
 
 IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                                               const IceCandidatePair_t * pIceCandidatePair,
-                                              uint8_t * pTurnPayload,
+                                              uint8_t * pTurnBuffer,
                                               size_t turnPayloadLength,
                                               size_t * pTotalBufferLength )
 {
     IceResult_t result = ICE_RESULT_OK;
-    uint8_t * pChannelDataHeader = NULL;
+    uint8_t * pChannelData = NULL;
     uint16_t padding;
 
     if( ( pContext == NULL ) ||
         ( pIceCandidatePair == NULL ) ||
-        ( pTurnPayload == NULL ) ||
+        ( pTurnBuffer == NULL ) ||
         ( pTotalBufferLength == NULL ) ||
         ( turnPayloadLength > UINT16_MAX ) )
     {
@@ -1162,16 +1162,16 @@ IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
 
     if( result == ICE_RESULT_OK )
     {
-        pChannelDataHeader = pTurnPayload - ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
-
-        ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ),
+        ICE_WRITE_UINT16( &( pTurnBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_CHANNEL_NUMBER_OFFSET ] ),
                           pIceCandidatePair->turnChannelNumber );
-        ICE_WRITE_UINT16( &( pChannelDataHeader[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ),
+        ICE_WRITE_UINT16( &( pTurnBuffer[ ICE_TURN_CHANNEL_DATA_MESSAGE_LENGTH_OFFSET ] ),
                           turnPayloadLength );
+
+        pChannelData = pTurnBuffer + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH;
 
         if( padding > 0 )
         {
-            memset( &( pTurnPayload[ turnPayloadLength ] ), 0, padding );
+            memset( &( pChannelData[ turnPayloadLength ] ), 0, padding );
         }
 
         *pTotalBufferLength = turnPayloadLength + ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH + padding;
