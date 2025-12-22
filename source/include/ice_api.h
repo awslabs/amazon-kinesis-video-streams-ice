@@ -82,16 +82,14 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
                                        uint8_t * pStunMessageBuffer,
                                        size_t * pStunMessageBufferLength );
 
-/* Writes 4 byte TURN channel data message header before the payload and the
- * required padding after the payload. It assumes that the caller has reserved
- * 4 (ICE_TURN_CHANNEL_DATA_MESSAGE_HEADER_LENGTH) bytes for the header.
+/* Writes 4 byte TURN channel data message header and required padding.
  *
  * @param pTotalBufferLength [in, out]: On input, the total buffer length.
  *                                      On output, the turn message size
  *                                      including header and padding.
- *            pTurnPayload
- *            |
- *            V         turnPayloadLength
+ * pTurnBuffer
+ * |
+ * V                     turnPayloadLength
  *            <-------------------------------------->
  * +----------+--------------------------------------+----------+------------------+
  * |  Header  |           TURN Payload               |  Padding |                  |
@@ -103,7 +101,7 @@ IceResult_t Ice_CreateNextPairRequest( IceContext_t * pContext,
  */
 IceResult_t Ice_CreateTurnChannelDataMessage( IceContext_t * pContext,
                                               const IceCandidatePair_t * pIceCandidatePair,
-                                              uint8_t * pTurnPayload,
+                                              uint8_t * pTurnBuffer,
                                               size_t turnPayloadLength,
                                               size_t * pTotalBufferLength );
 

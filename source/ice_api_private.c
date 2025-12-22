@@ -736,7 +736,7 @@ IceResult_t Ice_CreateRequestForConnectivityCheck( IceContext_t * pContext,
         /* For TURN candidate pair, create TURN channel header for connectivity check. */
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
-                                                   pStunMessageStart,
+                                                   pMessageBuffer,
                                                    stunMessageBufferLength,
                                                    &( turnMessageBufferLength ) );
     }
@@ -854,7 +854,7 @@ IceResult_t Ice_CreateRequestForNominatingCandidatePair( IceContext_t * pContext
     {
         result = Ice_CreateTurnChannelDataMessage( pContext,
                                                    pIceCandidatePair,
-                                                   pStunMessageStart,
+                                                   pMessageBuffer,
                                                    stunMessageBufferLength,
                                                    &( turnMessageBufferLength ) );
     }
